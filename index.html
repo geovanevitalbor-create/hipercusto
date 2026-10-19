@@ -4597,6 +4597,8 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     if (cod === '22023' || cod === 'P0002' || cod === 'P0001') return msg;   // as frases do próprio banco (em português)
     if (/fetch|network|Failed to/i.test(msg) && !cod) return 'Sem conexão com o servidor. Confira a internet e tente de novo.';
     if (/Invalid login credentials/i.test(msg)) return 'E-mail ou senha incorretos.';
+    if (+e.status === 429 || /rate limit|for security purposes/i.test(msg)) return 'Muitos pedidos seguidos. Espere alguns minutos e tente de novo.';
+    if (/Email address not authorized/i.test(msg)) return 'O envio de e-mails do sistema ainda não foi configurado. Avise o administrador (configurar o SMTP no Supabase).';
     if (/Email not confirmed/i.test(msg)) return 'E-mail ainda não confirmado. Peça ao administrador para confirmar o usuário no Supabase.';
     return 'Erro do servidor: ' + msg;
   }
@@ -5847,7 +5849,7 @@ function recalcular(registrarDif) {
   return dif;
 }
 function calcularAlertas() {
-  if (semContas()) { S.alertas = []; return; }
+  if (semContas() || (NUVEM && !(S.emp.produtos || []).length)) { S.alertas = []; return; }   // empresa ainda sem peças: nada a avisar
   try { S.alertas = window.Producao.alertas(S.fonte || H.fonte(S.emp), null, hojeRef()); }
   catch (e) { console.error(e); S.alertas = [{ nivel: 'critico', grupo: 'custos', texto: 'Não foi possível calcular os alertas: ' + e.message, rota: 'calculo' }]; }
 }
@@ -6207,7 +6209,7 @@ function renderPainel() {
   destruirGraficos();
   if (!$('#painel')) return;
   var t = !podeRota(S.rota) ? { render: telaSemAcesso } : TELAS[S.rota] || TELAS.resumo;
-  if (NUVEM && NUVEM.vazia() && !NUVEM.ROTAS_VAZIA[S.rota]) t = TELAS['boas-vindas'];   // empresa vazia: o painel de boas-vindas
+  if (NUVEM && podeRota(S.rota)) t = NUVEM.telaVazia(S.rota) || t;   // empresa vazia: o painel de boas-vindas no Resumo
   S.tela = t; S._hb = {};
   var foco = capturarFoco();
   var html;
@@ -7188,6 +7190,8 @@ ACOES.usrExcluir = function () {
 
 function naoEncontrado(oque, rota) { return ph(oque + ' não encontrado', '', btn('Voltar à lista', 'ir', 'data-rota="' + rota + '"', 'btn-ghost', 'back')) + alerta('warn', 'Esse registro não existe mais. Ele pode ter sido excluído.'); }
 function custoDe(cod) { return S.custos && S.custos[cod] ? S.custos[cod] : M.custoProduto(S.ctx, cod); }
+// a linha da tabela quando o cadastro ainda está vazio (ou quando o filtro não acha nada)
+function linhaVazia(total, cols, vazioTxt, filtroTxt) { return '<tr><td colspan="' + cols + '" class="vazio">' + esc(total ? filtroTxt : vazioTxt) + '</td></tr>'; }
 function usoDiretoMP() {
   var uso = {};
   S.emp.produtos.forEach(function (p) { (p.itens || []).forEach(function (it) { if (it.tipo === 'MP' || it.tipo === 'PS') { uso[it.ref] = uso[it.ref] || {}; uso[it.ref][p.cod] = 1; } if (it.reapMp) { uso[it.reapMp] = uso[it.reapMp] || {}; uso[it.reapMp][p.cod] = 1; } }); });
@@ -7309,7 +7313,7 @@ function telaMpLista() {
       return '<tr class="click" data-a="ir" data-rota="mps" data-id="' + esc(m.cod) + '" tabindex="0"><td class="cod">' + esc(m.cod) + '</td><td class="pri">' + esc(m.desc) + '</td><td>' + esc(nomeGrupo(m.grupo)) + '</td><td>' + esc(unidadeExt(m.un, 1)) + '</td><td class="r">' + fmtR(n(m.vc)) + '</td>' +
         colsImp.map(function (i) { return '<td class="r">' + (n(m.p[i]) ? fmtP(n(m.p[i])) : '<span class="muted">—</span>') + '</td>'; }).join('') +
         '<td class="r">' + (n(m.v1) ? fmtR(n(m.v1)) : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR(v.valor), od('mp', m.cod, hojeRef())) + '</b>' + (v.origem === 'erro' ? ' ' + badge('fórmula com erro', 'b-crit') : v.origem === 'manual' ? ' ' + badge('manual', 'b-info') : '') + '</td><td>' + fmtData(ult) + '</td><td class="r">' + (nUso ? nUso + ' produto' + (nUso > 1 ? 's' : '') : '<span class="muted">nenhum</span>') + '</td></tr>';
-    }).join('') : '<tr><td colspan="12" class="vazio">Nenhuma matéria-prima encontrada.</td></tr>') + '</tbody></table>', lista.length + ' de ' + e.mps.length);
+    }).join('') : linhaVazia(e.mps.length, 12, 'Nenhuma matéria-prima ainda. Clique em Incluir matéria-prima.', 'Nenhuma matéria-prima encontrada.')) + '</tbody></table>', lista.length + ' de ' + e.mps.length);
   return h;
 }
 function htmlLiquido(d, formulaCfg, comTitulo) {
@@ -7396,7 +7400,7 @@ function telaSetorLista() {
       var nm = (s.equipamentos || []).reduce(function (t, q) { return t + (vazio(q.qtd) ? 1 : n(q.qtd)); }, 0);
       var tx = function (k) { return orig(fmtR2(T[k].taxa), od('taxa', s.cod, hojeRef())) + (T[k].manual ? ' ' + badge('manual', 'b-info') : '') + (T[k].semHoras ? ' ' + badge('sem horas', 'b-crit') : ''); };
       return '<tr class="click" data-a="ir" data-rota="setores" data-id="' + esc(s.cod) + '" tabindex="0"><td class="cod">' + esc(s.cod) + '</td><td class="pri">' + esc(s.desc) + (s.cod === setorLimpeza() ? ' ' + badge('limpeza interna', 'b-acc') : '') + '</td><td class="r">' + fmtQ(n(s.horasOperacao)) + '</td><td class="r">' + nf + '</td><td class="r">' + nm + '</td><td class="r">' + fmtR0(T.mod.custo) + '</td><td class="r">' + fmtR0(T.maq.custo) + '</td><td class="r">' + tx('mod') + '</td><td class="r">' + tx('maq') + '</td><td class="r"><b>' + orig(fmtR2(T.composta), od('taxa', s.cod, hojeRef())) + '</b></td></tr>';
-    }).join('') + '</tbody><tfoot><tr><td colspan="5">Custo fixo dos setores no mês</td><td class="r">' + fmtR0(tot.mod) + '</td><td class="r">' + fmtR0(tot.maq) + '</td><td colspan="3" class="muted">Total ' + fmtR0(tot.mod + tot.maq) + ' por mês</td></tr></tfoot></table>');
+    }).join('') + (e.setores.length ? '' : linhaVazia(0, 10, 'Nenhum setor ainda. Clique em Incluir setor.')) + '</tbody><tfoot><tr><td colspan="5">Custo fixo dos setores no mês</td><td class="r">' + fmtR0(tot.mod) + '</td><td class="r">' + fmtR0(tot.maq) + '</td><td colspan="3" class="muted">Total ' + fmtR0(tot.mod + tot.maq) + ' por mês</td></tr></tfoot></table>');
   h += '<div class="hint">“Hora do setor” = 1 pessoa + 1 máquina trabalhando uma hora. É o que uma etapa da fórmula com 1 homem e 1 máquina custa por hora. Clique num setor para ver a conta da taxa. <button class="link" data-a="ir" data-rota="motor">Como calculamos</button></div>';
   // o que antes ficava em Ajustes: o custo fixo de cada setor e a mão de obra de cada pessoa por setor
   var vista = abaAtual('setLista', 'taxas');
@@ -7543,7 +7547,7 @@ function telaFuncLista() {
       var alocTot = (f.aloc || []).reduce(function (s, a) { return s + n(a.pct); }, 0);
       var dest = (f.aloc || []).map(function (a) { return '<span class="chip">' + esc(a.setor) + ' ' + fmt(n(a.pct), 0) + '%</span>'; }).join('') + (Math.abs(alocTot - 100) > 0.001 ? ' ' + badge(fmt(alocTot, 0) + '%', alocTot > 100 ? 'b-crit' : 'b-warn') : '');
       return '<tr class="click" data-a="ir" data-rota="funcionarios" data-id="' + esc(f.mat) + '" tabindex="0"><td class="cod">' + esc(f.mat) + '</td><td class="pri">' + esc(f.nome) + (f.situacao === 'inativo' ? ' ' + badge('desligado', 'b-mute') : '') + '<div class="muted" style="font-weight:400;font-size:11px">' + esc(f.cargo || '') + '</div></td><td class="r">' + fmtR2(n(f.sb)) + '</td><td class="r">' + fmtR2(c.ST) + '</td><td class="r"><b>' + orig(fmtR2(c.total), od('func', f.mat, hojeRef())) + '</b></td><td class="r">' + fmt(c.horasProdutivas, 1) + '</td><td class="r">' + orig(fmtR2(c.custoHora), od('func', f.mat, hojeRef())) + '</td><td>' + dest + (c.erros.length ? ' ' + badge('erro no cálculo', 'b-crit') : '') + '</td></tr>';
-    }).join('') + '</tbody><tfoot><tr><td colspan="3">' + lista.length + ' funcionários</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
+    }).join('') + (lista.length ? '' : linhaVazia(e.funcionarios.length, 8, 'Nenhum funcionário ainda. Clique em Incluir funcionário.', 'Nenhum funcionário encontrado.')) + '</tbody><tfoot><tr><td colspan="3">' + lista.length + ' funcionários</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
   return h;
 }
 function htmlAlocTot(d) {
@@ -7641,7 +7645,7 @@ function telaProdLista() {
       var c = custoDe(p.cod), m = margemPeca(p, c);
       var sit = c.erro ? badge('custo incompleto', 'b-crit') : c.semFormula ? badge('sem fórmula', 'b-warn') : p.situacao && p.situacao !== 'ativo' ? badge(p.situacao, 'b-mute') : badge('ativo', 'b-ok');
       return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(p.cod) + '" tabindex="0"><td class="cod">' + esc(p.cod) + '</td><td class="pri">' + esc(p.desc) + '</td><td>' + tipoTag(p.tipo) + '</td><td class="cod">' + esc(p.molde || '—') + '</td><td>' + txtLimpeza(p) + '</td><td class="r"><b>' + (c.erro || c.semFormula ? fmtR(c.total) : orig(fmtR(c.total), od('custo', p.cod, hojeRef()))) + '</b></td><td>' + miniBarra(c.cats, 110) + '</td><td class="r">' + (m ? fmtR(m.preco) : '<span class="muted">—</span>') + '</td><td class="r">' + (m ? fmtP(m.pct, 1) : '<span class="muted">—</span>') + '</td><td>' + sit + '</td></tr>';
-    }).join('') : '<tr><td colspan="10" class="vazio">Nenhum produto encontrado.</td></tr>') + '</tbody></table>', lista.length + ' de ' + e.produtos.length);
+    }).join('') : linhaVazia(e.produtos.length, 10, 'Nenhum produto ainda. Clique em Incluir produto.', 'Nenhum produto encontrado.')) + '</tbody></table>', lista.length + ' de ' + e.produtos.length);
   return h;
 }
 ACOES.novoProd = function (el) {
@@ -8582,7 +8586,7 @@ function telaMoldeLista() {
   h += tabelaBox('', '<table><thead><tr><th>Código</th><th>Molde</th><th>Setor</th><th class="r">Cavidades</th>' + (vv ? '<th class="r">Valor</th>' : '') + '<th class="r">Vida útil</th><th class="r">Usadas</th><th>Vida usada</th>' + (vv ? '<th class="r">Por peça</th>' : '') + '<th>Peças</th><th>Fim previsto</th><th>Situação</th></tr></thead><tbody>' +
     (us.length ? us.slice().sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).map(function (m) {
       return '<tr class="click" data-a="ir" data-rota="moldes" data-id="' + esc(m.cod) + '" tabindex="0"><td class="cod">' + esc(m.cod) + '</td><td class="pri">' + esc(m.desc) + '</td><td>' + esc(m.setor || '—') + '</td><td class="r">' + fmtQ(m.cavidades) + '</td>' + (vv ? '<td class="r">' + fmtR0(m.valor) + '</td>' : '') + '<td class="r">' + fmtQ(m.vida) + '</td><td class="r">' + fmtQ(Math.round(m.ciclos)) + '</td><td class="nw">' + medidor(m.pct, m.status === 'vencido' ? 'critico' : m.status === 'atencao' ? 'aviso' : 'ok', 85) + ' <span class="ocup-t">' + (m.pct === null ? '—' : fmtP(m.pct, 0)) + '</span></td>' + (vv ? '<td class="r">' + (m.porPeca === null ? '—' : orig(fmtR(m.porPeca), od('molde', m.cod, hojeRef()))) + '</td>' : '') + '<td>' + (m.produtos.map(function (p) { return '<span class="chip">' + esc(p) + '</span>'; }).join('') || '<span class="muted">nenhuma</span>') + '</td><td>' + txtPrevisao(m) + '</td><td>' + (m.situacao === 'inativo' ? badge('inativo', 'b-mute') : badgeMolde(m.status)) + '</td></tr>';
-    }).join('') : '<tr><td colspan="' + (vv ? 12 : 10) + '" class="vazio">Nenhum molde cadastrado.</td></tr>') + '</tbody></table>', us.length + ' moldes');
+    }).join('') : linhaVazia(0, vv ? 12 : 10, 'Nenhum molde ainda. Clique em Incluir molde.')) + '</tbody></table>', us.length + ' moldes');
   return h;
 }
 function htmlPrevMolde(d) {
@@ -8947,6 +8951,8 @@ TELAS.motor = {
 function gravarMudanca(reqs, depois, opts) {
   var por = S.usuario ? S.usuario.login : 'Sistema', hoje = hojeRef(), r;
   var lista = (reqs || []).map(function (q) { var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); c.por = por; if (!(opts && opts.semHoje)) c.hoje = hoje; return c; });
+  // versão oficial, empresa ainda sem configuração no registro: a configuração padrão entra no mesmo lote, antes
+  if (NUVEM && NUVEM.pedidosComConfig) lista = NUVEM.pedidosComConfig(lista);
   try { r = H.aplicarMudancas(S.emp, lista); }
   catch (e) { console.error(e); r = { ok: false, motivo: 'Erro ao gravar: ' + e.message }; }
   // gravar sem ter mudado nada não é erro: só avisa, sem vermelho
@@ -11599,7 +11605,10 @@ function exImp(D) {
    passa por salvarDB → NUVEM.salvar: a diferença desde o último retrato
    vai para o banco, em fila. Recusa ou conflito recarregam a empresa;
    gravação de outra pessoa chega pelo tempo real e recarrega também.
-   Empresa vazia: painel de boas-vindas e Cadastros › Importar planilha.
+   Empresa vazia: enquanto o registro não tem configuração, a tela usa a
+   configuração padrão só na memória (cfgProvisoria) e todas as telas abrem;
+   a primeira gravação leva a configuração padrão no mesmo lote, antes do
+   item. No Resumo, sem peças: boas-vindas (cadastrar na tela ou planilha).
    ===================================================================== */
 var NV = {
   api: null, papeis: {}, nomes: {}, ret: {}, fila: Promise.resolve(), geracao: 0, pendentes: 0, gravouEm: 0,
@@ -11608,7 +11617,35 @@ var NV = {
 var CFG_NUVEM = window.CENTRAL_SUPABASE || null;
 var ROTAS_VAZIA = { 'boas-vindas': 1, importar: 1, usuarios: 1, motor: 1, auditoria: 1 };
 function nvPlaceholder(v) { return !v || /^COLE_AQUI/.test(String(v)); }
-function nvVazia() { return !!(S.emp && !S.emp.somenteProducao && !S.emp.config); }
+function nvVazia() { return !!(S.emp && !S.emp.somenteProducao && (!S.emp.config || S.emp.cfgProvisoria)); }
+function nvCfgPadrao(emp) { var c = clone(window.CONFIG_PADRAO || {}); c.empresa = emp.nome; return c; }
+// logo depois de materializar: sem configuração no registro, a padrão fica só na memória (nunca vai para o banco por aqui)
+function nvAjustarCfg(emp) {
+  if (!emp || emp.somenteProducao) return emp;
+  if (emp.config) delete emp.cfgProvisoria;
+  else { emp.config = nvCfgPadrao(emp); emp.config.mesReferencia = hojeISO().slice(0, 7); emp.cfgProvisoria = true; }
+  return emp;
+}
+// a primeira gravação numa empresa sem configuração no registro: a configuração padrão entra antes, no mesmo lote
+// (com a mesma data de início); Ajustes gravando a configuração vira a própria criação dela
+function nvPedidosComConfig(lista) {
+  var e = S.emp;
+  if (!e || !e.cfgProvisoria || e.somenteProducao) return lista;
+  var desdes = lista.map(function (q) { return q.desde; }).filter(Boolean).sort(), criada = false;
+  if (!desdes.length) return lista;
+  lista.forEach(function (q) { if (q.tipo === 'cfg' && q.ref === 'config' && q.novo !== undefined) { q.base = null; criada = true; } });
+  if (criada) return lista;
+  var c = { tipo: 'cfg', ref: 'config', desde: desdes[0], base: null, novo: nvCfgPadrao(e), semEfeito: true, por: lista[0].por };
+  if (lista[0].hoje) c.hoje = lista[0].hoje;
+  return [c].concat(lista);
+}
+// o que aparece no lugar da tela pedida: boas-vindas no Resumo enquanto não há peças; quem não cadastra (consulta)
+// vê só o aviso enquanto a empresa está vazia
+function nvTelaVazia(rota) {
+  if (!S.emp || S.emp.somenteProducao) return null;
+  if (!pode('produtos', 'incluir')) return nvVazia() && !ROTAS_VAZIA[rota] ? TELAS['boas-vindas'] : null;
+  return (rota === 'resumo' || rota === 'painel') && !(S.emp.produtos || []).length ? TELAS['boas-vindas'] : null;
+}
 function nvPapel(k) { return NV.papeis[k || S.db.ativa] || null; }
 function nvNomePapel(k) { return PF.NOME_PAPEL[nvPapel(k)] || ''; }
 function nvTelaEntrada(miolo) {
@@ -11628,6 +11665,9 @@ function nvIniciar() {
   }
   // link do e-mail "Esqueci a senha": volta com #…type=recovery (o supabase-js limpa o endereço ao ler)
   NV.recuperacao = /type=recovery/.test(location.hash || '');
+  // link vencido ou já usado: o Supabase volta com #error=…&error_code=otp_expired (ou na query)
+  NV.vencido = nvLinkVencido();
+  if (NV.vencido) { NV.recuperacao = false; try { history.replaceState(null, '', location.pathname); } catch (e) { } }
   NV.api = window.Nuvem.supabase(window.supabase.createClient(CFG_NUVEM.url, CFG_NUVEM.chave));
   NV.api.aoMudarSessao(function (ev) {
     if (ev === 'PASSWORD_RECOVERY') { NV.recuperacao = true; nvTelaNovaSenha(); }
@@ -11635,6 +11675,7 @@ function nvIniciar() {
   });
   nvCarregando('Conferindo a sessão…');
   NV.api.sessao().then(function (u) {
+    if (NV.vencido) { nvTelaLinkVencido(); return; }
     if (NV.recuperacao) { nvTelaNovaSenha(); return; }
     if (u) nvEntrarComSessao(u); else { S.fase = 'login'; render(); }
   }, function (e) { S.fase = 'login'; render(); var m = $('#lg-msg'); if (m) m.textContent = e.message; });
@@ -11670,26 +11711,82 @@ function nvTentarLogin() {
     nvEntrarComSessao(r.usuario);
   });
 }
-ACOES.lgEsqueci = function () {
-  var email = (($('#lg-u') || {}).value || '').trim(), msg = $('#lg-msg');
-  if (!email) { msg.textContent = 'Digite o seu e-mail no campo acima e clique de novo em "Esqueci a senha".'; $('#lg-u').focus(); return; }
-  msg.textContent = 'Enviando…';
-  NV.api.esqueciSenha(email, location.origin + location.pathname).then(function (r) {
-    msg.textContent = r.ok ? 'Pronto: se o e-mail estiver cadastrado, chega em instantes um link para criar uma senha nova. Veja também a caixa de spam.' : r.motivo;
+ACOES.lgEsqueci = function () { nvTelaEsqueci((($('#lg-u') || {}).value || '').trim(), false); };
+
+/* ---------------- esqueci a senha: a tela própria ---------------- */
+var ESPERA_REENVIO = 60;   // segundos até poder reenviar o link
+var TXT_LINK_ENVIADO = 'Se este e-mail tiver acesso, o link chega em instantes. Veja também a caixa de spam. O link vale por 1 hora.';
+function nvLinkVencido() { return /(^|[#&?])error(_code)?=/.test((location.hash || '') + '&' + (location.search || '')); }
+function nvParaOnde() { return location.origin + location.pathname; }
+// a mesma resposta exista ou não o e-mail (não revela quem tem acesso); os erros vêm traduzidos de Nuvem.mapa.mensagem
+function nvEnviarLink(email) { return NV.api.esqueciSenha(email, nvParaOnde()); }
+function nvTelaEsqueci(email, enviado) {
+  definirTema(null); clearInterval(NV.timerReenvio); NV.esEmail = email || '';
+  if (!enviado) {
+    $('#app').innerHTML = nvTelaEntrada('<form class="auth-card" id="fEsqueci" novalidate><h2>Esqueci a senha</h2>' +
+      '<p class="desc">Informe o e-mail com que você entra. Mandamos um link para criar uma senha nova.</p>' +
+      '<div class="campo"><label for="es-email">E-mail</label><input class="i" id="es-email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" value="' + esc(email || '') + '"></div>' +
+      '<div class="lg-msg" id="es-msg" role="alert"></div><button class="btn btn-entrar" type="submit">Enviar link para o meu e-mail</button>' +
+      '<button class="lg-link" type="button" data-a="esVoltar">Voltar para a entrada</button></form>');
+    var f = $('#es-email'); if (f) f.focus();
+    return;
+  }
+  $('#app').innerHTML = nvTelaEntrada('<div class="auth-card" id="esEnviado"><h2>Confira o seu e-mail</h2>' +
+    '<p class="desc" role="status" id="es-ok">' + esc(TXT_LINK_ENVIADO) + '</p><p class="hint">Pedido para <b>' + esc(email) + '</b>.</p>' +
+    '<div class="lg-msg" id="es-msg" role="alert"></div><button class="btn btn-ghost" type="button" id="esReenviar" data-a="esReenviar" disabled>Reenviar</button>' +
+    '<button class="lg-link" type="button" data-a="esVoltar">Voltar para a entrada</button></div>');
+  nvContarReenvio();
+  NV.timerReenvio = setInterval(nvContarReenvio, 1000);
+}
+function nvContarReenvio() {
+  var b = $('#esReenviar'); if (!b) { clearInterval(NV.timerReenvio); return; }
+  var resta = Math.ceil(((NV.reenvioAte || 0) - Date.now()) / 1000);
+  if (resta > 0) { b.disabled = true; b.textContent = 'Reenviar em ' + resta + ' s'; }
+  else { b.disabled = false; b.textContent = 'Reenviar'; clearInterval(NV.timerReenvio); }
+}
+ACOES.esVoltar = function () {
+  clearInterval(NV.timerReenvio); NV.vencido = false;
+  NV.api.sessao().then(function (u) { if (u && !NV.recuperacao) nvEntrarComSessao(u); else { NV.recuperacao = false; S.fase = 'login'; render(); var l = $('#lg-u'); if (l && NV.esEmail) l.value = NV.esEmail; } });
+};
+ACOES.esReenviar = function () {
+  var b = $('#esReenviar'), msg = $('#es-msg'); if (!b || b.disabled) return;
+  b.disabled = true; b.textContent = 'Enviando…'; msg.textContent = '';
+  nvEnviarLink(NV.esEmail).then(function (r) {
+    if (!r.ok) { msg.textContent = r.motivo; b.disabled = false; b.textContent = 'Reenviar'; return; }
+    NV.reenvioAte = Date.now() + ESPERA_REENVIO * 1000; nvTelaEsqueci(NV.esEmail, true);
   });
 };
+ACOES.esPedirOutro = function () { NV.vencido = false; NV.recuperacao = false; nvTelaEsqueci('', false); };
+function nvTelaLinkVencido() {
+  definirTema(null);
+  $('#app').innerHTML = nvTelaEntrada('<div class="auth-card" id="nsVencido"><h2>Link vencido</h2><p class="desc" role="alert">Este link venceu ou já foi usado. Peça outro.</p>' +
+    '<button class="btn btn-entrar" type="button" data-a="esPedirOutro">Pedir outro link</button><button class="lg-link" type="button" data-a="esVoltar">Voltar para a entrada</button></div>');
+}
+
+/* ---------------- senha nova (link do e-mail) e Alterar minha senha ---------------- */
+var SENHA_MIN = 8;
+function nvCamposSenha(pre) {
+  return '<div class="campo"><label for="' + pre + '-n">Nova senha</label><input class="i" id="' + pre + '-n" type="password" autocomplete="new-password"></div>' +
+    '<div class="campo"><label for="' + pre + '-c">Repita a nova senha</label><input class="i" id="' + pre + '-c" type="password" autocomplete="new-password"></div>' +
+    '<div class="hint">Pelo menos ' + SENHA_MIN + ' caracteres.</div><button class="lg-link nv-mostrar" type="button" data-mostrar="' + pre + '" aria-pressed="false">Mostrar a senha</button>';
+}
+// mostrar ou esconder a senha digitada (só a tela; fora das ações e dos direitos)
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('[data-mostrar]'); if (!b) return;
+  var ver = b.getAttribute('aria-pressed') !== 'true', pre = b.dataset.mostrar;
+  ['-n', '-c'].forEach(function (x) { var i = document.getElementById(pre + x); if (i) i.type = ver ? 'text' : 'password'; });
+  b.setAttribute('aria-pressed', String(ver)); b.textContent = ver ? 'Esconder a senha' : 'Mostrar a senha';
+});
 function nvTelaNovaSenha() {
   definirTema(null);
-  $('#app').innerHTML = nvTelaEntrada('<form class="auth-card" id="fNovaSenha" novalidate><h2>Crie a sua senha nova</h2>' +
-    '<div class="campo"><label for="ns-n">Nova senha</label><input class="i" id="ns-n" type="password" autocomplete="new-password"></div>' +
-    '<div class="campo"><label for="ns-c">Repita a nova senha</label><input class="i" id="ns-c" type="password" autocomplete="new-password"></div>' +
+  $('#app').innerHTML = nvTelaEntrada('<form class="auth-card" id="fNovaSenha" novalidate><h2>Definir nova senha</h2>' + nvCamposSenha('ns') +
     '<div class="lg-msg" id="ns-msg" role="alert"></div><button class="btn btn-entrar" type="submit">Gravar a senha e entrar</button></form>');
   var f = $('#ns-n'); if (f) f.focus();
 }
 function nvFormSenha(idN, idC, idMsg, depois) {
   var nova = $(idN).value, conf = $(idC).value, msg = $(idMsg);
-  if (nova.length < 6) { msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
-  if (nova !== conf) { msg.textContent = 'As duas senhas não conferem.'; return; }
+  if (nova.length < SENHA_MIN) { msg.textContent = 'A senha precisa ter pelo menos ' + SENHA_MIN + ' caracteres.'; $(idN).focus(); return; }
+  if (nova !== conf) { msg.textContent = 'As duas senhas não conferem.'; $(idC).focus(); return; }
   msg.textContent = 'Gravando…';
   NV.api.novaSenha(nova).then(function (r) { if (!r.ok) { msg.textContent = r.motivo; return; } depois(); });
 }
@@ -11698,19 +11795,27 @@ document.addEventListener('submit', function (ev) {
   if (ev.target.id === 'fNovaSenha') {
     ev.preventDefault();
     nvFormSenha('#ns-n', '#ns-c', '#ns-msg', function () {
-      NV.recuperacao = false;
+      NV.recuperacao = false; NV.aviso = ['Senha trocada', 'Use a nova senha nas próximas entradas.'];
+      var m = $('#ns-msg'); if (m) { m.style.color = 'var(--ok-t)'; m.textContent = 'Senha trocada. Entrando…'; }
       try { history.replaceState(null, '', location.pathname); } catch (e) { }
-      NV.api.sessao().then(function (u) { if (u) nvEntrarComSessao(u); else { S.fase = 'login'; render(); } });
+      NV.api.sessao().then(function (u) { if (u) nvEntrarComSessao(u); else { S.fase = 'login'; NV.msgLogin = ''; render(); } });
     });
   } else if (ev.target.id === 'fSenhaNuvem') {
     ev.preventDefault();
-    nvFormSenha('#sn-n', '#sn-c', '#sn-msg', function () { $('#modal').innerHTML = ''; toast('Senha alterada', 'Use a nova senha no próximo acesso.'); });
+    nvFormSenha('#sn-n', '#sn-c', '#sn-msg', function () { $('#modal').innerHTML = ''; toast('Senha trocada', 'Use a nova senha no próximo acesso.'); });
+  } else if (ev.target.id === 'fEsqueci') {
+    ev.preventDefault();
+    var email = ($('#es-email').value || '').trim(), msg = $('#es-msg'), b = $('#fEsqueci button[type="submit"]');
+    if (!email) { msg.textContent = 'Informe o seu e-mail.'; $('#es-email').focus(); return; }
+    msg.textContent = ''; b.disabled = true; b.textContent = 'Enviando…';
+    nvEnviarLink(email).then(function (r) {
+      if (!r.ok) { b.disabled = false; b.textContent = 'Enviar link para o meu e-mail'; msg.textContent = r.motivo; return; }
+      NV.reenvioAte = Date.now() + ESPERA_REENVIO * 1000; nvTelaEsqueci(email, true);
+    });
   }
 }, true);
 function nvTrocarMinhaSenha() {
-  janela('Alterar minha senha', '<form id="fSenhaNuvem" class="form-senha" novalidate>' +
-    '<div class="campo"><label for="sn-n">Nova senha</label><input class="i" id="sn-n" type="password" autocomplete="new-password"></div>' +
-    '<div class="campo"><label for="sn-c">Repita a nova senha</label><input class="i" id="sn-c" type="password" autocomplete="new-password"></div>' +
+  janela('Alterar minha senha', '<form id="fSenhaNuvem" class="form-senha" novalidate>' + nvCamposSenha('sn') +
     '<div class="lg-msg" id="sn-msg" role="alert"></div><div class="btn-row"><button class="btn btn-accent" type="submit">Alterar senha</button></div></form>');
   var f = $('#sn-n'); if (f) f.focus();
 }
@@ -11737,7 +11842,7 @@ function nvEntrarComSessao(u) {
       else if (emps.length === 1) entrarEmpresa(emps[0]);
       else { S.fase = 'empresas'; salvarSessao(); render(); return; }
       if (TELAS[h] && h !== S.rota && podeRota(h)) ir(h, {}, true);
-    });
+    }).then(function () { if (NV.aviso && S.usuario) { toast(NV.aviso[0], NV.aviso[1]); NV.aviso = null; } });
   }).then(null, function (e) {
     console.error(e);
     S.usuario = null; S.fase = 'login'; NV.msgLogin = 'Não foi possível carregar os dados: ' + e.message; render();
@@ -11748,7 +11853,7 @@ function nvPrepararEmpresa(emp, k) {
   emp.nome = NV.nomes[k] || emp.nome;
   if (!emp.somenteProducao) R.materializar(emp, R.hojeDe(emp, hojeISO()));
   if (!emp.somenteProducao && emp.config) R.materializar(emp, R.hojeDe(emp, hojeISO()));   // a data de hoje fixada só se conhece depois da primeira
-  return emp;
+  return nvAjustarCfg(emp);
 }
 function nvCarregarEmpresa(k) {
   return NV.api.carregar(k).then(function (emp) {
@@ -11833,28 +11938,28 @@ function nvAgendarRecarga(k, nome, quieto) {
 }
 
 /* ---------------- boas-vindas (empresa vazia) ---------------- */
+var PASSOS_CADASTRO = [['mps', 'Matérias-primas', 'mps'], ['setores', 'Setores e máquinas', 'setores'], ['funcionarios', 'Funcionários', 'funcionarios'], ['moldes', 'Moldes', 'moldes'], ['produtos', 'Peças e fórmulas', 'produtos']];
 TELAS['boas-vindas'] = {
   render: function () {
-    var pode2 = pode('produtos', 'incluir');
-    var h = ph('Bem-vindo à Central de Custos', 'A ' + esc(S.emp.nome) + ' ainda não tem cadastros.');
+    var e = S.emp, pode2 = pode('produtos', 'incluir');
+    var nada = !PASSOS_CADASTRO.some(function (p) { return (e[p[2]] || []).length; });
+    var h = ph('Bem-vindo à Central de Custos', 'A ' + esc(e.nome) + (nada ? ' ainda não tem cadastros.' : ' ainda não tem peças cadastradas.'));
     if (!pode2) return h + alerta('info', 'O administrador ainda não cadastrou os dados desta empresa. Quando os cadastros entrarem, os custos, o lucro e o histórico aparecem aqui.');
-    h += '<div class="grid g2 nv-boas"><div>' + caixa('Comece pela planilha', '<ol class="nv-passos">' +
-      '<li><b>Baixe o modelo</b> em Cadastros › Importar planilha: uma aba para matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, preços do terceiro e configuração.</li>' +
-      '<li><b>Preencha</b> com os cadastros de hoje (números no padrão brasileiro: 1.500,25).</li>' +
-      '<li><b>Importe</b> escolhendo a data de início: tudo passa a valer a partir dela.</li>' +
-      '<li><b>Confira a configuração</b> em Ajustes (impostos, taxas hora, encargos) e lance a produção do dia.</li></ol>' +
-      '<div class="inline">' + btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-accent', 'file') + '</div>') + '</div><div>' +
-      caixa('Prefere cadastrar na tela?', '<p class="desc">Comece com a configuração padrão (impostos zerados, encargos e taxas de exemplo) e cadastre um por um. A planilha continua disponível depois.</p>' +
-        '<div class="inline">' + btn('Começar com a configuração padrão', 'nvComecar', '', 'btn-ghost', 'cog') + '</div>') + '</div></div>';
+    var passos = PASSOS_CADASTRO.filter(function (p) { return podeRota(p[0]); }).map(function (p) {
+      var q = (e[p[2]] || []).length;
+      return '<li><button class="link" data-a="ir" data-rota="' + p[0] + '">' + esc(p[1]) + '</button>' + (q ? ' ' + badge(q + (q === 1 ? ' cadastrado' : ' cadastrados'), 'b-ok') : '') + '</li>';
+    }).join('');
+    h += '<div class="grid g2 nv-boas" id="nvBoas"><div>' + caixa('Cadastrar na tela', '<p class="desc">Inclua um cadastro de cada vez, direto nas telas de Cadastros. Siga esta ordem, porque cada passo usa o anterior:</p>' +
+      '<ol class="nv-passos">' + passos + '</ol>' +
+      '<p class="hint">Impostos, taxas e encargos começam com valores padrão. Confira em Ajustes quando quiser.</p>' +
+      '<div class="inline">' + btn('Cadastrar na tela', 'ir', 'data-rota="mps"', 'btn-accent', 'plus') + '</div>') + '</div><div>' +
+      caixa('Importar planilha', '<ol class="nv-passos">' +
+        '<li><b>Baixe o modelo</b>: uma aba para matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, preços do terceiro e configuração.</li>' +
+        '<li><b>Preencha</b> com os cadastros de hoje (números no padrão brasileiro: 1.500,25).</li>' +
+        '<li><b>Importe</b> escolhendo a data de início: tudo passa a valer a partir dela.</li></ol>' +
+        '<div class="inline">' + btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-accent', 'file') + '</div>') + '</div></div>';
     return h;
   }
-};
-ACOES.nvComecar = function () {
-  var cfg = clone(window.CONFIG_PADRAO || {}); cfg.empresa = S.emp.nome;
-  gravarMudanca([{ tipo: 'cfg', ref: 'config', desde: hojeRef(), base: null, novo: cfg }], function () {
-    aposGravar('Configuração criada', 'configuração padrão a partir de ' + fmtData(hojeRef()), { silencioso: true });
-    ir('cfg-impostos', {}, true); toast('Configuração criada', 'Confira os impostos, as taxas e os encargos da ' + S.emp.nome + '.');
-  });
 };
 
 /* ---------------- Cadastros › Importar planilha ---------------- */
@@ -11949,7 +12054,7 @@ TELAS.usuarios = {
         var eu = S.usuario && a.userId === S.usuario.id;
         return '<tr><td class="pri">' + esc(a.nome || '—') + (eu ? ' ' + badge('você', 'b-info') : '') + '</td><td class="cod">' + esc(a.email) + '</td><td><select class="i" data-ch="acPapel" data-uid="' + esc(a.userId) + '" aria-label="Papel de ' + esc(a.nome || a.email) + '">' +
           Nuvem.PAPEIS.map(function (p) { return '<option value="' + p + '"' + (p === a.papel ? ' selected' : '') + '>' + esc(PF.NOME_PAPEL[p]) + '</option>'; }).join('') + '</select></td><td class="nw">' + (a.criadoEm ? fmtData(a.criadoEm) : '—') + '</td>' +
-          '<td>' + (eu ? '' : '<button class="btn btn-ghost btn-xs" data-a="acRemover" data-uid="' + esc(a.userId) + '" data-nome="' + esc(a.nome || a.email) + '">' + ic('trash') + 'Tirar acesso</button>') + '</td></tr>';
+          '<td><div class="inline">' + '<button class="btn btn-ghost btn-xs" data-a="acLinkSenha" data-email="' + esc(a.email) + '">' + ic('lock') + 'Enviar link para trocar a senha</button>' + (eu ? '' : '<button class="btn btn-ghost btn-xs" data-a="acRemover" data-uid="' + esc(a.userId) + '" data-nome="' + esc(a.nome || a.email) + '">' + ic('trash') + 'Tirar acesso</button>') + '</div></td></tr>';
       }).join('') + '</tbody></table>', L.length + (L.length === 1 ? ' pessoa' : ' pessoas'));
     h += caixa('Os papéis', '<div class="lista-kv">' + Nuvem.PAPEIS.map(function (p) { return '<span>' + esc(PF.NOME_PAPEL[p]) + '</span><b style="font-weight:400">' + esc(DESC_PAPEL[p]) + '</b>'; }).join('') + '</div>');
     return h;
@@ -11980,6 +12085,14 @@ ACOES.acPapel = function (el) {
   var uid = el.dataset.uid, papel = el.value;
   NV.api.alterarAcesso(S.db.ativa, uid, { papel: papel }).then(function (r) {
     nvDepoisDeAcesso(r, 'Papel alterado', 'Agora é ' + PF.NOME_PAPEL[papel].toLowerCase() + ' na ' + S.emp.nome + '. Vale no próximo acesso da pessoa.');
+  });
+};
+ACOES.acLinkSenha = function (el) {
+  var email = el.dataset.email; el.disabled = true;
+  nvEnviarLink(email).then(function (r) {
+    el.disabled = false;
+    if (r.ok) toast('Link enviado', TXT_LINK_ENVIADO + ' (' + email + ')', { tempo: 7000 });
+    else toast('Não foi possível enviar o link', r.motivo, { tipo: 'err', tempo: 8000 });
   });
 };
 ACOES.acRemover = function (el) {
@@ -12020,11 +12133,11 @@ TELAS.auditoria = {
 
 /* ---------------- ligar a versão oficial ---------------- */
 if (CFG_NUVEM) {
-  NUVEM = { iniciar: nvIniciar, salvar: nvSalvar, vazia: nvVazia, ROTAS_VAZIA: ROTAS_VAZIA, nomePapel: nvNomePapel };
+  NUVEM = { iniciar: nvIniciar, salvar: nvSalvar, vazia: nvVazia, telaVazia: nvTelaVazia, pedidosComConfig: nvPedidosComConfig, nomePapel: nvNomePapel };
   renderLogin = nvRenderLogin;
   tentarLogin = nvTentarLogin;
-  ACAO_SEM_LOGIN.lgEsqueci = 1;
-  ['acConceder', 'acProcurar', 'acPapel', 'acRemover'].forEach(function (a) { ACAO_ADMIN[a] = 1; });
+  ['lgEsqueci', 'esVoltar', 'esReenviar', 'esPedirOutro'].forEach(function (a) { ACAO_SEM_LOGIN[a] = 1; });
+  ['acConceder', 'acProcurar', 'acPapel', 'acRemover', 'acLinkSenha'].forEach(function (a) { ACAO_ADMIN[a] = 1; });
   ACOES.trocarMinhaSenha = nvTrocarMinhaSenha;
   ACOES.sair = function () {
     comConfirmacao(function () {
@@ -12037,7 +12150,10 @@ if (CFG_NUVEM) {
   var nvAtivarOrig = ativarEmpresa;
   ativarEmpresa = function (k) { if (S.usuario) S.usuario.admin = nvPapel(k) === 'administrador'; nvAtivarOrig(k); };
   var nvResumoOrig = resumoEmpresa;
-  resumoEmpresa = function (k) { var e = S.db.empresas[k]; return !e || e.somenteProducao || !e.config ? null : nvResumoOrig(k); };
+  resumoEmpresa = function (k) { var e = S.db.empresas[k]; return !e || e.somenteProducao || !e.config || e.cfgProvisoria ? null : nvResumoOrig(k); };
+  // materializar refaz a configuração a partir do registro: sem ela, volta a padrão provisória
+  var nvMaterializarOrig = materializarEmp;
+  materializarEmp = function () { nvMaterializarOrig(); nvAjustarCfg(S.emp); };
   // Cadastros › Importar planilha (administrador e gestor)
   MENU.forEach(function (g) { if (g.grupo === 'Cadastros') g.itens.push(['importar', 'Importar planilha']); });
   ROTA_PAI.importar = 'Cadastros';
