@@ -1475,6 +1475,18 @@ html[data-theme="light"] .vig.vig-corrigir .vig-ic,html[data-theme="light"] .vig
 .ed-op:not(:has(input:checked)) .ed-data{display:none}
 .ed-lista{margin:0 0 12px;padding-left:18px;color:var(--text2);font-size:13px}
 
+/* subgrupos do menu (Cadastros › Peças, Preços, Fábrica): abrem e fecham no lugar */
+.sn-sgrp{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;margin-top:2px;padding:7px 10px;border:none;border-radius:8px;background:transparent;color:var(--text);font:700 12px var(--f);text-align:left;cursor:pointer}
+.sn-sgrp span{flex:1;min-width:0}
+.sn-sgrp:hover{background:var(--hover)}
+.sn-sgrp.on{color:var(--acc-t)}
+.sn-sgrp .sn-chev{display:block;flex-shrink:0;width:12px;height:12px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;color:var(--text3);transition:transform .2s}
+.sn-sgrp[aria-expanded="true"] .sn-chev{transform:rotate(90deg)}
+.sn-sub2{display:none;margin:0 0 4px 10px;padding-left:8px;border-left:1px solid rgba(255,255,255,.09)}
+html[data-theme="light"] .sn-sub2{border-left-color:var(--line)}
+.sn-sub2.aberto{display:block}
+@media (max-width:760px){.sn-sgrp{min-height:42px;font-size:13.5px}.sn-sub2{margin-left:4px}}
+
 </style>
 </head>
 <body style="margin:0">
@@ -7286,11 +7298,11 @@ var MENU = [
   { grupo: 'Resumo', icone: 'home', itens: [['resumo', 'Visão geral'], ['alertas', 'Alertas']] },
   { item: ['pecas', 'Peças'], icone: 'tag' },
   { item: ['lucro-periodo', 'Lucro'], icone: 'chart' },
-  { item: ['historico', 'Histórico'], icone: 'clock' },
+  { grupo: 'Histórico', icone: 'clock', itens: [['historico', 'Todas as mudanças'], ['-', 'Por cadastro'], ['hist-molde', 'Moldes'], ['hist-mp', 'Matérias-primas'], ['hist-prod', 'Peças'], ['hist-limpeza', 'Limpeza'], ['hist-func', 'Funcionários'], ['hist-setor', 'Setores'], ['hist-cfg', 'Impostos'], ['-', 'Juntos'], ['comparar', 'Comparar']] },
   { grupo: 'Produção', icone: 'fabrica', itens: [['producao-dia', 'Produção do dia'], ['limpeza', 'Limpeza de peças']] },
-  { grupo: 'Cadastros', icone: 'box', itens: [['-', 'Peças e preços'], ['produtos', 'Produtos e fórmulas'], ['tabelas-preco', 'Tabelas de preço'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'],
-    ['-', 'Fábrica'], ['setores', 'Setores e máquinas'], ['cfg-equip', 'Gastos dos equipamentos'], ['funcionarios', 'Funcionários'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-taxas', 'Taxas hora'],
-    ['-', 'Impostos'], ['cfg-impostos', 'Impostos sobre a venda'], ['cfg-icms', 'ICMS por estado'], ['ncm', 'NCM']] },
+  { grupo: 'Cadastros', icone: 'box', itens: [['+', 'Peças'], ['produtos', 'Produtos e fórmulas'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'],
+    ['+', 'Preços'], ['tabelas-preco', 'Tabelas de preço'], ['cfg-impostos', 'Impostos sobre a venda'], ['cfg-icms', 'ICMS por estado'], ['ncm', 'NCM'],
+    ['+', 'Fábrica'], ['setores', 'Setores e máquinas'], ['cfg-equip', 'Gastos dos equipamentos'], ['funcionarios', 'Funcionários'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-taxas', 'Taxas hora']] },
   { grupo: 'Ajustes', icone: 'cog', fim: true, itens: [['cfg-tempos', 'Tempos e precisão'], ['cfg-geral', 'Geral e dados'], ['auditoria', 'Auditoria'], ['usuarios', 'Usuários e acessos']] },
   { ajuda: ['motor', 'Como calculamos'], icone: 'help' }
 ];
@@ -7300,7 +7312,7 @@ function itensMenu() {
   MENU.forEach(function (g) {
     if (g.item) l.push([g.item[0], g.item[1], null]);
     else if (g.ajuda) l.push([g.ajuda[0], g.ajuda[1], null]);
-    else g.itens.forEach(function (i) { if (i[0] !== '-') l.push([i[0], i[1], g.grupo]); });
+    else g.itens.forEach(function (i) { if (i[0] !== '-' && i[0] !== '+') l.push([i[0], i[1], g.grupo]); });
   });
   return l;
 }
@@ -7473,18 +7485,28 @@ function htmlSide() {
       }
       // subtítulo só aparece se tiver alguma tela liberada depois dele
       var itens = g.itens.filter(function (i, k) {
-        if (i[0] !== '-') return podeRota(i[0]);
-        for (var j = k + 1; j < g.itens.length && g.itens[j][0] !== '-'; j++) if (podeRota(g.itens[j][0])) return true;
+        if (i[0] !== '-' && i[0] !== '+') return podeRota(i[0]);
+        for (var j = k + 1; j < g.itens.length && g.itens[j][0] !== '-' && g.itens[j][0] !== '+'; j++) if (podeRota(g.itens[j][0])) return true;
         return false;
       });
       if (!itens.length) return '';
       var dentro = itens.some(function (i) { return i[0] !== '-' && aceso(i[0]); }), aberto = S.ui.grupos[g.grupo] !== undefined ? !!S.ui.grupos[g.grupo] : dentro;
       return '<div class="sn-sec' + (aberto ? ' aberto' : '') + (g.fim ? ' sn-fim' : '') + '"><button class="sn-grp' + (dentro ? ' on' : '') + '" data-a="grupoNav" data-g="' + esc(g.grupo) + '" aria-expanded="' + aberto + '" aria-haspopup="true">' + ic(g.icone) + '<span>' + esc(g.grupo) + '</span><svg class="sn-chev" viewBox="0 0 24 24">' + IC.chev + '</svg></button><div class="sn-sub" role="menu"><div class="sn-sub-t" aria-hidden="true">' + esc(g.grupo) + '</div>' +
-        itens.map(function (i) {
-          if (i[0] === '-') return '<div class="sn-rot">' + esc(i[1]) + '</div>';
+        (function () { S.ui.subg = S.ui.subg || {}; return ''; })() +
+        itens.map(function (i, ix, todos) {
+          var fecha = '';
+          if (i[0] === '-' || i[0] === '+') { fecha = S._snAberto ? '</div>' : ''; S._snAberto = false; }
+          if (i[0] === '-') return fecha + '<div class="sn-rot">' + esc(i[1]) + '</div>';
+          if (i[0] === '+') {
+            var k2 = g.grupo + '/' + i[1], dentro2 = false;
+            for (var j2 = ix + 1; j2 < todos.length && todos[j2][0] !== '-' && todos[j2][0] !== '+'; j2++) if (aceso(todos[j2][0])) dentro2 = true;
+            var ab2 = S.ui.subg[k2] !== undefined ? !!S.ui.subg[k2] : dentro2;
+            S._snAberto = true;
+            return fecha + '<button class="sn-sgrp' + (dentro2 ? ' on' : '') + '" data-a="subNav" data-k="' + esc(k2) + '" aria-expanded="' + ab2 + '"><span>' + esc(i[1]) + '</span><svg class="sn-chev" viewBox="0 0 24 24">' + IC.chev + '</svg></button><div class="sn-sub2' + (ab2 ? ' aberto' : '') + '">';
+          }
           var cnt = i[0] === 'alertas' && nAv ? '<span class="cnt' + (nCrit ? ' crit' : '') + '">' + nAv + '</span>' : '';
           return '<button class="sn-item' + (aceso(i[0]) ? ' on' : '') + '" data-a="ir" data-rota="' + i[0] + '" role="menuitem">' + esc(i[1]) + cnt + '</button>';
-        }).join('') + '</div></div>';
+        }).join('') + (S._snAberto ? (S._snAberto = false, '</div>') : '') + '</div></div>';
     }).join('');
 }
 // celular: a barra de baixo com as 4 perguntas e "Mais" (abre o resto do menu)
@@ -11649,6 +11671,8 @@ function htmlEscolhaH(tipo, sel) {
 // o histórico de um tipo de cadastro: à esquerda a lista dos itens (com quantas mudanças cada um teve), à direita o item escolhido;
 // ou, em "Todas as mudanças", a linha do tempo só deste tipo
 var TIPOS_HIST_ABA = [['molde', 'Moldes'], ['mp', 'Matérias-primas'], ['prod', 'Peças'], ['limpeza', 'Limpeza'], ['func', 'Funcionários'], ['setor', 'Setores'], ['cfg', 'Impostos']];
+var VISTA_DA_ROTA_H = { historico: 'tempo', mudancas: 'tempo', comparar: 'comparar' };
+TIPOS_HIST_ABA.forEach(function (t) { VISTA_DA_ROTA_H['hist-' + t[0]] = t[0]; });
 var UM_TIPO_H = { molde: 'Por molde', mp: 'Por matéria-prima', prod: 'Por peça', limpeza: 'Por peça', func: 'Por funcionário', setor: 'Por setor', cfg: 'Impostos' };
 function vistaHistTipo(tipo) {
   S.filtros.hiTipo = tipo;   // os botões de escolher e comparar agem neste tipo
@@ -11714,11 +11738,11 @@ function vistaTempo(tipoFixo) {
 }
 TELAS.historico = {
   render: function () {
-    var vista = abaAtual('hiVista', S.rota === 'mudancas' ? 'tempo' : 'item');
-    if (vista === 'item' || (vista !== 'tempo' && vista !== 'comparar' && !nomeTipoHist(vista))) vista = nomeTipoHist(S.filtros.hiTipo) ? S.filtros.hiTipo : 'molde';
-    var nC = itensCmp().length;
+    // o que mostrar vem do item do menu (Histórico › Todas as mudanças, Moldes, … , Comparar)
+    var vista = VISTA_DA_ROTA_H[S.rota] || 'tempo';
+    if (vista === 'molde' && !veValores()) vista = 'tempo';
+    S.aba.hiVista = vista;
     var h = mancheteHist();
-    h += abas('hiVista', [['tempo', 'Tudo']].concat(TIPOS_HIST_ABA).concat([['comparar', 'Comparar' + (nC ? ' (' + nC + ')' : '')]]), vista);
     return h + (vista === 'tempo' ? vistaTempo() : vista === 'comparar' ? vistaComparar() : vistaHistTipo(vista));
   },
   montar: function () { if (abaAtual('hiVista', 'item') === 'comparar') montarComparar(); else montarHist(); }
@@ -11751,7 +11775,8 @@ ACOES.hiTirar = function (el) { var t = S.filtros.hiTipo || 'mp', r = el.dataset
 ACOES.hiAbrir = function (el) {
   var t = el.dataset.tipo, ref = el.dataset.ref;
   S.filtros.hiTipo = t; S.filtros['hiSel_' + t] = [t === 'cfg' ? 'config' : ref]; S.filtros.hiMarca = el.dataset.desde; S.filtros.hiBusca = ''; S.aba.hiVista = t; S.aba['hm-' + t] = 'item';
-  if (S.rota !== 'historico') ir('historico'); else { renderPainel(); window.scrollTo(0, 0); }
+  var rh = TELAS['hist-' + t] ? 'hist-' + t : 'historico';
+  if (S.rota !== rh) ir(rh); else { renderPainel(); window.scrollTo(0, 0); }
 };
 ACOES.hiTempo = function () { S.aba.hiVista = 'tempo'; ir('historico'); };
 
@@ -12647,7 +12672,7 @@ ACOES.cmpAlternar = function (el, ev) {
 };
 ACOES.cmpTirar = function (el, ev) { if (ev) ev.stopPropagation(); tirarDaCmp(el.dataset.t, el.dataset.r); aposMudarCmp(); };
 ACOES.cmpLimpar = function () { S.cmpPorEmp[S.db.ativa] = []; salvarCmp(); S.ui.cmpAberta = false; aposMudarCmp(); };
-ACOES.cmpVer = function () { S.ui.cmpAberta = false; S.aba.hiVista = 'comparar'; ir('historico'); };
+ACOES.cmpVer = function () { S.ui.cmpAberta = false; S.aba.hiVista = 'comparar'; ir('comparar'); };
 ACOES.cmpBarra = function () { S.ui.cmpAberta = !S.ui.cmpAberta; atualizarBarraCmp(); };
 
 /* ---------------- a barra de baixo ---------------- */
@@ -14776,6 +14801,19 @@ function edAplicar(raiz) {
   var l = p.querySelectorAll('[data-b], [data-ch]');
   for (var i = 0; i < l.length; i++) { var el = l[i]; if (el.closest('.tbl-tools, .hm-lista, .cmpx-esc, .reg-hist') || el.disabled) continue; if (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(el.tagName)) el.disabled = true; }
 }
+// Histórico › um item por tipo: cada um é uma rota (o menu acende o item certo; o endereço abre direto)
+TIPOS_HIST_ABA.forEach(function (t) {
+  var r = 'hist-' + t[0];
+  TELAS[r] = { render: function () { return TELAS.historico.render(); }, montar: function () { TELAS.historico.montar(); } };
+  ROTA_MODULO[r] = ROTA_MODULO.historico; ROTAS_PER[r] = 1;
+});
+var podeRotaBase = podeRota;
+podeRota = function (r, emp) { if (r === 'hist-molde' && S.emp && !veValores()) return false; return podeRotaBase(r, emp); };
+ACOES.subNav = function (el) {
+  var k = el.dataset.k, ab = el.getAttribute('aria-expanded') !== 'true';
+  S.ui.subg = S.ui.subg || {}; S.ui.subg[k] = ab;
+  el.setAttribute('aria-expanded', String(ab)); var b = el.nextElementSibling; if (b) b.classList.toggle('aberto', ab);
+};
 // Resumo › Alertas: a tela de alertas é um item próprio no menu
 delete ROTA_ACESA.alertas;
 
