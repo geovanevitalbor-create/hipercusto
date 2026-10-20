@@ -1406,6 +1406,75 @@ html[data-theme="light"] .tg-det-top{background:var(--surf);border-color:var(--l
 @media (max-width:1100px){.tg{grid-template-columns:minmax(0,1fr)}.tg-lista{position:static;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}.tg-lista-t{grid-column:1/-1}}
 .tg-lista .tg-todas::before{display:none}
 
+/* ===================== Comparar: escolher à esquerda, comparar à direita ===================== */
+.cmpx{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.cmpx-esc{position:sticky;top:76px;max-height:calc(100vh - 96px);display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(var(--vidro-rgb),.36);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+html[data-theme="light"] .cmpx-esc{background:var(--surf);border-color:var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.cmpx-esc-t{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)}
+.cmpx-esc-t span{letter-spacing:0;text-transform:none;font-size:12px;color:var(--acc-t);font-weight:700}
+.cmpx-tipos{display:flex;flex-wrap:wrap;gap:5px}
+.cmpx-tipo{--tc:var(--acc);display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--text2);font:600 12px var(--f);cursor:pointer}
+.cmpx-tipo i{width:8px;height:8px;border-radius:50%;background:var(--tc)}
+.cmpx-tipo b{min-width:17px;padding:0 5px;border-radius:999px;background:var(--tc);color:#fff;font-size:10.5px;text-align:center}
+.cmpx-tipo:hover{color:var(--text);border-color:var(--tc)}
+.cmpx-tipo.on{color:var(--text);border-color:var(--tc);background:color-mix(in srgb,var(--tc) 16%,transparent)}
+.cmpx-lista{overflow-y:auto;display:flex;flex-direction:column;gap:2px;margin:0 -6px;padding:0 6px 2px;min-height:120px}
+.cmpx-grupo{--tc:var(--acc);display:flex;align-items:center;gap:7px;padding:10px 4px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--text3)}
+.cmpx-grupo i{width:8px;height:8px;border-radius:50%;background:var(--tc)}
+.cmpx-grupo span{margin-left:auto;letter-spacing:0}
+.cmpx-item{--sc:var(--acc);display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--text2);font:inherit;text-align:left;cursor:pointer}
+.cmpx-item:hover{background:var(--hover)}
+.cmpx-ck{flex-shrink:0;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line2);display:inline-flex;align-items:center;justify-content:center}
+.cmpx-ck svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cmpx-item.on{background:color-mix(in srgb,var(--sc) 13%,transparent);border-color:color-mix(in srgb,var(--sc) 45%,transparent)}
+.cmpx-item.on .cmpx-ck{background:var(--sc);border-color:var(--sc)}
+.cmpx-tx{min-width:0;display:flex;flex-direction:column}
+.cmpx-l1{font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmpx-l1 b{font-family:var(--f-mono);font-size:11.5px}
+.cmpx-l2{font-size:11px;color:var(--text3)}
+.cmpx-item.inativo{opacity:.55}
+.cmpx-dir{min-width:0}
+.cmpx-sel{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 12px}
+.cmpx-sel .kpi-lbl{margin-right:4px}
+.cmpx-limpar{margin-left:auto}
+.cmpx-vazio{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:340px;text-align:center;padding:30px;color:var(--text2)}
+.cmpx-vazio svg{width:34px;height:34px;stroke:var(--acc-t);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cmpx-vazio b{font-size:16px;color:var(--text)}
+.cmpx-vazio span{max-width:52ch;font-size:13px}
+.cmpx-dir .cmp-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-bottom:14px}
+@media (max-width:1100px){.cmpx{grid-template-columns:minmax(0,1fr)}.cmpx-esc{position:static;max-height:none}.cmpx-lista{max-height:320px}}
+
+/* ===================== Editar: só para ver x editando ===================== */
+.ver-so .i:disabled{opacity:1;cursor:default;color:var(--text);background-color:transparent;border-color:rgba(255,255,255,.07);box-shadow:none}
+html[data-theme="light"] .ver-so .i:disabled{border-color:var(--line-soft)}
+.ver-so select.i:disabled{background-image:none}
+.ver-so .chk input:disabled{opacity:.9}
+.ver-so .fx-acts .ico-btn:not(.aj-btn),.ver-so .fx-add,.ver-so [data-a$="Add"]:not([data-a="tabAdd"]),.ver-so [data-a$="Del"],.ver-so [data-a$="Padrao"],.ver-so [data-a="fxMover"]{display:none!important}
+.vig .btn{margin-left:auto;flex-shrink:0}
+.vig.vig-mudar{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.10)}
+.vig.vig-mudar .vig-ic{background:rgba(245,158,11,.22);color:#fcd34d}
+.vig.vig-mudar .vig-t>b{color:#fcd34d}
+.vig.vig-corrigir{border-color:rgba(236,131,90,.6);background:rgba(236,131,90,.10)}
+.vig.vig-corrigir .vig-ic{background:rgba(236,131,90,.22);color:#f6b08f}
+.vig.vig-corrigir .vig-t>b{color:#f6b08f}
+html[data-theme="light"] .vig.vig-mudar .vig-ic,html[data-theme="light"] .vig.vig-mudar .vig-t>b{color:#b45309}
+html[data-theme="light"] .vig.vig-corrigir .vig-ic,html[data-theme="light"] .vig.vig-corrigir .vig-t>b{color:#c2410c}
+.ed-modal{max-width:540px}
+.ed-modal>p{margin-bottom:12px}
+.ed-op{display:flex;gap:12px;align-items:flex-start;padding:14px;margin:0 0 10px;border-radius:12px;border:1px solid var(--line2);cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text2)}
+.ed-op:hover{border-color:var(--acc)}
+.ed-op:has(input:checked){border-color:var(--acc);background:rgba(var(--acc-rgb),.10)}
+.ed-op.off{opacity:.55;cursor:not-allowed}
+.ed-op input{margin-top:3px;accent-color:var(--acc);width:16px;height:16px;flex-shrink:0}
+.ed-op-t{display:flex;flex-direction:column;gap:4px}
+.ed-op-t b{font-size:14px;color:var(--text)}
+.ed-op-t small{font-size:12.5px;line-height:1.45;color:var(--text2)}
+.ed-data{display:flex;align-items:center;gap:8px;margin-top:6px}
+.ed-data label{margin:0;white-space:nowrap}
+.ed-data .i{width:auto}
+.ed-op:not(:has(input:checked)) .ed-data{display:none}
+.ed-lista{margin:0 0 12px;padding-left:18px;color:var(--text2);font-size:13px}
+
 </style>
 </head>
 <body style="margin:0">
@@ -7117,7 +7186,7 @@ ACOES.ajuda = function (el) {
 (function () {
   var raiz = document.getElementById('app');
   if (!raiz || !window.MutationObserver) return;
-  new MutationObserver(function () { ajMontar(raiz); }).observe(raiz, { childList: true, subtree: true });
+  new MutationObserver(function () { ajMontar(raiz); if (typeof edAplicar === 'function') edAplicar(raiz); }).observe(raiz, { childList: true, subtree: true });
   ajMontar(raiz);
 })();
 function btn(rotulo, acao, attrs, cls, icone) {
@@ -7214,13 +7283,15 @@ function compactoCurto(v) { var a = Math.abs(v), s = v < 0 ? '−' : ''; if (a >
 // Organizado por perguntas: cada entrada de cima responde uma; os grupos ficam embaixo e os ajustes técnicos no fim.
 // Entrada solta: { item: [rota, rótulo] }; grupo: { grupo, itens }. ['-', 'texto'] dentro de um grupo é só um subtítulo.
 var MENU = [
-  { item: ['resumo', 'Resumo'], icone: 'home' },
+  { grupo: 'Resumo', icone: 'home', itens: [['resumo', 'Visão geral'], ['alertas', 'Alertas']] },
   { item: ['pecas', 'Peças'], icone: 'tag' },
   { item: ['lucro-periodo', 'Lucro'], icone: 'chart' },
   { item: ['historico', 'Histórico'], icone: 'clock' },
   { grupo: 'Produção', icone: 'fabrica', itens: [['producao-dia', 'Produção do dia'], ['limpeza', 'Limpeza de peças']] },
-  { grupo: 'Cadastros', icone: 'box', itens: [['produtos', 'Produtos e fórmulas'], ['tabelas-preco', 'Tabelas de preço'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'], ['ncm', 'NCM'], ['setores', 'Setores e máquinas'], ['funcionarios', 'Funcionários']] },
-  { grupo: 'Ajustes', icone: 'cog', fim: true, itens: [['cfg-impostos', 'Impostos'], ['cfg-icms', 'ICMS por estado'], ['cfg-taxas', 'Taxas hora'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-equip', 'Gastos dos equipamentos'], ['cfg-tempos', 'Tempos e precisão'], ['cfg-geral', 'Geral e dados'], ['auditoria', 'Auditoria'], ['usuarios', 'Usuários e acessos']] },
+  { grupo: 'Cadastros', icone: 'box', itens: [['-', 'Peças e preços'], ['produtos', 'Produtos e fórmulas'], ['tabelas-preco', 'Tabelas de preço'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'],
+    ['-', 'Fábrica'], ['setores', 'Setores e máquinas'], ['cfg-equip', 'Gastos dos equipamentos'], ['funcionarios', 'Funcionários'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-taxas', 'Taxas hora'],
+    ['-', 'Impostos'], ['cfg-impostos', 'Impostos sobre a venda'], ['cfg-icms', 'ICMS por estado'], ['ncm', 'NCM']] },
+  { grupo: 'Ajustes', icone: 'cog', fim: true, itens: [['cfg-tempos', 'Tempos e precisão'], ['cfg-geral', 'Geral e dados'], ['auditoria', 'Auditoria'], ['usuarios', 'Usuários e acessos']] },
   { ajuda: ['motor', 'Como calculamos'], icone: 'help' }
 ];
 // todas as entradas do menu, em ordem: [rota, rótulo, grupo ou null]
@@ -10074,7 +10145,7 @@ ACOES.cfgCancelar = function () { S.draft = null; S.draftInfo = null; S.sujo = f
 TELAS['cfg-taxas'] = {
   render: function () {
     var d = cfgRascunho(), t = d.taxas;
-    var h = ph('Taxas hora', 'Padrões para novos funcionários, parâmetros dos encargos e de onde vêm horas e eficiência (manual PR-05).', botoesCfg(), 'Configuração');
+    var h = ph('Taxas hora', 'Padrões para novos funcionários, parâmetros dos encargos e de onde vêm horas e eficiência (manual PR-05).', botoesCfg(), 'Cadastros');
     var ch = contasHorasFunc(funcExemplo(d));
     h += '<div class="grid g2"><div>' + caixa('Padrões para novos funcionários', '<div class="grid g2">' + fCampo('Salário padrão', fNum('taxas.salarioPadrao', t.salarioPadrao, { suf: 'R$' })) +
       fCampo('Horas trabalhadas no mês', fNum('taxas.padraoHorasTrab', t.padraoHorasTrab, { suf: 'h' }), 'Horas que a pessoa realmente fica na fábrica no mês (sem férias e faltas).') +
@@ -10105,7 +10176,7 @@ function radio(path, val, v, rotulo) { return '<label class="chk"><input type="r
 TELAS['cfg-encargos'] = {
   render: function () {
     var d = cfgRascunho();
-    var h = ph('Encargos e provisões', 'Fórmulas que transformam o salário no custo mensal do funcionário (manual PR-06). Até 50 itens; cada um vira uma variável V01…V50.', botoesCfg() + btn('Restaurar fórmulas padrão', 'encPadrao', '', 'btn-ghost', 'refresh'), 'Configuração');
+    var h = ph('Encargos e provisões', 'Fórmulas que transformam o salário no custo mensal do funcionário (manual PR-06). Até 50 itens; cada um vira uma variável V01…V50.', botoesCfg() + btn('Restaurar fórmulas padrão', 'encPadrao', '', 'btn-ghost', 'refresh'), 'Cadastros');
     h += htmlBenefPadrao(d);
     if (d.taxas.modoEncargos === 'percentuais') h += alerta('warn', 'A configuração está usando percentuais fixos: esta tabela não está sendo usada. Mude em Configuração › Taxas hora.');
     h += '<div class="tbl-box"><div class="tbl-scroll"><table><thead><tr><th>Ref</th><th></th><th>Descrição</th><th>Tipo</th><th class="c">Varia por funcionário</th><th class="c">Integra o salário</th><th class="r">Valor (VB)</th><th>Fórmula</th><th>Vai para</th><th></th></tr></thead><tbody>' +
@@ -10176,7 +10247,7 @@ ACOES.encPadrao = function () {
 TELAS['cfg-equip'] = {
   render: function () {
     var d = cfgRascunho(), g = d.gastosEquip;
-    var h = ph('Gastos mensais dos equipamentos', 'Quais despesas são pedidas no cadastro das máquinas e como são lançadas (manual PR-07). O modo não muda a taxa; muda só o detalhe.', botoesCfg(), 'Configuração');
+    var h = ph('Gastos mensais dos equipamentos', 'Quais despesas são pedidas no cadastro das máquinas e como são lançadas (manual PR-07). O modo não muda a taxa; muda só o detalhe.', botoesCfg(), 'Cadastros');
     h += caixa('Modo de lançamento', '<div class="radio-lista">' + radio('gastosEquip.modo', g.modo, 'unitario', '<b>Por equipamento</b> — informa os gastos de cada máquina. Dá para ver o custo de cada uma.') + radio('gastosEquip.modo', g.modo, 'total', '<b>Total do setor</b> — informa só a soma dos gastos de todas as máquinas do setor.') + '</div>');
     h += caixa('Despesas pedidas', g.itens.map(function (x, i) { return '<div class="inline" style="margin-bottom:8px"><div class="campo" style="flex:1">' + fTexto('gastosEquip.itens.' + i + '.desc', x.desc, { id: 'gd-' + i }) + '</div><div class="campo" style="flex:2">' + fTexto('gastosEquip.itens.' + i + '.obs', x.obs || '', { ph: 'Explicação para quem lança', id: 'go-' + i }) + '</div><button class="ico-btn del" data-a="gastoDel" data-i="' + i + '" aria-label="Remover">' + ic('trash') + '</button></div>'; }).join('') + btn('Adicionar despesa', 'gastoAdd', '', 'btn-ghost btn-sm', 'plus'));
     return h;
@@ -12671,10 +12742,37 @@ function htmlEscolhaCmp(l) {
   }
   return h + '</div>';
 }
+var COR_TIPO_H = { molde: 'var(--c-mol)', mp: 'var(--c-mp)', prod: 'var(--c-setup)', limpeza: 'var(--c-limp)', func: 'var(--c-mod)', setor: 'var(--c-maq)', cfg: '#8b5cf6' };
+ACOES.cmpTipoF = function (el) { S.filtros.cmpTipo = el.dataset.v; renderPainel(); var b = document.getElementById('f-cmpBusca'); if (b) b.focus(); };
+function htmlEscolhaCmp2(l) {
+  var busca = S.filtros.cmpBusca || '', tf = S.filtros.cmpTipo || '', tipos = TIPOS_HIST.filter(function (tp) { return podeComparar(tp[0]); });
+  if (tf && !tipos.some(function (tp) { return tp[0] === tf; })) tf = '';
+  var nSel = {}; l.forEach(function (x) { nSel[x.t] = (nSel[x.t] || 0) + 1; });
+  var h = '<aside class="cmpx-esc" id="cmpEscolha" aria-label="Escolher itens"><div class="cmpx-esc-t">Escolher itens<span>' + l.length + ' de ' + MAX_CMP + '</span></div>' +
+    '<div class="cmpx-tipos" role="group" aria-label="Tipo">' + [['', 'Todos']].concat(tipos).map(function (tp) {
+      return '<button class="cmpx-tipo' + (tp[0] === tf ? ' on' : '') + '" data-a="cmpTipoF" data-v="' + tp[0] + '" aria-pressed="' + (tp[0] === tf) + '"' + (tp[0] ? ' style="--tc:' + COR_TIPO_H[tp[0]] + '"' : '') + '>' + (tp[0] ? '<i></i>' : '') + esc(tp[1].replace(' (moldes)', '')) + (tp[0] && nSel[tp[0]] ? '<b>' + nSel[tp[0]] + '</b>' : '') + '</button>';
+    }).join('') + '</div>' +
+    '<div class="campo busca"><label for="f-cmpBusca">Buscar</label><input class="i" id="f-cmpBusca" data-f="cmpBusca" value="' + esc(busca) + '" placeholder="Código ou nome" autocomplete="off"></div><div class="cmpx-lista">';
+  var algum = false;
+  tipos.forEach(function (tp) {
+    if (tf && tp[0] !== tf) return;
+    var todos = itensHist(tp[0]).filter(function (x) { return bate(x.ref + ' ' + x.nome + ' ' + x.sub, busca); });
+    if (!todos.length) return;
+    algum = true;
+    h += (tf ? '' : '<div class="cmpx-grupo" style="--tc:' + COR_TIPO_H[tp[0]] + '"><i></i>' + esc(tp[1]) + '<span>' + todos.length + '</span></div>') + todos.map(function (x) {
+      var on = naCmp(tp[0], x.ref), cor = on ? corSlot(slotCmp(tp[0], x.ref)) : '';
+      return '<button class="cmpx-item' + (on ? ' on' : '') + (x.inativo ? ' inativo' : '') + '" data-a="cmpAlternar" data-t="' + tp[0] + '" data-r="' + esc(x.ref) + '" aria-pressed="' + on + '" title="' + (on ? 'Tirar da comparação' : 'Pôr na comparação') + '"' + (on ? ' style="--sc:' + cor + '"' : '') + '>' +
+        '<span class="cmpx-ck" aria-hidden="true">' + (on ? ic('check') : '') + '</span><span class="cmpx-tx"><span class="cmpx-l1"><b>' + esc(x.ref === 'config' ? 'Impostos' : x.ref) + '</b> ' + esc(x.nome !== x.ref ? x.nome : '') + '</span><span class="cmpx-l2">' + esc(unidadeCmp(tp[0], x.ref)) + (x.inativo ? ' · desligado' : '') + '</span></span></button>';
+    }).join('');
+  });
+  return h + (algum ? '' : '<div class="vazio">Nada encontrado.</div>') + '</div></aside>';
+}
 function vistaComparar() {
   var l = itensCmp(), P = periodoCmp(), f = S.filtros;
-  var h = htmlEscolhaCmp(l);
-  if (!l.length) return h;
+  var esq = htmlEscolhaCmp2(l);
+  var topo = '<div class="cmpx-sel"><span class="kpi-lbl">Comparando</span>' + l.map(function (x) { return chipCmp(x, true); }).join('') + (l.length ? '<button class="btn btn-ghost btn-xs cmpx-limpar" data-a="cmpLimpar">' + ic('x') + 'Limpar tudo</button>' : '') + '</div>';
+  if (!l.length) return '<div class="cmpx">' + esq + '<div class="cmpx-dir"><div class="card cmpx-vazio">' + ic('chart') + '<b>Escolha à esquerda o que comparar</b><span>Até ' + MAX_CMP + ' itens de qualquer tipo no mesmo gráfico: matérias-primas, peças, funcionários, setores, moldes e impostos. Clique num item para pôr ou tirar.</span></div></div></div>';
+  var h = topo;
   var uns = {}; l.forEach(function (x) { uns[unidadeCmp(x.t, x.r)] = true; });
   var listaUn = Object.keys(uns), misto = listaUn.length > 1;
   var modo = S.aba.cmpModo || (misto ? 'indice' : 'valor');
@@ -12695,7 +12793,7 @@ function vistaComparar() {
     tabela: function () { return tabelaCmp(X, modo, P, false); }, csv: function () { return csvCmp(X, modo, P); } });
   h += '<section class="tbl-box" id="cmpTabelaBox"><h3>Lado a lado<span class="dir muted">' + fmtData(P.de) + ' → ' + fmtData(P.ate) + '</span></h3><div class="tbl-scroll">' + tabelaCmp(X, modo, P, true) + '</div>' +
     '<div class="hint">Valor no início e no fim: o valor que valia em cada data, na unidade do item. Variação: do primeiro valor no período ao último. Clique num valor para ver de onde ele vem; em “Maior mudança”, para ver a rastreabilidade dela.</div></section>';
-  return h;
+  return '<div class="cmpx">' + esq + '<div class="cmpx-dir">' + h + '</div></div>';
 }
 function tabelaCmp(X, modo, P, links) {
   return '<table id="cmpTabela"><thead><tr><th>Item</th><th>Unidade</th><th class="r">Valor em ' + fmtData(P.de) + '</th><th class="r">Valor em ' + fmtData(P.ate) + '</th><th class="r">Variação</th><th class="r">Mudanças</th><th>Maior mudança</th></tr></thead><tbody>' +
@@ -13236,7 +13334,7 @@ TELAS['cfg-impostos'] = {
   render: function () {
     var d = cfgRascunho(); if (!d.fiscal || typeof d.fiscal !== 'object') d.fiscal = {};
     var f = M.fiscalDe(d), F = d.fiscal, real = f.regime === 'real';
-    var h = ph('Impostos', 'O regime tributário da empresa e os impostos sobre a venda. O ICMS muda com o estado de destino (Ajustes › ICMS por estado) e o IPI com a NCM da peça (Cadastros › NCM). Os impostos da compra ficam no cadastro de cada matéria-prima.', botoesCfg(), 'Ajustes');
+    var h = ph('Impostos', 'O regime tributário da empresa e os impostos sobre a venda. O ICMS muda com o estado de destino (Ajustes › ICMS por estado) e o IPI com a NCM da peça (Cadastros › NCM). Os impostos da compra ficam no cadastro de cada matéria-prima.', botoesCfg(), 'Cadastros');
     h += avisoContador('Gravar aqui vale a partir de hoje. Para um valor valer a partir de outra data (passada ou futura), use <b>Mudar valor</b> no histórico, no fim da página.');
     var campoPct = function (k, rot, hint) { return fCampo(rot, fNum('fiscal.' + k, F[k], { suf: '%', ph: '0' }), hint); };
     h += '<div class="grid g2"><div>' +
@@ -13252,7 +13350,7 @@ TELAS['cfg-impostos'] = {
       caixa('Impostos na compra', '<p class="desc">Ficam no cadastro de cada matéria-prima: ICMS, IPI, PIS e COFINS da nota e se cada um gera crédito. Em branco, vale o padrão do regime: <b>' + (real ? 'no Lucro Real, os quatro geram crédito' : 'no Lucro Presumido, só ICMS e IPI geram crédito') + '</b> (indústria). O custo da matéria-prima = preço + IPI sem crédito − créditos + frete.</p>' + (podeRota('mps') ? btn('Matérias-primas', 'ir', 'data-rota="mps"', 'btn-ghost btn-sm', 'arrow') : '')) +
       (d.impostos && d.impostos.formulaMP && d.impostos.formulaMP.custom ? caixa('Fórmula própria da versão anterior', '<p class="desc">As matérias-primas que ainda estão no formato antigo usam a fórmula própria do custo líquido. Ao editar uma delas e mudar os impostos da compra, ela passa para o formato novo.</p>' + fCampo('Fórmula', fArea('impostos.formulaMP.expr', d.impostos.formulaMP.expr, { cls: 'mono', rows: 3 })) + '<div class="radio-lista">' + fCheck('impostos.formulaMP.custom', d.impostos.formulaMP.custom, 'Usar a fórmula própria nas matérias-primas antigas', { rr: true }) + '</div>') : '') +
       '</div></div>';
-    if (S.draftInfo && !S.sujo) h += secaoHistorico('cfg', 'config');
+    h = cfgComHist(h);
     return h;
   },
   preview: function () {
@@ -13289,13 +13387,13 @@ TELAS['cfg-icms'] = {
     var d = cfgRascunho(); if (!d.icmsUF || typeof d.icmsUF !== 'object') d.icmsUF = {};
     var f = M.fiscalDe(d), tabs = M.tabelasDe(d), usa = {};
     tabs.forEach(function (t) { (usa[t.uf] = usa[t.uf] || []).push(t.nome + (t.ativa ? '' : ' (desativada)')); });
-    var h = ph('ICMS por estado', 'O ICMS da venda depende do estado de destino: cada tabela de preço tem o seu estado. Dentro de ' + esc(f.uf) + ' vale a alíquota interna; para os outros estados, a interestadual. Uma NCM pode ter ICMS próprio (Cadastros › NCM).', botoesCfg() + btn('Preencher as interestaduais', 'icmsPadrao', '', 'btn-ghost', 'refresh'), 'Ajustes');
+    var h = ph('ICMS por estado', 'O ICMS da venda depende do estado de destino: cada tabela de preço tem o seu estado. Dentro de ' + esc(f.uf) + ' vale a alíquota interna; para os outros estados, a interestadual. Uma NCM pode ter ICMS próprio (Cadastros › NCM).', botoesCfg() + btn('Preencher as interestaduais', 'icmsPadrao', '', 'btn-ghost', 'refresh'), 'Cadastros');
     h += avisoContador('Em branco = 0%. Importados podem ter 4% (use a exceção na NCM).');
     h += '<div class="tbl-box"><div class="tbl-scroll"><table class="tbl-icms"><thead><tr><th>Estado</th><th>ICMS da venda</th><th>Tabelas de preço deste estado</th></tr></thead><tbody>' +
       M.UFS.map(function (uf) {
         return '<tr' + (uf === f.uf ? ' class="on"' : '') + '><td><b>' + uf + '</b>' + (uf === f.uf ? ' ' + badge('estado da empresa', 'b-info') : '') + '</td><td style="min-width:120px;max-width:160px">' + fNum('icmsUF.' + uf, d.icmsUF[uf], { suf: '%', ph: '0', id: 'icms-' + uf }) + '</td><td class="td-sub">' + esc((usa[uf] || []).join(', ') || '—') + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
-    if (S.draftInfo && !S.sujo) h += secaoHistorico('cfg', 'config');
+    h = cfgComHist(h);
     return h;
   },
   montar: function () { montarHist(); }
@@ -13392,13 +13490,9 @@ TELAS['tabelas-preco'] = {
     var d = rascunhoTabelas(), ctx = S.ctx, hoje = hojeRef(), passado = podeDataPassada(), f = S.filtros, cols = d.tabelas;
     var vista = f.tgVista === 'todas' ? 'todas' : 'uma', sel = tgSelecionada(d), js = 0;
     cols.forEach(function (t, j) { if (t.id === sel) js = j; });
-    var acoes = btn('Gravar preços', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + (TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '');
+    var acoes = botoesTabelas();
     var h = ph('Tabelas de preço', 'Cada tabela tem um estado de destino (o ICMS dele) e um preço por peça. O lucro da produção usa o <b>preço médio das tabelas</b>: a média simples das tabelas ativas em que a peça tem preço. A tabela geral é o preço do cadastro da peça. Preço em branco = a peça não está na tabela; tabela desativada não entra no preço médio (o histórico continua).', acoes, 'Cadastros');
-    h += '<div class="vig' + (S.sujo ? ' vig-on' : '') + '" id="vigEd" role="status">' +
-      '<span class="vig-ic vig-a">' + ic('check') + '</span><span class="vig-ic vig-b">' + ic('edit') + '</span>' +
-      '<div class="vig-t"><b class="vig-a">Preços em vigor</b><span class="vig-a">o que você mudar aqui vira preço novo a partir da data ao lado</span>' +
-      '<b class="vig-b">Registrando preços novos</b><span class="vig-b">valem a partir da data ao lado · os de antes ficam no histórico</span></div>' +
-      '<div class="vig-data"><label for="b-desde">Vale a partir de</label><input class="i" type="date" id="b-desde" data-b="desde" value="' + esc(d.desde) + '"' + (passado ? '' : ' min="' + esc(hoje) + '"') + '></div></div>';
+    h += faixaEdicao();
     // números de cada tabela, com os preços da tela
     var resumo = cols.map(function (t) {
       var com = 0, ms = [];
@@ -14168,7 +14262,7 @@ if (CFG_NUVEM) {
   var nvMaterializarOrig = materializarEmp;
   materializarEmp = function () { nvMaterializarOrig(); nvAjustarCfg(S.emp); };
   // Cadastros › Importar planilha (administrador e gestor)
-  MENU.forEach(function (g) { if (g.grupo === 'Cadastros') g.itens.push(['importar', 'Importar planilha']); });
+  MENU.forEach(function (g) { if (g.grupo === 'Cadastros') g.itens.push(['-', 'Planilha'], ['importar', 'Importar planilha']); });
   ROTA_PAI.importar = 'Cadastros';
 }
 
@@ -14498,6 +14592,193 @@ function iniciar() {
   render();
 }
 window.CentralCustos = { S: S, ir: ir, abrirRastro: abrirRastro, TELAS: TELAS, recalcular: recalcular, render: render, pode: pode, perAtual: perAtual, abrirOrigem: abrirOrigem, fecharRastro: function () { fecharRastro(); }, hojeRef: hojeRef };
+// impostos: Alíquotas | Histórico (o histórico da configuração), com a faixa de em vigor / valor novo
+function cfgComHist(h) {
+  var aba = abaAtual('reg-' + S.rota, 'valores'), i = h.indexOf('<!--/ph-->');
+  if (i < 0) return h;
+  i += '<!--/ph-->'.length;
+  var tabs = abas('reg-' + S.rota, [['valores', 'Alíquotas'], ['hist', 'Histórico']], aba, aba === 'hist' ? 'hist' : '');
+  if (aba !== 'hist') return h.slice(0, i) + faixaEdicao() + tabs + h.slice(i);
+  return h.slice(0, i) + tabs + '<div class="reg-hist">' + (S.sujo ? '<div class="card vazio">Grave ou descarte as alterações para ver o histórico.</div>' : secaoHistorico('cfg', 'config')) + '</div>';
+}
+// encargos, taxas hora e gastos dos equipamentos: a mesma faixa embaixo do título
+['cfg-taxas', 'cfg-encargos', 'cfg-equip', 'ncm'].forEach(function (r) {
+  var t = TELAS[r]; if (!t) return;
+  var r0 = t.render;
+  t.render = function () { var h = r0.apply(this, arguments), i = h.indexOf('<!--/ph-->'); if (i < 0) return h; i += '<!--/ph-->'.length; return h.slice(0, i) + faixaEdicao() + h.slice(i); };
+});
+/* ===================== Editar: corrigir um erro ou registrar uma mudança =====================
+   Cadastro aberto fica só para ver. "Editar" pergunta o que a pessoa vai fazer:
+   - Registrar uma mudança: o valor mudou de verdade; vale a partir de uma data (antes dela fica o antigo);
+   - Corrigir um erro: o valor estava errado; a correção vale desde quando cada valor passou a valer.
+   Depois de preencher, "Confirmar" mostra o resumo e só então grava. */
+var ED_TIPOS = { mp: 1, setor: 1, func: 1, prod: 1, molde: 1, cfg: 1, tab: 1 };
+var ED_CFG = { 'cfg-impostos': 1, 'cfg-icms': 1, 'cfg-taxas': 1, 'cfg-encargos': 1, 'cfg-equip': 1, ncm: 1 };
+function chaveEd() { return S.rota + '|' + (S.draftInfo ? S.draftInfo.tipo + ':' + S.draftInfo.cod : ''); }
+function edGate() {
+  var di = S.draftInfo;
+  if (!di || di.novo || !ED_TIPOS[di.tipo]) return false;
+  if (di.tipo === 'cfg' && !ED_CFG[S.rota]) return false;
+  if (di.tipo !== 'cfg' && di.tipo !== 'tab' && !(S.params && S.params.id)) return false;
+  try { if (rascunhoSomenteLeitura()) return false; } catch (e) { }
+  return true;
+}
+function edAtivo() { return !!(S.ui.ed && S.ui.ed.chave === chaveEd()); }
+function edBloqueado() { return edGate() && !edAtivo(); }
+function nomeRegEd() {
+  var di = S.draftInfo || {};
+  if (di.tipo === 'cfg') return rotuloRota(S.rota) || 'a configuração';
+  if (di.tipo === 'tab') return 'as tabelas de preço';
+  return di.cod || '';
+}
+// a faixa embaixo do título: o modo em que o cadastro está
+faixaEdicao = function () {
+  if (!S.draftInfo || rascunhoSomenteLeitura()) return '';
+  var hoje = fmtData(hojeRef());
+  if (S.draftInfo.novo) return '<div class="vig vig-novo" id="vigEd" role="status"><span class="vig-ic">' + ic('plus') + '</span><div class="vig-t"><b>Cadastro novo</b><span>começa a valer hoje, ' + hoje + '</span></div></div>';
+  if (!edGate()) return '';
+  var ed = edAtivo() ? S.ui.ed : null;
+  if (!ed) return '<div class="vig" id="vigEd" role="status"><span class="vig-ic">' + ic('check') + '</span><div class="vig-t"><b>Valores em vigor</b><span>só para ver · para alterar, clique em Editar</span></div>' + btn('Editar', 'edAbrir', '', 'btn-ghost btn-sm', 'edit') + '</div>';
+  if (ed.modo === 'corrigir') return '<div class="vig vig-corrigir" id="vigEd" role="status"><span class="vig-ic">' + ic('alert') + '</span><div class="vig-t"><b>Corrigindo um erro</b><span>a correção vale desde quando cada valor passou a valer · as contas dos dias passados são refeitas</span></div>' + btn('Trocar', 'edAbrir', '', 'btn-ghost btn-sm') + '</div>';
+  return '<div class="vig vig-mudar" id="vigEd" role="status"><span class="vig-ic">' + ic('edit') + '</span><div class="vig-t"><b>Registrando uma mudança</b><span>vale a partir de <b>' + fmtData(ed.desde) + '</b> · antes dessa data fica o valor antigo, no histórico</span></div>' + btn('Trocar', 'edAbrir', '', 'btn-ghost btn-sm') + '</div>';
+};
+// os botões do cabeçalho do cadastro
+var botoesEdicaoBase = botoesEdicao;
+botoesEdicao = function (prefixo, podeExcluir) {
+  if (!edGate()) return botoesEdicaoBase(prefixo, podeExcluir);
+  var extra = btn('Duplicar', prefixo + 'Duplicar', '', 'btn-ghost', 'copy') + (podeExcluir === false ? '' : btn('Excluir', prefixo + 'Excluir', '', 'btn-danger', 'trash'));
+  if (!edAtivo()) return btn('Editar', 'edAbrir', '', 'btn-accent', 'edit') + extra;
+  return btn(S.ui.ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', prefixo + 'Gravar', '', 'btn-accent', 'check') + btn('Cancelar', 'edCancelar', '', 'btn-ghost', 'x');
+};
+var botoesCfgBase = botoesCfg;
+botoesCfg = function () {
+  if (!edGate()) return botoesCfgBase();
+  if (!edAtivo()) return btn('Editar', 'edAbrir', '', 'btn-accent', 'edit');
+  return btn(S.ui.ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', 'cfgGravar', '', 'btn-accent', 'check') + btn('Cancelar', 'edCancelar', '', 'btn-ghost', 'x');
+};
+function botoesTabelas() {
+  var imp = TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '';
+  if (!edGate()) return btn('Gravar preços', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + imp;
+  if (!edAtivo()) return btn('Editar', 'edAbrir', '', 'btn-accent', 'edit') + imp;
+  return btn(S.ui.ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', 'tabGravar', '', 'btn-accent', 'check') + btn('Cancelar', 'edCancelar', '', 'btn-ghost', 'x');
+}
+// a pergunta
+function edAbrir(depois) {
+  var passado = podeDataPassada(), hoje = hojeRef(), m = $('#modal'), ed = edAtivo() ? S.ui.ed : null, modo = ed ? ed.modo : 'mudar';
+  S._edDepois = typeof depois === 'function' ? depois : null;
+  m.innerHTML = '<div class="modal-fundo" data-a="modalFechar"><div class="modal ed-modal" role="dialog" aria-modal="true" aria-labelledby="edTit" data-pare="1"><h3 id="edTit">Editar ' + esc(nomeRegEd()) + '</h3><p>O que você vai fazer?</p>' +
+    '<label class="ed-op"><input type="radio" name="edModo" value="mudar"' + (modo === 'mudar' ? ' checked' : '') + '><span class="ed-op-t"><b>Registrar uma mudança</b><small>O valor mudou de verdade: reajuste, preço novo, salário novo. Antes da data fica o valor antigo, no histórico.</small>' +
+      '<span class="ed-data"><label for="edData">Vale a partir de</label><input type="date" class="i" id="edData" value="' + esc(ed && ed.modo === 'mudar' ? ed.desde : hoje) + '"' + (passado ? '' : ' min="' + esc(hoje) + '"') + '></span></span></label>' +
+    '<label class="ed-op' + (passado ? '' : ' off') + '"><input type="radio" name="edModo" value="corrigir"' + (modo === 'corrigir' ? ' checked' : '') + (passado ? '' : ' disabled') + '><span class="ed-op-t"><b>Corrigir um erro</b><small>O valor que está aí está errado. A correção vale desde quando cada valor passou a valer, e as contas dos dias passados são refeitas.' + (passado ? '' : ' Só o administrador e o gestor podem corrigir o passado.') + '</small></span></label>' +
+    '<div class="btn-row"><button class="btn btn-ghost" data-a="modalFechar">Cancelar</button>' + btn('Começar a editar', 'edComecar', '', 'btn-accent', 'edit') + '</div></div></div>';
+  var r = m.querySelector('input[name="edModo"]:checked'); if (r) r.focus();
+}
+ACOES.edAbrir = function () { edAbrir(); };
+ACOES.edComecar = function () {
+  var r = document.querySelector('input[name="edModo"]:checked'), modo = r ? r.value : 'mudar', desde = hojeRef();
+  if (modo === 'mudar') {
+    var dt = (document.getElementById('edData') || {}).value || '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)) { toast('Falta a data', 'Informe a partir de quando o valor novo vale.', { tipo: 'err' }); return; }
+    if (dt < hojeRef() && !podeDataPassada()) { toast('Data passada', 'Só o administrador e o gestor podem registrar com data passada.', { tipo: 'err', tempo: 6000 }); return; }
+    desde = dt;
+  } else if (!podeDataPassada()) { toast('Sem permissão', 'Só o administrador e o gestor podem corrigir o passado.', { tipo: 'warn' }); return; }
+  S.ui.ed = { chave: chaveEd(), modo: modo, desde: desde };
+  if (S.draftInfo && S.draftInfo.tipo === 'tab' && S.draft) S.draft.desde = desde;
+  $('#modal').innerHTML = '';
+  renderPainel();
+  var f = S._edDepois; S._edDepois = null; if (f) f();
+};
+ACOES.edCancelar = function () {
+  S.ui.ed = null; S.draft = null; S.draftInfo = null; S.sujo = false;
+  renderPainel(); toast('Edição cancelada', 'Nada foi gravado.', { tipo: 'info' });
+};
+['cfgCancelar', 'tabCancelar'].forEach(function (k) { var f0 = ACOES[k]; if (f0) ACOES[k] = function () { S.ui.ed = null; return f0.apply(this, arguments); }; });
+var tabAddBase = ACOES.tabAdd;
+ACOES.tabAdd = function (el, ev) { if (edBloqueado()) { edAbrir(function () { tabAddBase(el, ev); }); return; } tabAddBase(el, ev); };
+// sair do cadastro sai do modo de edição
+var irAntesEd = ir;
+ir = function (rota, params, forcar) { var r = irAntesEd(rota, params, forcar); if (!S.sujo) S.ui.ed = null; return r; };
+
+// correção: cada campo volta para a data em que o valor dele começou a valer (até hoje)
+function inicioCampo(tipo, ref, k) {
+  var hoje = hojeRef(), best = null, lista = k.indexOf('linhas:') === 0 ? k.slice(7) : null;
+  (fonteTela().efetivos || []).forEach(function (ev) {
+    if (!ev || ev.tipo !== tipo || ev.ref !== ref || ev.desde > hoje) return;
+    var toca = ev.acao === 'criar' || (lista ? !!(ev.linhas && ev.linhas[lista]) : !!(ev.campos && Object.keys(ev.campos).some(function (c) { return c === k || k.indexOf(c + '.') === 0 || c.indexOf(k + '.') === 0; })));
+    if (toca && (!best || ev.desde > best)) best = ev.desde;
+  });
+  return best || hoje;
+}
+function copiaRasa(q) { var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); return c; }
+function dividirCorrecao(q) {
+  if (!q || q.cancela || !q.tipo || !q.ref) return [q];
+  var chaves = [];
+  if (q.novo !== undefined && q.base) {
+    var dif = null; try { dif = R.diferenca(q.tipo, clone(q.base), clone(q.novo)); } catch (e) { dif = null; }
+    if (!dif) return [q];
+    chaves = Object.keys(dif.campos).concat(Object.keys(dif.linhas).map(function (c) { return 'linhas:' + c; }));
+  } else if (q.campos) chaves = Object.keys(q.campos);
+  if (!chaves.length) return [q];
+  var grupos = {};
+  chaves.forEach(function (k) { var d = inicioCampo(q.tipo, q.ref, k); (grupos[d] = grupos[d] || []).push(k); });
+  var datas = Object.keys(grupos).sort();
+  return datas.map(function (d) {
+    var c = copiaRasa(q); c.desde = d; c._n = grupos[d].length;
+    if (datas.length > 1) {
+      if (q.novo !== undefined && q.base) {
+        var nv = clone(q.base);
+        grupos[d].forEach(function (k) { var p = k.indexOf('linhas:') === 0 ? k.slice(7) : k, v = getPath(q.novo, p); setPath(nv, p, v === undefined ? v : clone(v)); });
+        c.novo = nv; c.base = clone(q.base);
+      } else { var cs = {}; grupos[d].forEach(function (k) { cs[k] = q.campos[k]; }); c.campos = cs; }
+    }
+    return c;
+  });
+}
+function contarCampos(q) {
+  if (q._n) return q._n;
+  if (q.novo !== undefined && q.base) { try { var dif = R.diferenca(q.tipo, clone(q.base), clone(q.novo)); return dif ? Object.keys(dif.campos).length + Object.keys(dif.linhas).length : 0; } catch (e) { return 0; } }
+  return q.campos ? Object.keys(q.campos).length : 0;
+}
+// a gravação, quando vem de "Confirmar": aplica o modo, mostra o resumo e só grava depois do OK
+var gravarMudancaBase = gravarMudanca;
+gravarMudanca = function (reqs, depois, opts) {
+  if (!S._edGravando || !edAtivo()) return gravarMudancaBase(reqs, depois, opts);
+  var ed = S.ui.ed, lista = [];
+  (reqs || []).forEach(function (q) {
+    if (!q || q.cancela) { lista.push(q); return; }
+    if (ed.modo === 'corrigir') lista = lista.concat(dividirCorrecao(q));
+    else { var c = copiaRasa(q); c.desde = ed.desde; lista.push(c); }
+  });
+  var n = 0; lista.forEach(function (q) { if (q && !q.cancela) n += contarCampos(q); });
+  if (!n) { S.sujo = false; toast('Nada mudou', 'Você não alterou nenhum valor. Altere um campo ou clique em Cancelar.', { tipo: 'info' }); return false; }
+  var datas = {}; lista.forEach(function (q) { if (q && !q.cancela) datas[q.desde] = (datas[q.desde] || 0) + contarCampos(q); });
+  var nome = nomeRegEd(), plural = function (k) { return k + (k === 1 ? ' valor alterado' : ' valores alterados'); }, html;
+  if (ed.modo === 'corrigir') {
+    html = '<p>A correção substitui o valor errado desde quando ele passou a valer:</p><ul class="ed-lista">' + Object.keys(datas).sort().map(function (d) { return '<li><b>' + fmtData(d) + '</b> · ' + plural(datas[d]) + '</li>'; }).join('') + '</ul><p>As contas dos dias desde então são refeitas. A correção fica registrada no histórico.</p>';
+  } else html = '<p><b>' + plural(n) + '</b>, valendo a partir de <b>' + fmtData(ed.desde) + '</b>.</p><p>Antes dessa data fica o valor antigo, no histórico.</p>';
+  confirmar({ titulo: (ed.modo === 'corrigir' ? 'Confirmar a correção de ' : 'Confirmar a mudança de ') + nome + '?', html: html, ok: ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', perigo: ed.modo === 'corrigir' }, function () {
+    lista.forEach(function (q) { if (q) delete q._n; });
+    gravarMudancaBase(lista, function (evs) { S.ui.ed = null; if (depois) depois(evs); }, opts);
+  });
+  return true;
+};
+Object.keys(ACOES).forEach(function (k) {
+  if (!/^(mp|setor|func|prod|molde|cfg|ncm|tab)Gravar$/.test(k)) return;
+  var f0 = ACOES[k];
+  ACOES[k] = function () { var antes = S._edGravando; S._edGravando = true; try { return f0.apply(this, arguments); } finally { S._edGravando = antes; } };
+});
+// só para ver: campos travados e com cara de valor; botões de incluir/tirar linhas escondidos
+function edAplicar(raiz) {
+  var p = raiz.querySelector('#painel') || raiz.querySelector('.panel'); if (!p) return;
+  var bloq = false; try { bloq = S.fase === 'app' && edBloqueado(); } catch (e) { bloq = false; }
+  p.classList.toggle('ver-so', bloq);
+  if (!bloq) return;
+  var l = p.querySelectorAll('[data-b], [data-ch]');
+  for (var i = 0; i < l.length; i++) { var el = l[i]; if (el.closest('.tbl-tools, .hm-lista, .cmpx-esc, .reg-hist') || el.disabled) continue; if (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(el.tagName)) el.disabled = true; }
+}
+// Resumo › Alertas: a tela de alertas é um item próprio no menu
+delete ROTA_ACESA.alertas;
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
 })();
