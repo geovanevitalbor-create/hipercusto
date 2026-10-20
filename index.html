@@ -1356,6 +1356,56 @@ html[data-theme="light"] .hm-lista{background:var(--surf);border-color:var(--lin
 .hm-det>.hi-atual:first-child{margin-top:0}
 @media (max-width:1100px){.hm{grid-template-columns:minmax(0,1fr)}.hm-lista{position:static;max-height:none}.hm-itens{max-height:260px}}
 
+/* ===================== largura: o conteúdo ocupa a tela toda; o menu só recolhe e volta ===================== */
+.panel{max-width:none;margin:0}
+.manchete{max-width:none}
+@media (min-width:761px){
+  .app{transition:padding-left .24s ease}
+  .side-nav{transition:transform .24s ease,visibility 0s linear 0s}
+  .app.sem-trilho .side-nav{display:flex!important;transform:translateX(-100%);visibility:hidden;transition:transform .24s ease,visibility 0s linear .24s}
+  .app.sem-trilho .panel{max-width:none;margin:0;padding-left:28px}
+  .app.sem-trilho .nav{padding-left:28px}
+}
+@media (prefers-reduced-motion:reduce){.app,.side-nav{transition:none!important}}
+
+/* ===================== histórico de um item: o valor de hoje e um sub-item por vez ===================== */
+.hi-secs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px}
+.hi-secs-acao{margin-left:auto}
+.hi-scroll,.cb-tabela{max-height:none}
+.hm-det .hi-atual .kpi-row{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.hi-extra{margin:2px 0 14px;font-size:12.5px;color:var(--text2)}
+
+/* ===================== Tabelas de preço: a lista das tabelas e a tabela escolhida ===================== */
+.tg{display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;align-items:start}
+.tg-lista{position:sticky;top:76px;display:flex;flex-direction:column;gap:8px}
+.tg-lista-t{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:0 2px 2px}
+.tg-lista-t span{padding:0 7px;border-radius:999px;background:var(--surf2);color:var(--text2);letter-spacing:0}
+.tg-lista .tg-card{display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;cursor:pointer;font:inherit;color:var(--text);padding:12px 12px 11px 16px}
+.tg-lista .tg-card:hover{border-color:rgba(var(--acc-rgb),.45)}
+.tg-lista .tg-card.on{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 14%,rgba(var(--vidro-rgb),.5));box-shadow:0 0 0 1px var(--tc) inset,0 8px 32px rgba(0,0,0,.3)}
+.tg-card-top{display:flex;align-items:center;gap:8px;min-width:0}
+.tg-card-top b{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-lista .tg-nova,.tg-lista .tg-todas{flex-direction:row;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px;font-weight:700;font-size:12.5px;color:var(--text2)}
+.tg-lista .tg-nova{border-style:dashed}
+.tg-lista .tg-todas.on{color:var(--acc-t);border-color:var(--acc)}
+.tg-lista .tg-nova svg,.tg-lista .tg-todas svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tg-det{min-width:0;display:flex;flex-direction:column}
+.tg-det-top{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px 16px;margin:0 0 14px;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);border-left:4px solid var(--tc,var(--acc));background:rgba(var(--vidro-rgb),.36)}
+html[data-theme="light"] .tg-det-top{background:var(--surf);border-color:var(--line);border-left-color:var(--tc,var(--acc))}
+.tg-det-top>.tg-dot{align-self:center;width:12px;height:12px}
+.tg-det-top .tg-nome{flex:1 1 260px;font-size:17px;font-weight:700;min-height:42px;align-self:center}
+.tg-det-top .campo{width:150px}
+.tg-det-top .chk{margin-bottom:10px}
+.tg-det-top .tg-geral{margin-bottom:11px}
+.tg-nome-ro{font-size:16px;align-self:center}
+.tg-det-top>.muted{align-self:center;font-size:12.5px}
+.tg-kpis{margin-bottom:12px}
+.tg-uma .tg-cel{min-width:170px}
+.tg-uma .tg-cel .sufixo{max-width:200px}
+.tg-uma td.r b{font-weight:700}
+@media (max-width:1100px){.tg{grid-template-columns:minmax(0,1fr)}.tg-lista{position:static;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}.tg-lista-t{grid-column:1/-1}}
+.tg-lista .tg-todas::before{display:none}
+
 </style>
 </head>
 <body style="margin:0">
@@ -7221,6 +7271,7 @@ ACOES.trocarTrilho = function () {
   $$('.nav-trilho').forEach(function (b) { b.outerHTML = htmlBotaoTrilho(b.classList.contains('sn-trilho') ? 'sn-trilho' : ''); });
   var nb = oc ? $('#navTrilho') : $('.sn-trilho'); if (nb && document.activeElement === document.body) nb.focus();
   try { window.dispatchEvent(new Event('resize')); } catch (e) { }   // os gráficos acompanham a largura nova
+  setTimeout(function () { try { window.dispatchEvent(new Event('resize')); } catch (e) { } }, 260);
 };
 document.addEventListener('keydown', function (ev) {
   if (ev.key !== '[' || ev.ctrlKey || ev.metaKey || ev.altKey || !$('.app')) return;
@@ -11388,6 +11439,7 @@ function blocoHistorico(tipo, refs, id, opts) {
   X.marcaData = opts.marca || null;
   S._hb = S._hb || {}; S._hb[id] = X;
   var mudar = opts.mudar && podeMudarH(tipo) ? btn('Mudar valor', 'hiMudar', 'data-tipo="' + tipo + '" data-ref="' + esc(refs[0]) + '"', 'btn-accent btn-sm', 'edit') : '';
+  var secH = abaAtual(id + 'Sec', 'grafico'); if (X.marcaData) secH = 'mudancas';
   // valor de hoje de cada item
   var h = '<div class="hi-atual" id="' + id + 'Atual">' + X.itens.map(function (it) {
     var extra = '';
@@ -11401,20 +11453,25 @@ function blocoHistorico(tipo, refs, id, opts) {
       return kpi(s.nome + ' hoje', v === null && tipo === 'func' ? 'desligado' : orig(X.fmt(v), v === null ? null : origemSerieH(tipo, it.ref, s, hoje)), sub);
     }).join('') + '</div>' + extra + '</div>';
   }).join('') + '</div>';
+  // um sub-item por vez
+  var nLinhas = X.linhas.length;
+  h += '<div class="hi-secs">' + seg(id + 'Sec', [['grafico', 'Gráfico'], ['mudancas', 'Mudanças (' + nLinhas + ')'], ['periodo', 'Por período']], secH) + (mudar ? '<span class="hi-secs-acao">' + mudar + '</span>' : '') + '</div>';
+  mudar = '';
   // gráfico
   var nMarcas = 0; X.itens.forEach(function (it) { it.series.forEach(function (s) { nMarcas += s.marcas.length; }); });
+  if (secH === 'grafico')
   h += cartaoGrafico({ id: 'g' + id, titulo: 'Como o valor mudou', sub: 'Desde ' + fmtData(X.de) + '. Cada ponto é uma mudança (' + nMarcas + '); clique num ponto para ver a rastreabilidade dela e na linha para ver de onde vem o valor naquela data. Use a barra de baixo (ou Ctrl + roda do mouse) para escolher o período.', altura: 320, acoes: mudar, tipos: ['degraus', 'linha'],
     rotulo: 'Gráfico em degraus do valor desde ' + fmtData(X.de),
     tabela: function () { return '<table>' + cabecalhoMud(false) + '<tbody>' + X.linhas.slice().sort(function (a, b) { return a.desde < b.desde ? 1 : -1; }).map(function (l) { return linhaMudH(l, atribRastro(l, TIPO_HIST_EV[tipo], X.itens[l.i] ? X.itens[l.i].ref : '')); }).join('') + '</tbody></table>'; } });
   // tabela das mudanças
   var ls = ordenarLinhasH(X.linhas);
-  h += '<section class="tbl-box" id="t' + id + '"><h3>Mudanças<span class="dir muted">' + ls.length + (ls.length === 1 ? ' mudança' : ' mudanças') + ' desde ' + fmtData(X.de) + '</span></h3><div class="tbl-scroll hi-scroll"><table class="hi-tab">' + cabecalhoMud(true) + '<tbody>' +
+  if (secH === 'mudancas') h += '<section class="tbl-box" id="t' + id + '"><h3>Mudanças<span class="dir muted">' + ls.length + (ls.length === 1 ? ' mudança' : ' mudanças') + ' desde ' + fmtData(X.de) + '</span></h3><div class="tbl-scroll hi-scroll"><table class="hi-tab">' + cabecalhoMud(true) + '<tbody>' +
     (ls.length ? ls.map(function (l) { return linhaMudH(l, atribRastro(l, TIPO_HIST_EV[tipo], X.itens[l.i] ? X.itens[l.i].ref : '')); }).join('') : '<tr><td colspan="8" class="vazio">Nenhuma mudança desde ' + fmtData(X.de) + '.</td></tr>') + '</tbody></table></div>' +
     '<div class="hint">Era e Passou a ser mostram o campo que mudou (por exemplo, o preço de compra). Embaixo, em cinza, vem o valor que o custo usa, com o nome dele (por exemplo, o custo por quilograma usado nas peças, já sem os créditos de impostos). Em “O que mudou” está o cadastro que mudou naquele dia. Clique numa linha para ver a rastreabilidade: a conta, todas as peças afetadas e o efeito no lucro.</div></section>';
   // por período
   var agrG = id === 'hi' && ROTAS_PER[S.rota] ? perAtual().agr : 'mes', agr = abaAtual(id + 'Agr', agrG === 'dia' ? 'mes' : agrG), per = PD.periodos(X.de, hoje, agr), cols = [];
   X.itens.forEach(function (it) { it.series.forEach(function (s) { cols.push({ s: s, ref: it.ref, serie: serieH(f, s, per, hoje) }); }); });
-  h += '<section class="tbl-box" id="p' + id + '"><h3>Por período<span class="dir">' + seg(id + 'Agr', [['mes', 'Mês'], ['tri', 'Trimestre'], ['ano', 'Ano']], agr) + '</span></h3><div class="tbl-scroll"><table><thead><tr><th>Período</th>' +
+  if (secH === 'periodo') h += '<section class="tbl-box" id="p' + id + '"><h3>Por período<span class="dir">' + seg(id + 'Agr', [['mes', 'Mês'], ['tri', 'Trimestre'], ['ano', 'Ano']], agr) + '</span></h3><div class="tbl-scroll"><table><thead><tr><th>Período</th>' +
     cols.map(function (c) { return '<th class="r">' + esc(c.s.rotulo) + '<div class="td-sub muted">no fim do período</div></th><th class="r">Variação</th>'; }).join('') + '</tr></thead><tbody>' +
     per.map(function (p, k) { return k; }).reverse().map(function (k) {
       var p = per[k];
@@ -11529,7 +11586,8 @@ function vistaHistTipo(tipo) {
   if (modo === 'tempo') return h + vistaTempo(tipo);
   var itens = itensHist(tipo);
   if (!itens.length) return h + '<div class="card vazio">Nenhum cadastro deste tipo ainda.</div>';
-  var sel = selecaoH(tipo), busca = S.filtros['hmBusca_' + tipo] || '', tEv = TIPO_HIST_EV[tipo], cont = {}, ult = {};
+  var sel = selecaoH(tipo).slice(0, 1); S.filtros['hiSel_' + tipo] = sel;
+  var busca = S.filtros['hmBusca_' + tipo] || '', tEv = TIPO_HIST_EV[tipo], cont = {}, ult = {};
   fonteTela().efetivos.forEach(function (ev) { if (ev.tipo === tEv && ev.acao === 'alterar') { cont[ev.ref] = (cont[ev.ref] || 0) + 1; if (!ult[ev.ref] || ev.desde > ult[ev.ref]) ult[ev.ref] = ev.desde; } });
   var lista = itens.filter(function (it) { return bate(it.ref + ' ' + (it.nome || ''), busca); });
   var det = blocoHistorico(tipo, sel, 'hi', { mudar: true, marca: S.filtros.hiMarca || null });
@@ -13305,58 +13363,111 @@ function rascunhoTabelas() {
   S.draftInfo = { tipo: 'tab', novo: false, cod: 'tabelas' }; S.sujo = false;
   return S.draft;
 }
+// a conta de uma peça numa tabela com o preço que está na tela (o rascunho): impostos do estado da tabela, sobra e margem
+function tgConta(cod, uf, preco) {
+  try {
+    var ctx = S.ctx, p = ctx && ctx.prod[cod]; if (!p) return null;
+    var ncm = !vazio(p.ncm) && ctx.ncms ? ctx.ncms[p.ncm] || null : null, iv = M.impostosVenda(ctx.emp.config, ncm, uf), v = M.vendaPeca(ctx, cod), custo = v ? v.custo : null;
+    var pr = vazio(preco) ? 0 : n(preco), r = { custo: custo, pct: iv.pct };
+    if (!(pr > 0)) return r;
+    r.preco = pr; r.liquido = pr * (1 - iv.pct / 100); r.sobra = custo === null ? null : r.liquido - custo; r.margem = r.liquido && r.sobra !== null ? r.sobra / r.liquido * 100 : null;
+    return r;
+  } catch (e) { return null; }
+}
+function tgSelecionada(d) {
+  var id = S.filtros.tgSel;
+  if (!d.tabelas.some(function (t) { return t.id === id; })) id = d.tabelas[0] ? d.tabelas[0].id : null;
+  S.filtros.tgSel = id;
+  return id;
+}
+function tgClasseM(m) { return m === null || m === undefined ? '' : m < 0 ? 'neg' : m < 10 ? 'baixa' : 'ok'; }
+var COR_TAB = ['var(--acc)', '#0891b2', '#f59e0b', '#16a34a', '#8b5cf6', '#0d9488', '#d55181', '#2563eb'];
+function corTab(j) { return COR_TAB[j % COR_TAB.length]; }
+ACOES.tgTodas = function () { S.filtros.tgVista = 'todas'; renderPainel(); };
+ACOES.tgVer = function (el) { S.filtros.tgSel = el.dataset.id; S.filtros.tgVista = 'uma'; renderPainel(); };
 TELAS['tabelas-preco'] = {
-  // a tela em três partes: as tabelas (cartões), a busca e a grade (peça × tabela, cabeçalho e peça sempre à vista)
+  // à esquerda as tabelas (clique numa para ver os preços dela); à direita a tabela escolhida, peça por peça.
+  // "Todas lado a lado" mostra a grade peça × tabela para comparar.
   render: function () {
     var d = rascunhoTabelas(), ctx = S.ctx, hoje = hojeRef(), passado = podeDataPassada(), f = S.filtros, cols = d.tabelas;
-    var COR_TAB = ['var(--acc)', '#0891b2', '#f59e0b', '#16a34a', '#8b5cf6', '#0d9488', '#d55181', '#2563eb'];
-    var corTab = function (j) { return COR_TAB[j % COR_TAB.length]; };
+    var vista = f.tgVista === 'todas' ? 'todas' : 'uma', sel = tgSelecionada(d), js = 0;
+    cols.forEach(function (t, j) { if (t.id === sel) js = j; });
     var acoes = btn('Gravar preços', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + (TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '');
     var h = ph('Tabelas de preço', 'Cada tabela tem um estado de destino (o ICMS dele) e um preço por peça. O lucro da produção usa o <b>preço médio das tabelas</b>: a média simples das tabelas ativas em que a peça tem preço. A tabela geral é o preço do cadastro da peça. Preço em branco = a peça não está na tabela; tabela desativada não entra no preço médio (o histórico continua).', acoes, 'Cadastros');
-    // faixa: em vigor x registrando preços novos, com a data em que os novos valem
     h += '<div class="vig' + (S.sujo ? ' vig-on' : '') + '" id="vigEd" role="status">' +
       '<span class="vig-ic vig-a">' + ic('check') + '</span><span class="vig-ic vig-b">' + ic('edit') + '</span>' +
       '<div class="vig-t"><b class="vig-a">Preços em vigor</b><span class="vig-a">o que você mudar aqui vira preço novo a partir da data ao lado</span>' +
       '<b class="vig-b">Registrando preços novos</b><span class="vig-b">valem a partir da data ao lado · os de antes ficam no histórico</span></div>' +
       '<div class="vig-data"><label for="b-desde">Vale a partir de</label><input class="i" type="date" id="b-desde" data-b="desde" value="' + esc(d.desde) + '"' + (passado ? '' : ' min="' + esc(hoje) + '"') + '></div></div>';
-    // as vendas gravadas de cada peça (margens por tabela, preço médio)
-    var V = {};
-    d.pecas.forEach(function (x) { V[x.cod] = ctx ? M.vendaPeca(ctx, x.cod) : null; });
-    var margemDe = function (x, t) { var v = V[x.cod], vt = v ? v.tabelas.filter(function (y) { return y.id === t.id; })[0] : null; return vt && vt.temPreco ? vt : null; };
-    // 1) as tabelas
-    h += '<div class="tg-tabelas">' + cols.map(function (t, j) {
-      var p = 'tabelas.' + j + '.', com = d.pecas.filter(function (x) { return !vazio(x[t.id]); }).length;
-      var ms = d.pecas.map(function (x) { return margemDe(x, t); }).filter(Boolean), mm = ms.length ? ms.reduce(function (a, y) { return a + y.margem; }, 0) / ms.length : null;
-      return '<div class="tg-card' + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '">' +
-        '<div class="tg-card-top"><span class="tg-dot"></span>' + fTexto(p + 'nome', t.nome, { id: 'tg-n-' + j, ph: 'Nome da tabela', rr: true }) + '</div>' +
-        '<div class="tg-card-row">' + fCampo('Estado', fSelect(p + 'uf', t.uf, M.UFS, { id: 'tg-u-' + j, rr: true })) + fCheck(p + 'ativa', t.ativa !== false, 'Ativa', { id: 'tg-a-' + j, rr: true }) + '</div>' +
-        '<div class="tg-card-pe"><span><b>' + com + '</b> de ' + d.pecas.length + ' peças com preço</span>' + (mm !== null ? '<span>margem média <b class="' + (mm < 0 ? 'neg' : '') + '">' + fmtP(mm, 1) + '</b></span>' : '') +
-        (t.id === 'T1' ? '<span class="tg-geral">preço do cadastro da peça</span>' : '') + '</div></div>';
-    }).join('') + '<button class="tg-card tg-nova" data-a="tabAdd">' + ic('plus') + '<span>Adicionar tabela</span></button></div>';
-    // 2) busca e filtros
-    var baixa = function (x) { var v = V[x.cod]; return v && v.tabelas.some(function (y) { return y.temPreco && y.margem < 10; }); };
-    var semPreco = function (x) { return cols.some(function (t) { return t.ativa !== false && vazio(x[t.id]); }); };
-    var l = d.pecas.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) {
-      return bate(o.x.cod + ' ' + nomeProd(o.x.cod), f.tgBusca) && (!f.tgSem || semPreco(o.x)) && (!f.tgBaixa || baixa(o.x));
+    // números de cada tabela, com os preços da tela
+    var resumo = cols.map(function (t) {
+      var com = 0, ms = [];
+      d.pecas.forEach(function (x) { if (!vazio(x[t.id])) { com++; var c = tgConta(x.cod, t.uf, x[t.id]); if (c && c.margem !== null && c.margem !== undefined) ms.push(c.margem); } });
+      return { com: com, mm: ms.length ? ms.reduce(function (a, b) { return a + b; }, 0) / ms.length : null, baixa: ms.filter(function (m) { return m < 10; }).length };
     });
-    var nSem = d.pecas.filter(semPreco).length, nBaixa = d.pecas.filter(baixa).length;
+    var lista = '<aside class="tg-lista" aria-label="Tabelas"><div class="tg-lista-t">Tabelas<span>' + cols.length + '</span></div>' + cols.map(function (t, j) {
+      var r = resumo[j], on = vista === 'uma' && t.id === sel;
+      return '<button class="tg-card' + (on ? ' on' : '') + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '" data-a="tgVer" data-id="' + esc(t.id) + '"' + (on ? ' aria-current="true"' : '') + '>' +
+        '<span class="tg-card-top"><span class="tg-dot"></span><b>' + esc(t.nome || 'Sem nome') + '</b><span class="tg-uf">' + esc(t.uf || '') + '</span></span>' +
+        '<span class="tg-card-pe"><span><b>' + r.com + '</b>/' + d.pecas.length + ' peças</span>' + (r.mm !== null ? '<span>margem <b class="tg-m ' + tgClasseM(r.mm) + '">' + fmtP(r.mm, 1) + '</b></span>' : '') + (t.ativa === false ? '<span>desativada</span>' : '') + '</span></button>';
+    }).join('') + '<button class="tg-card tg-nova" data-a="tabAdd">' + ic('plus') + '<span>Nova tabela</span></button>' +
+      '<button class="tg-card tg-todas' + (vista === 'todas' ? ' on' : '') + '" data-a="tgTodas"' + (vista === 'todas' ? ' aria-current="true"' : '') + '>' + ic('menu') + '<span>Todas lado a lado</span></button></aside>';
+    // busca e filtros (servem às duas vistas)
+    var baixa = function (x, t) { var c = tgConta(x.cod, t.uf, x[t.id]); return c && c.margem !== null && c.margem !== undefined && c.margem < 10; };
+    var tSel = cols[js], semPreco = function (x) { return vista === 'uma' ? vazio(x[tSel.id]) : cols.some(function (t) { return t.ativa !== false && vazio(x[t.id]); }); };
+    var temBaixa = function (x) { return vista === 'uma' ? baixa(x, tSel) : cols.some(function (t) { return baixa(x, t); }); };
+    var l = d.pecas.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) { return bate(o.x.cod + ' ' + nomeProd(o.x.cod), f.tgBusca) && (!f.tgSem || semPreco(o.x)) && (!f.tgBaixa || temBaixa(o.x)); });
+    var nSem = d.pecas.filter(semPreco).length, nBaixa = d.pecas.filter(temBaixa).length;
     var chk = function (k, rot, nn) { return '<label class="chk tg-filtro"><input type="checkbox" data-f="' + k + '"' + (f[k] ? ' checked' : '') + '><span>' + rot + ' <b>' + nn + '</b></span></label>'; };
-    h += '<div class="tbl-tools tg-tools">' + filtroTexto('tgBusca', 'Código ou nome da peça') + chk('tgSem', 'Sem preço em alguma tabela', nSem) + chk('tgBaixa', 'Margem abaixo de 10%', nBaixa) +
-      '<span class="tg-cont">' + l.length + ' de ' + d.pecas.length + ' peças</span></div>';
-    // 3) a grade
-    var tag = function (vt) { return vt ? '<span class="tg-m ' + (vt.sobra < 0 ? 'neg' : vt.margem < 10 ? 'baixa' : 'ok') + '" title="Margem nesta tabela (gravada)">' + fmtP(vt.margem, 1) + '</span>' : ''; };
-    h += '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tbl-grade tg-grade" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th>' +
-      cols.map(function (t, j) { return '<th class="tg-th' + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '"><span class="tg-dot"></span>' + esc(t.nome || 'Sem nome') + '<span class="tg-uf">' + esc(t.uf || '') + '</span>' + (t.ativa === false ? '<span class="tg-uf">desativada</span>' : '') + '</th>'; }).join('') +
-      '<th class="r">Preço médio</th><th class="r">Margem média</th><th>Pior margem</th></tr></thead><tbody>' +
-      (l.length ? l.map(function (o) {
-        var x = o.x, i = o.i, v = V[x.cod], m = v && v.media, pior = v && v.pior ? v.tabelas.filter(function (t) { return t.id === v.pior; })[0] : null;
-        return '<tr data-prod="' + esc(x.cod) + '"><td class="tg-peca"><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub" title="' + esc(nomeProd(x.cod)) + '">' + esc(nomeProd(x.cod)) + '</div></td>' +
-          cols.map(function (t) { return '<td class="tg-cel' + (t.ativa === false ? ' off' : '') + '"><div class="tg-cel-in">' + fNum('pecas.' + i + '.' + t.id, x[t.id], { suf: 'R$', ph: '—', id: 'tg-' + i + '-' + t.id }) + tag(margemDe(x, t)) + '</div></td>'; }).join('') +
-          '<td class="r">' + (m ? orig(fmtR(m.preco), od('preco', x.cod, hoje, 'preco')) + '<div class="td-sub muted">' + m.n + (m.n === 1 ? ' tabela' : ' tabelas') + '</div>' : '<span class="muted">sem preço</span>') + '</td>' +
-          '<td class="r">' + (m ? '<b class="' + (m.sobra < 0 ? 'neg' : '') + '">' + fmtP(m.margem, 1) + '</b>' : '—') + '</td><td>' + (pior && m.n > 1 ? esc(pior.nome) + ' (' + fmtP(pior.margem, 1) + ')' : '<span class="muted">—</span>') + '</td></tr>';
-      }).join('') : '<tr><td colspan="' + (cols.length + 4) + '" class="vazio">' + (d.pecas.length ? 'Nenhuma peça com esse filtro.' : 'Nenhuma peça à venda ainda. Cadastre os produtos acabados em Produtos e fórmulas.') + '</td></tr>') + '</tbody></table></div></div>';
-    h += '<div class="hint">As margens ao lado de cada preço e a média são as gravadas hoje; grave para ver as novas. Verde: 10% ou mais; amarelo: abaixo de 10%; vermelho: prejuízo. A conta dos impostos de cada tabela fica na página da peça.</div>';
+    var tools = '<div class="tbl-tools tg-tools">' + filtroTexto('tgBusca', 'Código ou nome da peça') + chk('tgSem', vista === 'uma' ? 'Sem preço nesta tabela' : 'Sem preço em alguma tabela', nSem) + chk('tgBaixa', 'Margem abaixo de 10%', nBaixa) + '<span class="tg-cont">' + l.length + ' de ' + d.pecas.length + ' peças</span></div>';
+    var vazioTxt = '<tr><td colspan="9" class="vazio">' + (d.pecas.length ? 'Nenhuma peça com esse filtro.' : 'Nenhuma peça à venda ainda. Cadastre os produtos acabados em Produtos e fórmulas.') + '</td></tr>';
+    var det;
+    if (vista === 'uma' && tSel) {
+      var p = 'tabelas.' + js + '.', r = resumo[js];
+      det = '<section class="tg-det" style="--tc:' + corTab(js) + '">' +
+        '<div class="tg-det-top"><span class="tg-dot"></span>' + fTexto(p + 'nome', tSel.nome, { id: 'tg-n-' + js, ph: 'Nome da tabela', cls: 'tg-nome' }) +
+        fCampo('Estado de destino', fSelect(p + 'uf', tSel.uf, M.UFS, { id: 'tg-u-' + js, rr: true })) + fCheck(p + 'ativa', tSel.ativa !== false, 'Ativa (entra no preço médio)', { id: 'tg-a-' + js, rr: true }) +
+        (tSel.id === 'T1' ? '<span class="tg-geral">preço do cadastro da peça</span>' : '') + '</div>' +
+        '<div class="kpi-row tg-kpis">' + kpi('Peças com preço', r.com + ' <span class="u">de ' + d.pecas.length + '</span>', r.com < d.pecas.length ? (d.pecas.length - r.com) + ' sem preço nesta tabela' : 'todas as peças') +
+          kpi('Margem média', r.mm === null ? '—' : fmtP(r.mm, 1), 'com os preços da tela') + kpi('Abaixo de 10%', String(r.baixa), r.baixa ? 'peças com margem baixa ou prejuízo' : 'nenhuma', r.baixa ? 'warn' : '') + '</div>' +
+        tools + '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tg-uma" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th><th class="r">Custo de fazer</th><th>Preço nesta tabela</th><th class="r">Impostos</th><th class="r">Preço sem impostos</th><th class="r">Sobra por peça</th><th class="r">Margem</th></tr></thead><tbody>' +
+        (l.length ? l.map(function (o) {
+          var x = o.x, i = o.i, c = tgConta(x.cod, tSel.uf, x[tSel.id]) || {};
+          return '<tr data-prod="' + esc(x.cod) + '" data-i="' + i + '"><td class="tg-peca"><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub" title="' + esc(nomeProd(x.cod)) + '">' + esc(nomeProd(x.cod)) + '</div></td>' +
+            '<td class="r">' + (c.custo === null || c.custo === undefined ? '—' : fmtR(c.custo)) + '</td>' +
+            '<td class="tg-cel">' + fNum('pecas.' + i + '.' + tSel.id, x[tSel.id], { suf: 'R$', ph: 'sem preço', id: 'tg-' + i + '-' + tSel.id }) + '</td>' +
+            '<td class="r" id="tgI-' + i + '">' + (c.pct === undefined ? '—' : fmtP(c.pct, 2)) + '</td><td class="r" id="tgL-' + i + '">' + (c.liquido === undefined ? '—' : fmtR(c.liquido)) + '</td>' +
+            '<td class="r" id="tgS-' + i + '"><b class="' + (c.sobra < 0 ? 'neg' : '') + '">' + (c.sobra === undefined || c.sobra === null ? '—' : fmtR(c.sobra)) + '</b></td>' +
+            '<td class="r" id="tgM-' + i + '">' + (c.margem === undefined || c.margem === null ? '<span class="muted">—</span>' : '<span class="tg-m ' + tgClasseM(c.margem) + '">' + fmtP(c.margem, 1) + '</span>') + '</td></tr>';
+        }).join('') : vazioTxt) + '</tbody></table></div></div></section>';
+    } else {
+      det = '<section class="tg-det">' + '<div class="tg-det-top"><b class="tg-nome-ro">Todas as tabelas lado a lado</b><span class="muted">clique no nome de uma tabela à esquerda para editar o nome, o estado e os preços dela</span></div>' + tools +
+        '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tbl-grade tg-grade" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th>' +
+        cols.map(function (t, j) { return '<th class="tg-th' + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '"><span class="tg-dot"></span>' + esc(t.nome || 'Sem nome') + '<span class="tg-uf">' + esc(t.uf || '') + '</span></th>'; }).join('') +
+        '<th class="r">Preço médio</th><th class="r">Margem média</th></tr></thead><tbody>' +
+        (l.length ? l.map(function (o) {
+          var x = o.x, i = o.i, v = ctx ? M.vendaPeca(ctx, x.cod) : null, m = v && v.media;
+          return '<tr data-prod="' + esc(x.cod) + '"><td class="tg-peca"><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub" title="' + esc(nomeProd(x.cod)) + '">' + esc(nomeProd(x.cod)) + '</div></td>' +
+            cols.map(function (t) { var c = tgConta(x.cod, t.uf, x[t.id]) || {}; return '<td class="tg-cel' + (t.ativa === false ? ' off' : '') + '"><div class="tg-cel-in">' + fNum('pecas.' + i + '.' + t.id, x[t.id], { suf: 'R$', ph: '—', id: 'tg-' + i + '-' + t.id }) + (c.margem !== undefined && c.margem !== null ? '<span class="tg-m ' + tgClasseM(c.margem) + '">' + fmtP(c.margem, 1) + '</span>' : '') + '</div></td>'; }).join('') +
+            '<td class="r">' + (m ? fmtR(m.preco) + '<div class="td-sub muted">' + m.n + (m.n === 1 ? ' tabela' : ' tabelas') + '</div>' : '<span class="muted">sem preço</span>') + '</td>' +
+            '<td class="r">' + (m ? '<b class="' + (m.sobra < 0 ? 'neg' : '') + '">' + fmtP(m.margem, 1) + '</b>' : '—') + '</td></tr>';
+        }).join('') : vazioTxt) + '</tbody></table></div></div></section>';
+    }
+    h += '<div class="tg">' + lista + det + '</div>';
+    h += '<div class="hint">Custo, impostos, sobra e margem são refeitos com o preço que está na tela, antes de gravar. Verde: margem de 10% ou mais; amarelo: abaixo de 10%; vermelho: prejuízo. Preço médio e margem média de "Todas lado a lado" são os gravados. A conta dos impostos de cada tabela fica na página da peça.</div>';
     return h;
+  },
+  // ao digitar um preço: impostos, preço sem impostos, sobra e margem da linha mudam na hora
+  preview: function () {
+    var d = S.draft; if (!d || S.filtros.tgVista === 'todas') return;
+    var t = null; d.tabelas.forEach(function (x) { if (x.id === S.filtros.tgSel) t = x; }); if (!t) return;
+    $$('#tabGrade tbody tr[data-i]').forEach(function (tr) {
+      var i = +tr.dataset.i, x = d.pecas[i]; if (!x) return;
+      var c = tgConta(x.cod, t.uf, x[t.id]) || {}, set = function (k, v) { var el = document.getElementById(k + i); if (el) el.innerHTML = v; };
+      set('tgL-', c.liquido === undefined ? '—' : fmtR(c.liquido));
+      set('tgS-', '<b class="' + (c.sobra < 0 ? 'neg' : '') + '">' + (c.sobra === undefined || c.sobra === null ? '—' : fmtR(c.sobra)) + '</b>');
+      set('tgM-', c.margem === undefined || c.margem === null ? '<span class="muted">—</span>' : '<span class="tg-m ' + tgClasseM(c.margem) + '">' + fmtP(c.margem, 1) + '</span>');
+    });
   }
 };
 ACOES.tabAdd = function () {
@@ -13364,6 +13475,7 @@ ACOES.tabAdd = function () {
   var id = 'T' + (max + 1);
   d.tabelas.push({ id: id, nome: 'Nova tabela', uf: M.fiscalDe(S.emp.config || {}).uf, ativa: true });
   d.pecas.forEach(function (x) { x[id] = ''; });
+  S.filtros.tgSel = id; S.filtros.tgVista = 'uma';   // a tabela nova já abre para receber os preços
   S.sujo = true; renderPainel();
   var el = document.getElementById('tg-n-' + (d.tabelas.length - 1)); if (el) { el.focus(); el.select(); }
 };
