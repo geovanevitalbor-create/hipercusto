@@ -1487,6 +1487,56 @@ html[data-theme="light"] .sn-sub2{border-left-color:var(--line)}
 .sn-sub2.aberto{display:block}
 @media (max-width:760px){.sn-sgrp{min-height:42px;font-size:13.5px}.sn-sub2{margin-left:4px}}
 
+/* "em vigor" (só para ver) é um selo discreto; o modo de edição continua uma faixa inteira */
+.vig.vig-ver{display:inline-flex;width:auto;max-width:100%;gap:8px;padding:5px 14px 5px 6px;border-radius:999px;margin:0 0 14px}
+.vig.vig-ver .vig-ic{width:22px;height:22px}
+.vig.vig-ver .vig-ic svg{width:12px;height:12px}
+.vig.vig-ver .vig-t b{font-size:12.5px}
+.vig.vig-ver .vig-t span{font-size:12px}
+
+/* Tabelas de preço: o cabeçalho da tabela numa linha só (nome, estado, ativa | números), a lista com os números juntos à direita */
+.tg-det-top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 22px}
+.tg-det-id{display:flex;align-items:center;gap:10px;flex:0 1 380px;min-width:220px}
+.tg-det-id .tg-nome{flex:1;min-width:0}
+.tg-det-cfg{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.tg-det-cfg .campo{width:130px}
+.tg-det-cfg .chk,.tg-det-cfg .tg-geral{margin-bottom:10px}
+.tg-stats{display:flex;gap:10px;margin-left:auto}
+.tg-stat{display:flex;flex-direction:column;gap:2px;min-width:118px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+html[data-theme="light"] .tg-stat{background:var(--surf2);border-color:var(--line)}
+.tg-stat span{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
+.tg-stat b{font-size:19px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.tg-stat b small{font-size:11px;font-weight:600;color:var(--text3)}
+.tg-stat.warn{border-color:rgba(245,158,11,.45)}
+.tg-stat.warn b{color:#fcd34d}
+.tg-m-txt.ok{color:#86efac}.tg-m-txt.baixa{color:#fcd34d}.tg-m-txt.neg{color:#fca5a5}
+html[data-theme="light"] .tg-m-txt.ok{color:#15803d}html[data-theme="light"] .tg-m-txt.baixa{color:#b45309}html[data-theme="light"] .tg-m-txt.neg{color:#b91c1c}
+.tg-tools .tg-cont{margin-left:4px}
+.tg-uma th.tg-cn{width:150px}
+.tg-uma th.tg-ci{width:200px}
+.tg-uma .tg-cel .sufixo{max-width:none}
+@media (max-width:1100px){.tg-stats{margin-left:0;width:100%}.tg-stat{flex:1;min-width:0}}
+
+/* ===================== Tabelas de preço: abas em cima, o conteúdo da aba embaixo (uma coluna só) ===================== */
+.tg{display:block}
+.tg-abas{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px;margin:0;padding:0 2px;border-bottom:1px solid var(--line2);position:relative;z-index:1}
+.tg-aba{--tc:var(--acc);display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:170px;margin-bottom:-1px;padding:10px 16px 9px;border:1px solid transparent;border-bottom:none;border-radius:12px 12px 0 0;background:transparent;color:var(--text2);font:inherit;text-align:left;cursor:pointer}
+.tg-aba:hover{background:var(--hover)}
+.tg-aba-l1{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--text)}
+.tg-aba-l1 svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tg-aba-l2{font-size:11.5px;color:var(--text3)}
+.tg-aba.off .tg-aba-l1{color:var(--text3)}
+.tg-aba.on{background:rgba(var(--vidro-rgb),.55);border-color:var(--line2);box-shadow:inset 0 3px 0 var(--tc)}
+html[data-theme="light"] .tg-aba.on{background:var(--surf)}
+.tg-aba.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:inherit}
+.tg-aba{position:relative}
+.tg .tg-det{display:block;padding:18px 18px 14px;border:1px solid var(--line2);border-top:none;border-radius:0 0 16px 16px;background:rgba(var(--vidro-rgb),.36);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+html[data-theme="light"] .tg .tg-det{background:var(--surf)}
+.tg .tg-det .tg-det-top{margin:0 0 16px;padding:0 0 16px;border:none;border-bottom:1px solid var(--line-soft);border-radius:0;background:none}
+.tg .tg-det .tg-box{margin-bottom:0;box-shadow:none}
+.tg-media{margin-left:auto;align-self:flex-end;margin-bottom:10px;font-size:12.5px;color:var(--text2)}
+.tg-media b{font-size:15px;font-weight:800;margin-left:6px}
+
 </style>
 </head>
 <body style="margin:0">
@@ -13524,13 +13574,14 @@ TELAS['tabelas-preco'] = {
       d.pecas.forEach(function (x) { if (!vazio(x[t.id])) { com++; var c = tgConta(x.cod, t.uf, x[t.id]); if (c && c.margem !== null && c.margem !== undefined) ms.push(c.margem); } });
       return { com: com, mm: ms.length ? ms.reduce(function (a, b) { return a + b; }, 0) / ms.length : null, baixa: ms.filter(function (m) { return m < 10; }).length };
     });
-    var lista = '<aside class="tg-lista" aria-label="Tabelas"><div class="tg-lista-t">Tabelas<span>' + cols.length + '</span></div>' + cols.map(function (t, j) {
+    // as tabelas em abas, em cima; embaixo, colado na aba escolhida, o que é dela (nome, estado, preços)
+    var lista = '<div class="tg-abas" role="tablist" aria-label="Tabelas de preço">' + cols.map(function (t, j) {
       var r = resumo[j], on = vista === 'uma' && t.id === sel;
-      return '<button class="tg-card' + (on ? ' on' : '') + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '" data-a="tgVer" data-id="' + esc(t.id) + '"' + (on ? ' aria-current="true"' : '') + '>' +
-        '<span class="tg-card-top"><span class="tg-dot"></span><b>' + esc(t.nome || 'Sem nome') + '</b><span class="tg-uf">' + esc(t.uf || '') + '</span></span>' +
-        '<span class="tg-card-pe"><span><b>' + r.com + '</b>/' + d.pecas.length + ' peças</span>' + (r.mm !== null ? '<span>margem <b class="tg-m ' + tgClasseM(r.mm) + '">' + fmtP(r.mm, 1) + '</b></span>' : '') + (t.ativa === false ? '<span>desativada</span>' : '') + '</span></button>';
-    }).join('') + '<button class="tg-card tg-nova" data-a="tabAdd">' + ic('plus') + '<span>Nova tabela</span></button>' +
-      '<button class="tg-card tg-todas' + (vista === 'todas' ? ' on' : '') + '" data-a="tgTodas"' + (vista === 'todas' ? ' aria-current="true"' : '') + '>' + ic('menu') + '<span>Todas lado a lado</span></button></aside>';
+      return '<button class="tg-aba' + (on ? ' on' : '') + (t.ativa === false ? ' off' : '') + '" role="tab" aria-selected="' + on + '" style="--tc:' + corTab(j) + '" data-a="tgVer" data-id="' + esc(t.id) + '">' +
+        '<span class="tg-aba-l1"><span class="tg-dot"></span>' + esc(t.nome || 'Sem nome') + '<span class="tg-uf">' + esc(t.uf || '') + '</span></span>' +
+        '<span class="tg-aba-l2">' + (t.ativa === false ? 'desativada · ' : '') + r.com + '/' + d.pecas.length + ' peças' + (r.mm !== null ? ' · margem ' + fmtP(r.mm, 1) : '') + '</span></button>';
+    }).join('') + '<button class="tg-aba tg-aba-todas' + (vista === 'todas' ? ' on' : '') + '" role="tab" aria-selected="' + (vista === 'todas') + '" data-a="tgTodas">' +
+      '<span class="tg-aba-l1">' + ic('menu') + 'Todas lado a lado</span><span class="tg-aba-l2">comparar as tabelas</span></button></div>';
     // busca e filtros (servem às duas vistas)
     var baixa = function (x, t) { var c = tgConta(x.cod, t.uf, x[t.id]); return c && c.margem !== null && c.margem !== undefined && c.margem < 10; };
     var tSel = cols[js], semPreco = function (x) { return vista === 'uma' ? vazio(x[tSel.id]) : cols.some(function (t) { return t.ativa !== false && vazio(x[t.id]); }); };
@@ -13538,18 +13589,19 @@ TELAS['tabelas-preco'] = {
     var l = d.pecas.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) { return bate(o.x.cod + ' ' + nomeProd(o.x.cod), f.tgBusca) && (!f.tgSem || semPreco(o.x)) && (!f.tgBaixa || temBaixa(o.x)); });
     var nSem = d.pecas.filter(semPreco).length, nBaixa = d.pecas.filter(temBaixa).length;
     var chk = function (k, rot, nn) { return '<label class="chk tg-filtro"><input type="checkbox" data-f="' + k + '"' + (f[k] ? ' checked' : '') + '><span>' + rot + ' <b>' + nn + '</b></span></label>'; };
-    var tools = '<div class="tbl-tools tg-tools">' + filtroTexto('tgBusca', 'Código ou nome da peça') + chk('tgSem', vista === 'uma' ? 'Sem preço nesta tabela' : 'Sem preço em alguma tabela', nSem) + chk('tgBaixa', 'Margem abaixo de 10%', nBaixa) + '<span class="tg-cont">' + l.length + ' de ' + d.pecas.length + ' peças</span></div>';
+    var tools = '<div class="tbl-tools tg-tools">' + filtroTexto('tgBusca', 'Código ou nome da peça') + chk('tgSem', vista === 'uma' ? 'Sem preço nesta tabela' : 'Sem preço em alguma tabela', nSem) + chk('tgBaixa', 'Margem abaixo de 10%', nBaixa) + '<span class="tg-cont">' + l.length + ' de ' + d.pecas.length + ' peças</span>' +
+      (vista === 'uma' && resumo[js] ? '<span class="tg-media">Margem média nesta tabela <b class="tg-m-txt ' + tgClasseM(resumo[js].mm) + '">' + (resumo[js].mm === null ? '—' : fmtP(resumo[js].mm, 1)) + '</b></span>' : '') + '</div>';
     var vazioTxt = '<tr><td colspan="9" class="vazio">' + (d.pecas.length ? 'Nenhuma peça com esse filtro.' : 'Nenhuma peça à venda ainda. Cadastre os produtos acabados em Produtos e fórmulas.') + '</td></tr>';
     var det;
     if (vista === 'uma' && tSel) {
       var p = 'tabelas.' + js + '.', r = resumo[js];
       det = '<section class="tg-det" style="--tc:' + corTab(js) + '">' +
-        '<div class="tg-det-top"><span class="tg-dot"></span>' + fTexto(p + 'nome', tSel.nome, { id: 'tg-n-' + js, ph: 'Nome da tabela', cls: 'tg-nome' }) +
-        fCampo('Estado de destino', fSelect(p + 'uf', tSel.uf, M.UFS, { id: 'tg-u-' + js, rr: true })) + fCheck(p + 'ativa', tSel.ativa !== false, 'Ativa (entra no preço médio)', { id: 'tg-a-' + js, rr: true }) +
-        (tSel.id === 'T1' ? '<span class="tg-geral">preço do cadastro da peça</span>' : '') + '</div>' +
-        '<div class="kpi-row tg-kpis">' + kpi('Peças com preço', r.com + ' <span class="u">de ' + d.pecas.length + '</span>', r.com < d.pecas.length ? (d.pecas.length - r.com) + ' sem preço nesta tabela' : 'todas as peças') +
-          kpi('Margem média', r.mm === null ? '—' : fmtP(r.mm, 1), 'com os preços da tela') + kpi('Abaixo de 10%', String(r.baixa), r.baixa ? 'peças com margem baixa ou prejuízo' : 'nenhuma', r.baixa ? 'warn' : '') + '</div>' +
-        tools + '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tg-uma" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th><th class="r">Custo de fazer</th><th>Preço nesta tabela</th><th class="r">Impostos</th><th class="r">Preço sem impostos</th><th class="r">Sobra por peça</th><th class="r">Margem</th></tr></thead><tbody>' +
+        '<div class="tg-det-top">' +
+          '<div class="tg-det-id"><span class="tg-dot"></span>' + fTexto(p + 'nome', tSel.nome, { id: 'tg-n-' + js, ph: 'Nome da tabela', cls: 'tg-nome' }) + '</div>' +
+          '<div class="tg-det-cfg">' + fCampo('Estado de destino', fSelect(p + 'uf', tSel.uf, M.UFS, { id: 'tg-u-' + js, rr: true })) + fCheck(p + 'ativa', tSel.ativa !== false, 'Ativa (entra no preço médio)', { id: 'tg-a-' + js, rr: true }) +
+            (tSel.id === 'T1' ? '<span class="tg-geral">preço do cadastro da peça</span>' : '') + '</div>' +
+        '</div>' +
+        tools + '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tg-uma" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th><th class="r tg-cn">Custo de fazer</th><th class="tg-ci">Preço nesta tabela</th><th class="r tg-cn">Impostos</th><th class="r tg-cn">Preço sem impostos</th><th class="r tg-cn">Sobra por peça</th><th class="r tg-cn">Margem</th></tr></thead><tbody>' +
         (l.length ? l.map(function (o) {
           var x = o.x, i = o.i, c = tgConta(x.cod, tSel.uf, x[tSel.id]) || {};
           return '<tr data-prod="' + esc(x.cod) + '" data-i="' + i + '"><td class="tg-peca"><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub" title="' + esc(nomeProd(x.cod)) + '">' + esc(nomeProd(x.cod)) + '</div></td>' +
@@ -14663,7 +14715,7 @@ faixaEdicao = function () {
   if (S.draftInfo.novo) return '<div class="vig vig-novo" id="vigEd" role="status"><span class="vig-ic">' + ic('plus') + '</span><div class="vig-t"><b>Cadastro novo</b><span>começa a valer hoje, ' + hoje + '</span></div></div>';
   if (!edGate()) return '';
   var ed = edAtivo() ? S.ui.ed : null;
-  if (!ed) return '<div class="vig" id="vigEd" role="status"><span class="vig-ic">' + ic('check') + '</span><div class="vig-t"><b>Valores em vigor</b><span>só para ver · para alterar, clique em Editar</span></div>' + btn('Editar', 'edAbrir', '', 'btn-ghost btn-sm', 'edit') + '</div>';
+  if (!ed) return '<div class="vig vig-ver" id="vigEd" role="status"><span class="vig-ic">' + ic('check') + '</span><div class="vig-t"><b>Valores em vigor</b><span>só para ver · para alterar, clique em Editar</span></div></div>';
   if (ed.modo === 'corrigir') return '<div class="vig vig-corrigir" id="vigEd" role="status"><span class="vig-ic">' + ic('alert') + '</span><div class="vig-t"><b>Corrigindo um erro</b><span>a correção vale desde quando cada valor passou a valer · as contas dos dias passados são refeitas</span></div>' + btn('Trocar', 'edAbrir', '', 'btn-ghost btn-sm') + '</div>';
   return '<div class="vig vig-mudar" id="vigEd" role="status"><span class="vig-ic">' + ic('edit') + '</span><div class="vig-t"><b>Registrando uma mudança</b><span>vale a partir de <b>' + fmtData(ed.desde) + '</b> · antes dessa data fica o valor antigo, no histórico</span></div>' + btn('Trocar', 'edAbrir', '', 'btn-ghost btn-sm') + '</div>';
 };
@@ -14682,7 +14734,7 @@ botoesCfg = function () {
   return btn(S.ui.ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', 'cfgGravar', '', 'btn-accent', 'check') + btn('Cancelar', 'edCancelar', '', 'btn-ghost', 'x');
 };
 function botoesTabelas() {
-  var imp = TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '';
+  var imp = btn('Nova tabela', 'tabAdd', '', 'btn-ghost', 'plus') + (TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '');
   if (!edGate()) return btn('Gravar preços', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + imp;
   if (!edAtivo()) return btn('Editar', 'edAbrir', '', 'btn-accent', 'edit') + imp;
   return btn(S.ui.ed.modo === 'corrigir' ? 'Confirmar correção' : 'Confirmar mudança', 'tabGravar', '', 'btn-accent', 'check') + btn('Cancelar', 'edCancelar', '', 'btn-ghost', 'x');
