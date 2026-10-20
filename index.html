@@ -7,12 +7,17 @@
      (Supabase → Project Settings → API: "Project URL" e a chave "anon public").
      ===================================================================== -->
 <script>
-window.CENTRAL_SUPABASE = { url: 'https://acafnixbsecazinceful.supabase.co', chave: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjYWZuaXhic2VjYXppbmNlZnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODU1MjYsImV4cCI6MjEwNzk2MTUyNn0.wM4VxV8bpej2CDm4pbh8lJ3zYaeFiUGy616VxrgYhiU' };
+window.CENTRAL_SUPABASE = { url: 'https://acafnixbsecazinceful.supabase.co', chave: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjYWZuaXhic2VjYXppbmNlZnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODU1MjYsImV4cCI6MjEwNzk2MTUyNn0.wM4VxV8bpej2CDm4pbh8lJ3zYaeFiUGy616VxrgYhiU', vapidPublica: '' };
 </script>
+<!-- vapidPublica: a chave PÚBLICA das notificações no celular (supabase/NOTIFICACOES.md, passos 1 e 2).
+     Sem ela a Central funciona normalmente; só o "Ativar no celular" fica desligado. -->
 <!-- ===================== fim da configuração ===================== -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Central de Custos</title>
 <meta name="description" content="Custo de produção, lucro bruto diário, moldes e limpeza de peças da Vitalbor e da Universal Juntas">
+<meta name="theme-color" content="#15181d">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -105,6 +110,24 @@ button.nav-brand{cursor:pointer}button.nav-brand:hover{background:var(--hover)}
 .nav-user .av{width:32px;height:32px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--acc-rgb),.16);border:1px solid rgba(var(--acc-rgb),.5);color:var(--acc-t);font:700 11.5px var(--f-tit)}
 .nav-tema{width:38px!important;height:38px!important;border-radius:999px!important}
 .nav-tema svg{width:17px!important;height:17px!important}
+.nav-trilho{width:38px!important;height:38px!important;border-radius:999px!important}
+.nav-trilho svg{width:17px!important;height:17px!important}
+.nav-trilho[aria-pressed="true"]{color:var(--acc-t,var(--text))}
+/* barra lateral escondida (só no computador): o conteúdo fica no meio, com largura confortável */
+@media (min-width:761px){
+  .app.sem-trilho{padding-left:0}
+  .app.sem-trilho .side-nav,.app.sem-trilho .sn-veu{display:none}
+  .app.sem-trilho .nav{padding-left:max(var(--gr), calc((100% - 1200px) / 2))}
+  .app.sem-trilho .panel{max-width:1200px;margin:0 auto;padding-left:var(--gr)}
+}
+/* contas vivas embaixo dos campos (horas do funcionário, preparação) e a quantidade com unidade */
+.conta-viva{margin-top:6px;padding:6px 10px;border-left:2px solid rgba(var(--acc-rgb),.55);background:rgba(var(--acc-rgb),.06);border-radius:0 6px 6px 0;color:var(--text2);font-size:12.5px;font-variant-numeric:tabular-nums}
+.un-box{display:flex;gap:6px;align-items:stretch;min-width:0}
+.un-box input{flex:1 1 auto;min-width:0}
+.un-box select{flex:0 0 auto;width:auto;min-width:64px}
+.lista-kv .kv-sub{font-size:12px;color:var(--text3);font-weight:400;padding-left:10px}
+.tbl-benef td{vertical-align:middle}
+@media (max-width:760px){.nav-trilho{display:none!important}}
 .sn-toggle{display:none}
 .pend{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--warn-t);background:rgba(250,178,25,.1);border:1px solid rgba(250,178,25,.4);border-radius:999px;padding:4px 5px 4px 12px}
 .pend button{border:none;border-radius:999px;background:var(--st-warn);color:#1a1205;font-weight:700;font-size:11.5px;padding:4px 10px;cursor:pointer}
@@ -964,7 +987,7 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script>window.SEED_DADOS = {"versao": "oficial", "empresas": {}, "usuarios": []}; window.CONFIG_PADRAO = {"ggfBaseMeses":3,"diasAlertaPreco":180,"dataReferencia":"","precisao":{"quantidades":6,"valores":4,"percentuais":2,"horas":6,"modo":"maxima"},"impostos":{"entrada":[{"nome":"ICMS","sinal":"-","exibir":true},{"nome":"IPI","sinal":"+","exibir":true},{"nome":"","sinal":"-","exibir":false},{"nome":"","sinal":"-","exibir":false},{"nome":"","sinal":"-","exibir":false}],"formulaMP":{"custom":false,"expr":"VC - (VC * P1 / 100) + (VC * P2 / 100) + V1 - (V1 * A1 / 100)"}},"impostosVendaPct":0,"limpeza":{"setor":""},"taxas":{"padraoHorasTrab":188,"padraoHorasBase":220,"padraoEfic":85,"salarioPadrao":2200,"rotatividade":30,"diasUteis":22,"uniformesMeses":6,"examesMeses":12,"modoEncargos":"formulas","pctEncargos":36.8,"pctProvisoes":25,"pctOutros":18,"origemParams":"funcionario","origemHoras":"cadastro","origemEfic":"cadastro","limite240":true,"heExtras":[50,100,0,0,0],"alocacao100":true},"encargos":[{"ref":"V01","desc":"INSS patronal (CPP)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":20,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Contribuição previdenciária patronal sobre o salário total."},{"ref":"V02","desc":"RAT ajustado (RAT × FAP)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":3,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Risco ambiental do trabalho já multiplicado pelo FAP da empresa."},{"ref":"V03","desc":"Terceiros (Sistema S, salário-educação, INCRA)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":5.8,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Contribuições a terceiros recolhidas na GPS/DCTFWeb."},{"ref":"V04","desc":"FGTS","tipo":"%","variaFunc":false,"integraSalario":false,"vb":8,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Depósito mensal de FGTS."},{"ref":"V05","desc":"13º salário (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"VB = número de salários pagos por ano a título de 13º."},{"ref":"V06","desc":"Férias + 1/3 (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1.3333,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"VB = 1 salário de férias + 1/3 constitucional."},{"ref":"V07","desc":"Encargos sobre 13º e férias","tipo":"%","variaFunc":false,"integraSalario":false,"vb":0,"formula":"(V05 + V06) * (V01 + V02 + V03 + V04) / ST","grupo":"Provisões","resumo":"Aplica sobre as provisões o mesmo percentual de INSS, RAT, terceiros e FGTS."},{"ref":"V08","desc":"Aviso prévio indenizado (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1,"formula":"ST * VB / RT","grupo":"Provisões","resumo":"VB = salários de aviso por desligamento. RT = permanência média em meses."},{"ref":"V09","desc":"Multa rescisória do FGTS (provisão)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":40,"formula":"V04 * VB / 100","grupo":"Provisões","resumo":"40% sobre os depósitos mensais de FGTS."},{"ref":"V10","desc":"Faltas legais e atestados (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":4,"formula":"(ST / DU) * VB / 12","grupo":"Provisões","resumo":"VB = dias por ano. DU = dias úteis do mês."},{"ref":"V11","desc":"Vale-transporte (custo líquido da empresa)","tipo":"$","variaFunc":true,"integraSalario":false,"vb":160,"formula":"VB","grupo":"Outros","resumo":"Valor mensal já descontada a parte do funcionário."},{"ref":"V12","desc":"Refeição no refeitório","tipo":"$","variaFunc":false,"integraSalario":false,"vb":18,"formula":"VB * DU","grupo":"Outros","resumo":"VB = custo por refeição. DU = dias úteis."},{"ref":"V13","desc":"Plano de saúde","tipo":"$","variaFunc":true,"integraSalario":false,"vb":280,"formula":"VB","grupo":"Outros","resumo":"Mensalidade paga pela empresa."},{"ref":"V14","desc":"Uniformes e EPI","tipo":"$","variaFunc":false,"integraSalario":false,"vb":420,"formula":"VB / FU","grupo":"Outros","resumo":"VB = custo do kit. FU = meses entre trocas."},{"ref":"V15","desc":"Exames periódicos (PCMSO)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":95,"formula":"VB / EP","grupo":"Outros","resumo":"VB = custo dos exames. EP = meses entre exames."},{"ref":"V16","desc":"Adicional de insalubridade","tipo":"$","variaFunc":true,"integraSalario":true,"vb":0,"formula":"VB","grupo":"Encargos","resumo":"Integra o salário: sobre ele incidem INSS, FGTS, 13º e férias."},{"ref":"V17","desc":"Seguro de vida em grupo","tipo":"$","variaFunc":false,"integraSalario":false,"vb":18,"formula":"VB","grupo":"Outros","resumo":"Prêmio mensal por funcionário."},{"ref":"V18","desc":"Participação nos resultados (provisão)","tipo":"#","variaFunc":false,"integraSalario":false,"vb":0.5,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"Inativo: ative se houver PLR. VB = salários por ano."}],"gastosEquip":{"modo":"unitario","itens":[{"id":"g1","desc":"Manutenção de ferramental","obs":"Polimento, reparo e ajuste de moldes e facas (a compra do molde entra na depreciação do molde)."},{"id":"g2","desc":"Lubrificação","obs":"Óleos, graxas e filtros."},{"id":"g3","desc":"Manutenção","obs":"Contratos, peças e serviços de manutenção da máquina."},{"id":"g4","desc":"Energia elétrica","obs":"Consumo medido ou estimado: kW × fator de carga × horas × tarifa."},{"id":"g5","desc":"Outros","obs":"Gases, nitrogênio, insumos consumidos pela máquina."}]},"tempos":{"fabricacao":"pph","setup":"sex","usuarioEscolhe":true,"validarConversao":true},"recalculo":"auto","empresa":""};</script>
+<script>window.SEED_DADOS = {"versao": "oficial", "empresas": {}, "usuarios": []}; window.CONFIG_PADRAO = {"ggfBaseMeses":3,"diasAlertaPreco":180,"dataReferencia":"","precisao":{"quantidades":6,"valores":4,"percentuais":2,"horas":6,"modo":"maxima"},"impostos":{"entrada":[{"nome":"ICMS","sinal":"-","exibir":true},{"nome":"IPI","sinal":"+","exibir":true},{"nome":"","sinal":"-","exibir":false},{"nome":"","sinal":"-","exibir":false},{"nome":"","sinal":"-","exibir":false}],"formulaMP":{"custom":false,"expr":"VC - (VC * P1 / 100) + (VC * P2 / 100) + V1 - (V1 * A1 / 100)"}},"impostosVendaPct":0,"limpeza":{"setor":""},"taxas":{"padraoHorasTrab":188,"padraoHorasBase":220,"padraoEfic":85,"salarioPadrao":2200,"rotatividade":30,"diasUteis":22,"uniformesMeses":6,"examesMeses":12,"modoEncargos":"formulas","pctEncargos":36.8,"pctProvisoes":25,"pctOutros":18,"origemParams":"funcionario","origemHoras":"cadastro","origemEfic":"cadastro","limite240":true,"heExtras":[50,100,0,0,0],"alocacao100":true},"encargos":[{"ref":"V01","desc":"INSS patronal (CPP)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":20,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Contribuição previdenciária patronal sobre o salário total."},{"ref":"V02","desc":"RAT ajustado (RAT × FAP)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":3,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Risco ambiental do trabalho já multiplicado pelo FAP da empresa."},{"ref":"V03","desc":"Terceiros (Sistema S, salário-educação, INCRA)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":5.8,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Contribuições a terceiros recolhidas na GPS/DCTFWeb."},{"ref":"V04","desc":"FGTS","tipo":"%","variaFunc":false,"integraSalario":false,"vb":8,"formula":"ST * VB / 100","grupo":"Encargos","resumo":"Depósito mensal de FGTS."},{"ref":"V05","desc":"13º salário (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"VB = número de salários pagos por ano a título de 13º."},{"ref":"V06","desc":"Férias + 1/3 (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1.3333,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"VB = 1 salário de férias + 1/3 constitucional."},{"ref":"V07","desc":"Encargos sobre 13º e férias","tipo":"%","variaFunc":false,"integraSalario":false,"vb":0,"formula":"(V05 + V06) * (V01 + V02 + V03 + V04) / ST","grupo":"Provisões","resumo":"Aplica sobre as provisões o mesmo percentual de INSS, RAT, terceiros e FGTS."},{"ref":"V08","desc":"Aviso prévio indenizado (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":1,"formula":"ST * VB / RT","grupo":"Provisões","resumo":"VB = salários de aviso por desligamento. RT = permanência média em meses."},{"ref":"V09","desc":"Multa rescisória do FGTS (provisão)","tipo":"%","variaFunc":false,"integraSalario":false,"vb":40,"formula":"V04 * VB / 100","grupo":"Provisões","resumo":"40% sobre os depósitos mensais de FGTS."},{"ref":"V10","desc":"Faltas legais e atestados (provisão)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":4,"formula":"(ST / DU) * VB / 12","grupo":"Provisões","resumo":"VB = dias por ano. DU = dias úteis do mês."},{"ref":"V11","desc":"Vale-transporte (passou para Benefícios)","tipo":"#","variaFunc":true,"integraSalario":false,"vb":0,"formula":"VB","grupo":"Outros","resumo":"Inativo: o vale-transporte agora fica em Benefícios padrão, com o desconto do funcionário."},{"ref":"V12","desc":"Refeição no refeitório","tipo":"$","variaFunc":false,"integraSalario":false,"vb":18,"formula":"VB * DU","grupo":"Outros","resumo":"VB = custo por refeição. DU = dias úteis."},{"ref":"V13","desc":"Plano de saúde (passou para Benefícios)","tipo":"#","variaFunc":true,"integraSalario":false,"vb":0,"formula":"VB","grupo":"Outros","resumo":"Inativo: o plano de saúde agora fica em Benefícios padrão."},{"ref":"V14","desc":"Uniformes e EPI","tipo":"$","variaFunc":false,"integraSalario":false,"vb":420,"formula":"VB / FU","grupo":"Outros","resumo":"VB = custo do kit. FU = meses entre trocas."},{"ref":"V15","desc":"Exames periódicos (PCMSO)","tipo":"$","variaFunc":false,"integraSalario":false,"vb":95,"formula":"VB / EP","grupo":"Outros","resumo":"VB = custo dos exames. EP = meses entre exames."},{"ref":"V16","desc":"Adicional de insalubridade","tipo":"$","variaFunc":true,"integraSalario":true,"vb":0,"formula":"VB","grupo":"Encargos","resumo":"Integra o salário: sobre ele incidem INSS, FGTS, 13º e férias."},{"ref":"V17","desc":"Seguro de vida em grupo","tipo":"$","variaFunc":false,"integraSalario":false,"vb":18,"formula":"VB","grupo":"Outros","resumo":"Prêmio mensal por funcionário."},{"ref":"V18","desc":"Participação nos resultados (provisão)","tipo":"#","variaFunc":false,"integraSalario":false,"vb":0.5,"formula":"ST * VB / 12","grupo":"Provisões","resumo":"Inativo: ative se houver PLR. VB = salários por ano."}],"beneficios":{"va":{"nome":"Vale alimentação","valor":0,"desconto":0,"ativo":true},"vt":{"nome":"Vale transporte","valor":0,"desconto":0,"ativo":true}},"gastosEquip":{"modo":"unitario","itens":[{"id":"g1","desc":"Manutenção de ferramental","obs":"Polimento, reparo e ajuste de moldes e facas (a compra do molde entra na depreciação do molde)."},{"id":"g2","desc":"Lubrificação","obs":"Óleos, graxas e filtros."},{"id":"g3","desc":"Manutenção","obs":"Contratos, peças e serviços de manutenção da máquina."},{"id":"g4","desc":"Energia elétrica","obs":"Consumo medido ou estimado: kW × fator de carga × horas × tarifa."},{"id":"g5","desc":"Outros","obs":"Gases, nitrogênio, insumos consumidos pela máquina."}]},"tempos":{"fabricacao":"pph","setup":"sex","usuarioEscolhe":true,"validarConversao":true},"recalculo":"auto","empresa":""};</script>
 <script>
 /* =====================================================================
    PERFIS DE ACESSO — módulos, operações, perfis prontos e hash de senha
@@ -1280,6 +1303,7 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       return h;
     }
     if (t.modo === 'pph') { var p = num(t.valor); return p > 0 ? 1 / p : 0; }
+    if (t.modo === 'min') return num(t.valor) / 60;   // preparação em minutos
     return num(t.valor);
   }
   function converterTempo(t, validar) {
@@ -1353,6 +1377,31 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
      PR-05/PR-06 — Custo mensal de cada funcionário
      --------------------------------------------------------------- */
   var VARS_ENC = ['VB', 'SB', 'VH', 'VA', 'ST', 'RT', 'FU', 'EP', 'DU', 'QH', 'QE', /^Q[1-7]$/, /^V\d\d$/];
+  // Benefícios (R$ por mês): lista aberta da empresa em config.beneficios = {id: {nome, valor, desconto, ativo}}
+  // (vale alimentação 'va' e vale transporte 'vt' já vêm criados; os outros ganham id 'b1', 'b2'…). Cada pessoa pode
+  // ter valor ou desconto próprio em f.benef.<id> = {valor, desconto} (em branco = o padrão) ou {nao: true} (não recebe).
+  // Entra no custo: valor − desconto do funcionário (nunca abaixo de zero). Não entra na base dos encargos.
+  var BENEF_PADRAO = { va: 'Vale alimentação', vt: 'Vale transporte' };
+  function idsBeneficios(B) {
+    var ordem = function (k) { return k === 'va' ? -2 : k === 'vt' ? -1 : (+(/(\d+)$/.exec(k) || [0, 1e6])[1]); };
+    return Object.keys(B || {}).filter(function (k) { return B[k] && typeof B[k] === 'object'; }).sort(function (a, b) { return ordem(a) - ordem(b) || (a < b ? -1 : a > b ? 1 : 0); });
+  }
+  function nomeBeneficio(id, d) { return String((d && d.nome) || '').trim() || BENEF_PADRAO[id] || 'Benefício'; }
+  function beneficiosFunc(f, cfg) {
+    var B = (cfg && cfg.beneficios) || {}, P = (f && f.benef) || {}, itens = [], total = 0;
+    idsBeneficios(B).forEach(function (id) {
+      var d = B[id];
+      if (d.ativo === false) return;
+      var p = P[id] || {}, nome = nomeBeneficio(id, d);
+      if (p.nao) { itens.push({ id: id, nome: nome, valor: 0, desconto: 0, liquido: 0, nao: true, proprio: true }); return; }
+      var proprioV = !vazio(p.valor), proprioD = !vazio(p.desconto);
+      var valor = proprioV ? num(p.valor) : num(d.valor), desconto = proprioD ? num(p.desconto) : num(d.desconto);
+      var liquido = Math.max(0, valor - desconto);
+      if (valor || desconto) itens.push({ id: id, nome: nome, valor: valor, desconto: desconto, liquido: liquido, proprio: proprioV || proprioD, proprioValor: proprioV, proprioDesconto: proprioD });
+      total += liquido;
+    });
+    return { itens: itens, total: total };
+  }
   function custoFuncionario(f, emp) {
     var cfg = emp.config, tx = cfg.taxas;
     var SB = num(f.sb);
@@ -1426,7 +1475,9 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       r.VA = VA; r.ST = ST;
     }
     r.salario = r.ST;
-    r.total = r.salario + r.encargos + r.provisoes + r.outros;
+    var bn = beneficiosFunc(f, cfg);
+    r.beneficios = bn.total; r.benefItens = bn.itens;
+    r.total = r.salario + r.encargos + r.provisoes + r.outros + r.beneficios;
     r.horas = QH + QE;
     r.horasProdutivas = r.horas * efic / 100;
     r.custoHora = r.horasProdutivas > 0 ? r.total / r.horasProdutivas : 0;
@@ -1503,7 +1554,7 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     emp.setores.forEach(function (s) {
       out[s.cod] = {
         cod: s.cod,
-        mod: { custo: 0, horas: 0, taxa: 0, itens: [] },
+        mod: { custo: 0, horas: 0, taxa: 0, beneficios: 0, itens: [] },
         maq: { custo: 0, horas: 0, taxa: 0, depr: 0, desp: 0, itens: [] },
         // GGF por posto-hora: horas de operação × postos de trabalho que rodam em paralelo
         ggf: { custo: 0, horas: num(s.horasOperacao) * (vazio(s.postos) ? 1 : num(s.postos)), taxa: 0, itens: [] }
@@ -1516,8 +1567,8 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       (f.aloc || []).forEach(function (a) {
         var S = out[a.setor]; if (!S) return;
         var p = num(a.pct) / 100;
-        S.mod.custo += c.total * p; S.mod.horas += c.horasProdutivas * p;
-        S.mod.itens.push({ rotulo: f.nome, ref: f.mat, valor: c.total * p, horas: c.horasProdutivas * p, pct: num(a.pct) });
+        S.mod.custo += c.total * p; S.mod.horas += c.horasProdutivas * p; S.mod.beneficios += (c.beneficios || 0) * p;
+        S.mod.itens.push({ rotulo: f.nome, ref: f.mat, valor: c.total * p, horas: c.horasProdutivas * p, pct: num(a.pct), beneficios: (c.beneficios || 0) * p });
       });
     });
     // MAQ: depreciação + gastos mensais dos equipamentos (PR-07)
@@ -1643,7 +1694,7 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     var lote = num(opts.lote) || num(p.lote);
     if (!lote) {
       lote = 1;
-      if (temPreparacao(p)) erros.push('Lote econômico em branco: a preparação (setup) está sendo cobrada inteira em cada unidade. Informe o lote no cadastro do produto.');
+      if (temPreparacao(p)) erros.push('Peças por preparação (lote) em branco: a preparação está sendo cobrada inteira em cada peça. Informe quantas peças são feitas a cada preparação no cadastro do produto.');
     }
     var cats = zero(), linhas = [], acum = 0, temCircular = false;
     (p.itens || []).forEach(function (it, idx) {
@@ -1772,6 +1823,20 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     return res;
   }
 
+  // Peças por hora de uma peça: na etapa de produção mais lenta da própria fórmula (o gargalo), pelo tempo por peça
+  // (tempo da etapa ÷ quantidade de formulação; as peças por hora da etapa já contam as cavidades do molde).
+  // Faturamento e margem por hora = preço sem impostos e sobra por peça × peças por hora.
+  function porHora(c, liquido, sobra) {
+    var qf = (c && c.qf) || 1, g = null, n = 0;
+    ((c && c.linhas) || []).forEach(function (L) {
+      if (L.tipo !== 'SP' || L.erro || !(L.tempoH > 0)) return;
+      var t = L.tempoH / qf; n++;
+      if (!g || t > g.horasPorPeca + 1e-15) g = { idx: L.idx, ref: L.ref, desc: L.desc, fase: L.fase || '', horasPorPeca: t };
+    });
+    if (!g) return { pph: null, etapa: null, etapas: 0, fatHora: null, margemHora: null };
+    var pph = 1 / g.horasPorPeca, vale = function (v) { return v === null || v === undefined || !isFinite(v) ? null : v * pph; };
+    return { pph: pph, etapa: g, etapas: n, fatHora: vale(liquido), margemHora: vale(sobra) };
+  }
   function custosTodos(ctx) {
     var o = {};
     ctx.emp.produtos.forEach(function (p) { o[p.cod] = custoProduto(ctx, p.cod); });
@@ -2404,7 +2469,8 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     mesesAnteriores: mesesAnteriores, diasDaSemana: diasDaSemana,
     valorLiquidoCompra: valorLiquidoCompra, precoTerceiroEm: precoTerceiroEm, custoFuncionario: custoFuncionario, valoresContas: valoresContas, mesesComDados: mesesComDados,
     lancamentosSalarios: lancamentosSalarios, garantirSalarios: garantirSalarios,
-    calcularTaxas: calcularTaxas, contexto: contexto, custoProduto: custoProduto, custosTodos: custosTodos,
+    calcularTaxas: calcularTaxas, contexto: contexto, custoProduto: custoProduto, custosTodos: custosTodos, porHora: porHora,
+    BENEF_PADRAO: BENEF_PADRAO, idsBeneficios: idsBeneficios, nomeBeneficio: nomeBeneficio, beneficiosFunc: beneficiosFunc,
     explodir: explodir, necessidades: necessidades, localizar: localizar,
     finPct: finPct, percentuaisMarkup: percentuaisMarkup, precoVenda: precoVenda, custoParaQuantidade: custoParaQuantidade, regraLote: regraLote,
     snapshotItem: snapshotItem, chaveSnapshot: chaveSnapshot, markupDoItem: markupDoItem, capacidadeSetores: capacidadeSetores,
@@ -4905,6 +4971,71 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
           papeis = null;
           return (r.data || []).length ? ok() : nao('Só o administrador da empresa tira acessos.');
         }, function (e) { return nao(mensagem(e)); });
+      },
+
+      /* ---------------- notificações (administrador e gestor; cada um só as próprias linhas) ---------------- */
+      // as preferências gravadas ([{user_id, empresa_id, tipo, ligado, hora_producao}]) e o que já foi avisado ({chave: true})
+      notifPrefs: function () {
+        return uid().then(function (u) {
+          if (!u) throw erro('Entre de novo.', '42501');
+          return cli.from('notificacao_prefs').select('*').eq('user_id', u.id).then(function (r) {
+            if (r.error) throw erro(mensagem(r.error), r.error.code);
+            return r.data || [];
+          });
+        });
+      },
+      gravarNotifPref: function (empresa, tipo, campos) {
+        return uid().then(function (u) {
+          if (!u) return nao('Entre de novo.');
+          var l = { user_id: u.id, empresa_id: empresa, tipo: tipo };
+          if (campos && campos.ligado !== undefined) l.ligado = !!campos.ligado;
+          if (campos && campos.hora) l.hora_producao = campos.hora;
+          return cli.from('notificacao_prefs').upsert(l, { onConflict: 'user_id,empresa_id,tipo' }).select('*').then(function (r) {
+            return r.error ? nao(mensagem(r.error)) : ok({ pref: (r.data || [])[0] || l });
+          });
+        }).then(null, function (e) { return nao(mensagem(e)); });
+      },
+      notifEnviadas: function () {
+        return uid().then(function (u) {
+          if (!u) return {};
+          return todas(function () { return cli.from('notificacoes_enviadas').select('chave').eq('user_id', u.id).order('id'); }).then(function (l) {
+            var o = {}; l.forEach(function (x) { o[x.chave] = true; }); return o;
+          });
+        });
+      },
+      // a inscrição do navegador (PushSubscription.toJSON()): {endpoint, keys: {p256dh, auth}}
+      inscreverPush: function (sub, userAgent) {
+        if (!sub || !sub.endpoint || !sub.keys) return promessa(nao('O navegador não devolveu a inscrição.'));
+        return cli.rpc('inscrever_push', { p_endpoint: sub.endpoint, p_keys: sub.keys, p_user_agent: txt(userAgent).slice(0, 300) }).then(function (r) {
+          return r.error ? nao(mensagem(r.error)) : ok();
+        }, function (e) { return nao(mensagem(e)); });
+      },
+      tirarInscricao: function (endpoint) {
+        return cli.from('push_inscricoes').delete().eq('endpoint', txt(endpoint)).select('id').then(function (r) {
+          return r.error ? nao(mensagem(r.error)) : ok({ removidas: (r.data || []).length });
+        }, function (e) { return nao(mensagem(e)); });
+      },
+      minhasInscricoes: function () {
+        return uid().then(function (u) {
+          if (!u) return [];
+          return cli.from('push_inscricoes').select('endpoint, user_agent, criado_em').eq('user_id', u.id).order('criado_em').then(function (r) {
+            if (r.error) throw erro(mensagem(r.error), r.error.code);
+            return r.data || [];
+          });
+        });
+      },
+      // a função "alertas" em modo de teste: uma notificação só para os aparelhos de quem pediu
+      testarNotificacao: function () {
+        if (!cli.functions || typeof cli.functions.invoke !== 'function') return promessa(nao('Esta versão do supabase-js não chama funções.'));
+        return cli.functions.invoke('alertas', { body: { teste: true } }).then(function (r) {
+          if (r.error) {
+            var ctx = r.error.context;
+            if (ctx && typeof ctx.json === 'function') return ctx.json().then(function (j) { return nao(j && j.motivo ? j.motivo : mensagem(r.error)); }, function () { return nao(mensagem(r.error)); });
+            return nao(/Failed to send|fetch/i.test(txt(r.error.message)) ? 'A função "alertas" não respondeu. Confira se ela foi publicada (supabase/NOTIFICACOES.md, passo 4).' : mensagem(r.error));
+          }
+          var d = r.data || {};
+          return d.ok ? ok({ enviados: d.enviados }) : nao(d.motivo || 'Nenhum aparelho recebeu.');
+        }, function (e) { return nao(mensagem(e)); });
       }
     };
     return api;
@@ -5104,6 +5235,234 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 </script>
 <script>
 /* =====================================================================
+   NOTIFICAÇÕES — o que avisar, para quem, sem repetir. Puro (sem tela e
+   sem banco): usado pela página (avisos com o sistema aberto) e pela
+   Edge Function "alertas" do Supabase (push no celular), que importa este
+   arquivo junto com o motor num pacote só (supabase/functions/alertas/
+   motor.bundle.js, gerado pelo build.py — as mesmas contas da tela).
+   Os 4 avisos (cada pessoa liga e desliga cada um, por empresa):
+     abaixo_custo          peça vendida abaixo do custo (o alerta crítico de preço)
+     producao_nao_lancada  produção de hoje não lançada até a hora escolhida (dia útil)
+     molde_vida            molde com 85% ou mais da vida útil, e de novo ao passar de 100%
+     mudanca_passado       mudança gravada com data no passado (mexeu em números já fechados)
+   Cada aviso tem uma chave; a mesma chave nunca é avisada duas vezes à
+   mesma pessoa. Peça abaixo do custo e molde são situações: quando a
+   situação some (preço corrigido, molde trocado), a chave é esquecida e,
+   se voltar, avisa de novo. Produção e mudança têm data e número na chave.
+   Só administrador e gestor recebem.
+   ===================================================================== */
+(function (raiz, fabrica) {
+  if (typeof module === 'object' && module.exports) module.exports = fabrica(require('./producao.js'), require('./historico.js'), require('./registro.js'), require('./nuvem.js'));
+  else raiz.Notificacoes = fabrica(raiz.Producao, raiz.Historico, raiz.Registro, raiz.Nuvem);
+})(typeof self !== 'undefined' ? self : this, function (P, H, R, N) {
+  'use strict';
+
+  var TIPOS = [
+    { id: 'abaixo_custo', nome: 'Peça vendida abaixo do custo', desc: 'Quando uma peça passa a ser vendida por menos do que custa (preço líquido menor que o custo).' },
+    { id: 'producao_nao_lancada', nome: 'Produção do dia não lançada', desc: 'Em dia útil, se até a hora escolhida ninguém lançou a produção de hoje.' },
+    { id: 'molde_vida', nome: 'Molde no fim da vida útil', desc: 'Quando um molde chega a 85% da vida útil e de novo quando passa de 100%.' },
+    { id: 'mudanca_passado', nome: 'Mudança com data no passado', desc: 'Quando alguém grava uma mudança valendo desde uma data que já passou (mexe em números já fechados), com quem e o quê.' }
+  ];
+  var IDS = TIPOS.map(function (t) { return t.id; });
+  var HORA_PADRAO = '18:00';
+  var PAPEIS = { administrador: 1, gestor: 1 };
+  var SITUACOES = { abaixo_custo: 1, molde_vida: 1 };   // chaves esquecidas quando a situação some
+  var AGRUPAR = 3;              // mais que isso do mesmo tipo de uma vez: um aviso só, com o total
+  var JANELA_MUDANCA_H = 24;    // mudanças gravadas nas últimas 24 horas
+
+  function tem(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function ddmm(d) { return d.slice(8, 10) + '/' + d.slice(5, 7); }
+  function milhar(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function hora5(h) { var m = /^(\d{1,2}):(\d{2})/.exec(String(h || '')); return m ? (m[1].length === 1 ? '0' : '') + m[1] + ':' + m[2] : HORA_PADRAO; }
+
+  // data e hora em Brasília (America/Sao_Paulo), qualquer que seja o fuso de quem roda
+  function agoraSP(d) {
+    var f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    var p = {}; f.formatToParts(d || new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return { data: p.year + '-' + p.month + '-' + p.day, hora: (p.hour === '24' ? '00' : p.hour) + ':' + p.minute };
+  }
+
+  // a preferência de uma pessoa (sem linha gravada: ligado, às 18:00)
+  function prefDe(prefs, user, empresa, tipo) {
+    var l = (prefs || []).filter(function (p) { return p.user_id === user && p.empresa_id === empresa && p.tipo === tipo; })[0];
+    return { ligado: !l || l.ligado !== false, hora: l && l.hora_producao ? hora5(l.hora_producao) : HORA_PADRAO };
+  }
+
+  /* ---------------- o texto de uma mudança ---------------- */
+  var ITEM = { mp: 'da matéria-prima', func: 'do funcionário', setor: 'do setor', molde: 'do molde', prod: 'da peça', terceiro: 'do terceiro para a peça', cfg: 'da configuração' };
+  var ITEM_CRIAR = { mp: 'a matéria-prima', func: 'o funcionário', setor: 'o setor', molde: 'o molde', prod: 'a peça', terceiro: 'o preço do terceiro para a peça', cfg: 'a configuração' };
+  var CAMPOS = {
+    mp: { vc: 'o preço de compra', v1: 'o frete e seguro', v2: 'outros valores', liquidoManual: 'o custo líquido digitado', situacao: 'a situação', p: 'o imposto de entrada', desc: 'a descrição', un: 'a unidade' },
+    func: { sb: 'o salário', horasTrab: 'as horas trabalhadas', horasBase: 'as horas base', efic: 'a eficiência', situacao: 'a situação', he: 'as horas extras', vb: 'os valores', aloc: 'os setores', nome: 'o nome' },
+    setor: { horasOperacao: 'as horas de operação', manual: 'a taxa digitada', equipamentos: 'as máquinas', despTotal: 'os gastos das máquinas', desc: 'o nome' },
+    molde: { valor: 'o valor', vida: 'a vida útil', cavidades: 'as cavidades', setor: 'o setor', situacao: 'a situação', ciclosIniciais: 'as injetadas iniciais', desc: 'a descrição' },
+    prod: { preco: 'o preço de venda', itens: 'a fórmula', molde: 'o molde', limpeza: 'a limpeza', lote: 'o lote', qf: 'a quantidade de formulação', situacao: 'a situação', desc: 'a descrição' },
+    terceiro: { preco: 'o preço' },
+    cfg: { impostosVendaPct: 'os impostos sobre a venda', encargos: 'os encargos', taxas: 'as regras das taxas hora', gastosEquip: 'os gastos dos equipamentos', limpeza: 'o setor da limpeza', impostos: 'os impostos de entrada', tempos: 'os tempos', precisao: 'a precisão' }
+  };
+  function oQueMudou(ev) {
+    var tipo = ev.tipo, ref = ev.tipo === 'cfg' ? '' : ' ' + ev.ref;
+    if (ev.acao === 'criar') return 'cadastrou ' + (ITEM_CRIAR[tipo] || tipo) + ref;
+    if (ev.acao === 'cancelar') return 'desfez uma mudança ' + (ITEM[tipo] || 'de') + ref;
+    var nomes = CAMPOS[tipo] || {}, vistos = {}, l = [];
+    Object.keys(ev.campos || {}).concat(Object.keys(ev.linhas || {})).forEach(function (k) {
+      var r = k.split('.')[0]; if (vistos[r]) return; vistos[r] = 1; l.push(nomes[r] || r);
+    });
+    var txt = !l.length ? 'um valor' : l.length <= 2 ? l.join(' e ') : l.slice(0, 2).join(', ') + ' e mais ' + (l.length - 2);
+    return 'mudou ' + txt + ' ' + (ITEM[tipo] || 'de') + ref;
+  }
+
+  /* ---------------- os avisos de uma empresa (para todos) ----------------
+     emp: a empresa no formato da tela, já materializada. o = {
+       hoje: 'aaaa-mm-dd' (data de Brasília, ou a fixada na configuração), relogio: {data, hora} de Brasília,
+       agora: Date, alertas?: os de Producao.alertas já calculados (a tela), fonte?: H.fonte(emp) já pronta,
+       porIds?: {seq: uuid de quem gravou} }
+     → { calculado: bool, itens: [{ tipo, chave, empresa, titulo, corpo, url, situacao?, aposHora?, porId?, porNome? }] } */
+  function avisosDaEmpresa(emp, o) {
+    o = o || {};
+    var k = emp.id, nome = emp.nome || k, rel = o.relogio || agoraSP(o.agora), hoje = o.hoje || R.hojeDe(emp, rel.data), itens = [];
+    if (!emp.config || emp.cfgProvisoria || emp.somenteProducao || !(emp.produtos || []).length) return { calculado: false, itens: [] };
+    var fonte = o.fonte || H.fonte(emp), alertas = o.alertas || P.alertas(fonte, null, hoje);
+    var link = function (rota, id) { return '#ir/' + encodeURIComponent(k) + '/' + rota + (id ? '/' + encodeURIComponent(id) : ''); };
+    // 1. peça vendida abaixo do custo (o mesmo alerta crítico da tela)
+    alertas.forEach(function (a) {
+      if (a.grupo !== 'precos' || a.nivel !== 'critico' || !a.ref) return;
+      itens.push({ tipo: 'abaixo_custo', chave: 'abaixo_custo:' + k + ':' + a.ref, empresa: k, situacao: true, ref: a.ref,
+        titulo: 'Peça abaixo do custo · ' + nome, corpo: a.texto, url: link('peca', a.ref) });
+    });
+    // 2. produção de hoje (Brasília) não lançada: só em dia útil; a hora é de cada pessoa
+    if (P.ehDiaUtil(rel.data) && !(emp.producao || []).some(function (x) { return x.data === rel.data; }))
+      itens.push({ tipo: 'producao_nao_lancada', chave: 'producao_nao_lancada:' + k + ':' + rel.data, empresa: k, aposHora: true,
+        titulo: 'Produção não lançada · ' + nome, corpo: 'A produção de hoje (' + ddmm(rel.data) + ') ainda não foi lançada: o lucro do dia fica só com o custo fixo.', url: link('producao-dia', rel.data) });
+    // 3. molde chegando ao fim da vida útil (85%) e passando dela (100%)
+    P.usoMoldes(fonte, hoje).forEach(function (m) {
+      if (m.situacao === 'inativo' || (m.status !== 'atencao' && m.status !== 'vencido')) return;
+      var venc = m.status === 'vencido', quem = m.produtos.length ? ' (' + m.produtos.join(', ') + ')' : '';
+      itens.push({ tipo: 'molde_vida', chave: 'molde_vida:' + k + ':' + m.cod + ':' + (venc ? 100 : 85), empresa: k, situacao: true, ref: m.cod,
+        titulo: (venc ? 'Molde passou da vida útil · ' : 'Molde no fim da vida útil · ') + nome,
+        corpo: 'O molde ' + m.cod + quem + (venc ? ' passou da vida útil: ' : ' está com ' + Math.floor(m.pct) + '% da vida útil: ') + milhar(m.ciclos) + ' de ' + milhar(m.vida) + ' injetadas.',
+        url: link('moldes', m.cod) });
+    });
+    // 4. mudança gravada nas últimas 24 h valendo desde antes do dia em que foi gravada
+    var agora = o.agora || new Date(), desde = new Date(agora.getTime() - JANELA_MUDANCA_H * 3600e3).toISOString();
+    (emp.mudancas || []).forEach(function (ev) {
+      if (!ev || !ev.em || ev.tipo === 'producao' || ev.em < desde) return;
+      var gravado = agoraSP(new Date(ev.em)).data;
+      if (!ev.desde || ev.desde >= gravado) return;
+      var seq = String(ev.id).replace(/^m/, '');
+      itens.push({ tipo: 'mudanca_passado', chave: 'mudanca_passado:' + k + ':' + seq, empresa: k, porNome: ev.por || '', porId: (o.porIds || {})[seq] || null,
+        titulo: 'Mudança com data no passado · ' + nome,
+        corpo: (ev.por || 'Alguém') + ' ' + oQueMudou(ev) + ', valendo desde ' + ddmm(ev.desde) + ' (gravado em ' + ddmm(gravado) + '): os números desde então mudaram.',
+        url: link('mudanca', ev.id) });
+    });
+    return { calculado: true, itens: itens };
+  }
+
+  // muitos novos do mesmo tipo de uma vez (a primeira vez, por exemplo): um aviso só, com o total
+  var PLURAL = {
+    abaixo_custo: function (n, nome) { return { titulo: n + ' peças abaixo do custo · ' + nome, corpo: n + ' peças estão sendo vendidas por menos do que custam. Toque para ver a lista de peças.', rota: 'pecas' }; },
+    molde_vida: function (n, nome) { return { titulo: n + ' moldes no fim da vida útil · ' + nome, corpo: n + ' moldes chegaram a 85% da vida útil ou passaram dela. Toque para ver os moldes.', rota: 'moldes' }; },
+    mudanca_passado: function (n, nome) { return { titulo: n + ' mudanças com data no passado · ' + nome, corpo: n + ' mudanças foram gravadas valendo desde datas que já passaram. Toque para ver o histórico.', rota: 'historico' }; }
+  };
+  function agrupar(lista) {
+    var grupos = {}, ordem = [];
+    lista.forEach(function (x) {
+      var g = x.empresa + '|' + x.tipo;
+      if (!grupos[g]) { grupos[g] = []; ordem.push(g); }
+      grupos[g].push(x);
+    });
+    var out = [];
+    ordem.forEach(function (g) {
+      var l = grupos[g], x = l[0];
+      if (l.length <= AGRUPAR || !PLURAL[x.tipo]) { l.forEach(function (y) { out.push({ tipo: y.tipo, empresa: y.empresa, chaves: [y.chave], titulo: y.titulo, corpo: y.corpo, url: y.url, tag: y.chave }); }); return; }
+      var p = PLURAL[x.tipo](l.length, x.titulo.split(' · ').slice(1).join(' · '));
+      out.push({ tipo: x.tipo, empresa: x.empresa, chaves: l.map(function (y) { return y.chave; }), titulo: p.titulo, corpo: p.corpo, url: '#ir/' + encodeURIComponent(x.empresa) + '/' + p.rota, tag: x.tipo + ':' + x.empresa });
+    });
+    return out;
+  }
+
+  /* ---------------- para uma pessoa: o que é novo ----------------
+     itens: de avisosDaEmpresa (uma ou várias empresas); quem = {id, nome}; prefs: linhas de notificacao_prefs;
+     ja: {chave: true} do que já foi avisado; rel: {data, hora} de Brasília.
+     → as notificações a mostrar (agrupadas), cada uma com as chaves que ela cobre */
+  function novosPara(itens, quem, prefs, ja, rel) {
+    var l = itens.filter(function (x) {
+      var p = prefDe(prefs, quem.id, x.empresa, x.tipo);
+      if (!p.ligado || tem(ja, x.chave)) return false;
+      if (x.aposHora && rel.hora < p.hora) return false;
+      if (x.tipo === 'mudanca_passado' && ((x.porId && x.porId === quem.id) || (!x.porId && quem.nome && x.porNome === quem.nome))) return false;   // a própria mudança
+      return true;
+    });
+    return agrupar(l);
+  }
+  // as chaves de situação (abaixo do custo, molde) que já não valem: esquecer, para avisar de novo se voltarem
+  function esquecer(itens, ja, empresa) {
+    var ativas = {};
+    itens.forEach(function (x) { ativas[x.chave] = 1; });
+    return Object.keys(ja).filter(function (c) {
+      var p = c.split(':');
+      return SITUACOES[p[0]] && p[1] === empresa && !ativas[c];
+    });
+  }
+
+  /* ---------------- a empresa a partir das linhas do banco ----------------
+     e = {id, nome, mudancas: linhas, producao: linhas, dados} (o mesmo que a página lê) */
+  function empresaDoBanco(e, relogio) {
+    var emp = N.mapa.montarEmpresa({ id: e.id, nome: e.nome, mudancas: e.mudancas || [], producao: e.producao || [], dados: e.dados || {} });
+    R.materializar(emp, R.hojeDe(emp, relogio));
+    if (emp.config) R.materializar(emp, R.hojeDe(emp, relogio));   // a data de hoje fixada só se conhece depois da primeira
+    return emp;
+  }
+
+  /* ---------------- o que a função manda (o agendamento, a cada 30 minutos) ----------------
+     dados = { empresas: [{id, nome, mudancas, producao, dados}], acessos: [{user_id, empresa_id, papel, nome?}] }
+     prefs: linhas de notificacao_prefs; enviados: linhas de notificacoes_enviadas ({user_id, chave}); agora: Date
+     → { enviar: [{user_id, empresa_id, tipo, chaves, titulo, corpo, url, tag}], esquecer: [{user_id, chave}], erros: [{empresa, msg}] } */
+  function alertasParaEnviar(dados, prefs, enviados, agora) {
+    agora = agora || new Date();
+    var rel = agoraSP(agora), out = { enviar: [], esquecer: [], erros: [] }, jaDe = {};
+    (enviados || []).forEach(function (x) { (jaDe[x.user_id] = jaDe[x.user_id] || {})[x.chave] = true; });
+    (dados.empresas || []).forEach(function (e) {
+      var quem = (dados.acessos || []).filter(function (a) { return a.empresa_id === e.id && PAPEIS[a.papel]; });
+      if (!quem.length) return;
+      var r;
+      try {
+        var emp = empresaDoBanco(e, rel.data), porIds = {};
+        (e.mudancas || []).forEach(function (l) { if (l.por) porIds[String(l.seq)] = l.por; });
+        r = avisosDaEmpresa(emp, { relogio: rel, agora: agora, porIds: porIds });
+      } catch (err) { out.erros.push({ empresa: e.id, msg: err && err.message ? err.message : String(err) }); return; }
+      if (!r.calculado) return;
+      quem.forEach(function (a) {
+        var ja = jaDe[a.user_id] || {};
+        novosPara(r.itens, { id: a.user_id, nome: a.nome }, prefs, ja, rel).forEach(function (x) {
+          x.user_id = a.user_id; x.empresa_id = e.id; delete x.empresa; out.enviar.push(x);
+        });
+        esquecer(r.itens, ja, e.id).forEach(function (c) { out.esquecer.push({ user_id: a.user_id, chave: c }); });
+      });
+    });
+    return out;
+  }
+
+  // a mensagem que vai no push (o service worker mostra): curta, sem nada além do aviso
+  function carga(x) { return JSON.stringify({ titulo: x.titulo, corpo: x.corpo, url: x.url, tag: x.tag || x.chaves[0] }); }
+
+  // #ir/<empresa>/<rota>[/<id>] → {empresa, rota, id}
+  function lerLink(h) {
+    var m = /^#?ir\/([^/]+)\/([a-z-]+)(?:\/(.+))?$/.exec(String(h || ''));
+    if (!m) return null;
+    try { return { empresa: decodeURIComponent(m[1]), rota: m[2], id: m[3] ? decodeURIComponent(m[3]) : null }; } catch (e) { return null; }
+  }
+
+  return {
+    TIPOS: TIPOS, IDS: IDS, HORA_PADRAO: HORA_PADRAO, AGRUPAR: AGRUPAR, PAPEIS: PAPEIS,
+    agoraSP: agoraSP, prefDe: prefDe, oQueMudou: oQueMudou, avisosDaEmpresa: avisosDaEmpresa, novosPara: novosPara, esquecer: esquecer,
+    agrupar: agrupar, empresaDoBanco: empresaDoBanco, alertasParaEnviar: alertasParaEnviar, carga: carga, lerLink: lerLink
+  };
+});
+
+</script>
+<script>
+/* =====================================================================
    IMPORTAR PLANILHA — os cadastros de uma empresa vindos de um .xlsx.
    Uma aba por tipo (matérias-primas, funcionários, setores e máquinas,
    moldes, peças e fórmulas, preços do terceiro, configuração), com os
@@ -5204,8 +5563,10 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       ['Matrícula', 'mat', 'texto', true], ['Nome ou função', 'nome', 'texto', true], ['Cargo', 'cargo', 'texto'], ['Salário (R$)', 'sb', 'numero', true],
       ['Horas trabalhadas por mês', 'horasTrab', 'numero', false, 'Em branco = o padrão da configuração'], ['Horas base por mês', 'horasBase', 'numero'], ['Eficiência (%)', 'efic', 'numero'],
       ['Horas extras 50% por mês', 'he0', 'numero'], ['Horas extras 100% por mês', 'he1', 'numero'],
-      ['Setores (código e %)', 'aloc', 'alocacao', true, 'Ex.: S03 70; S04 30. Só o código = 100%'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto']],
-      exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', ''] },
+      ['Setores (código e %)', 'aloc', 'alocacao', true, 'Ex.: S03 70; S04 30. Só o código = 100%'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
+      ['Vale alimentação (R$ por mês)', 'bVa', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale alimentação (R$ por mês)', 'bVaD', 'numero'],
+      ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês)', 'bVtD', 'numero']],
+      exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', '', '', '', '240,00', '144,00'] },
     { id: 'setor', nome: 'Setores e máquinas', chave: 'cod', agrupada: true, colunas: [
       ['Código do setor', 'cod', 'texto', true], ['Descrição do setor', 'desc', 'texto', true], ['Horas de operação por mês', 'horasOperacao', 'numero', true], ['Postos de trabalho', 'postos', 'numero'],
       ['Máquina', 'eqDesc', 'texto', false, 'Uma linha por máquina; repita o código do setor. Setor sem máquina: deixe em branco'], ['Quantidade de máquinas', 'eqQtd', 'numero'], ['Valor de cada máquina (R$)', 'eqValor', 'numero'],
@@ -5219,11 +5580,11 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       exemplo: ['EXEMPLO-MD1', 'Molde O-ring 64 cavidades (linha de exemplo: apague)', 'EXEMPLO-S1', '64', '38.000,00', '600000', '0', '10/06/2022', 'ativo', ''] },
     { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, colunas: [
       ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
-      ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1'], ['Lote econômico', 'lote', 'numero'], ['Preço de venda (R$)', 'preco', 'numero', false, 'Só produto acabado'], ['Molde', 'molde', 'texto'],
+      ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1'], ['Peças por preparação (lote)', 'lote', 'numero', false, 'Quantas peças são feitas a cada preparação da máquina', ['Lote econômico']], ['Preço de venda (R$)', 'preco', 'numero', false, 'Só produto acabado'], ['Molde', 'molde', 'texto'],
       ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Obrigatório na limpeza interna'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
       ['Tipo da linha', 'lTipo', 'tipoLinha', false, 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção. Uma linha da planilha por linha da fórmula'],
       ['Item da linha (código)', 'lRef', 'texto'], ['Quantidade', 'lQtd', 'numero', false, 'Para matéria-prima e componentes, na quantidade de formulação'],
-      ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção'], ['Preparação (hh:mm)', 'lSetup', 'horas'], ['Pessoas', 'lHomens', 'numero'], ['Máquinas', 'lMaquinas', 'numero'], ['Refugo (%)', 'lRefugo', 'numero'], ['Fase', 'lFase', 'texto']],
+      ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção'], ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'], ['Pessoas', 'lHomens', 'numero'], ['Máquinas', 'lMaquinas', 'numero'], ['Refugo (%)', 'lRefugo', 'numero'], ['Fase', 'lFase', 'texto']],
       exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção'] },
     { id: 'terceiro', nome: 'Preços do terceiro', chave: 'prod', colunas: [
       ['Peça', 'prod', 'texto', true], ['Preço por peça (R$)', 'preco', 'numero', true], ['Vale a partir de', 'desde', 'data', false, 'Em branco = a data de início da importação'], ['Observação', 'obs', 'texto']],
@@ -5243,8 +5604,15 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     ['Horas base por mês (padrão)', 'taxas.padraoHorasBase', 'numero'],
     ['Eficiência (%) (padrão)', 'taxas.padraoEfic', 'numero'],
     ['Dias úteis por mês', 'taxas.diasUteis', 'numero'],
-    ['Avisar preço de matéria-prima sem atualização há (dias)', 'diasAlertaPreco', 'numero']
+    ['Avisar preço de matéria-prima sem atualização há (dias)', 'diasAlertaPreco', 'numero'],
+    ['Benefício padrão: vale alimentação (R$ por mês)', 'beneficios.va.valor', 'numero', 'Quanto a empresa paga por mês a cada funcionário'],
+    ['Benefício padrão: desconto no vale alimentação (R$ por mês)', 'beneficios.va.desconto', 'numero', 'Parte que o funcionário paga'],
+    ['Benefício padrão: vale transporte (R$ por mês)', 'beneficios.vt.valor', 'numero'],
+    ['Benefício padrão: desconto no vale transporte (R$ por mês)', 'beneficios.vt.desconto', 'numero', 'Ex.: 6% do salário']
   ];
+  // outros benefícios da empresa (lista aberta): "Benefício padrão: <nome> (R$ por mês)" e "Benefício padrão: desconto no <nome> (R$ por mês)"
+  var RE_BENEF_CFG = /^benef[ií]cio padr[aã]o:\s*(desconto (?:no|na|do|da) )?(.+?)\s*\(R\$ por m[eê]s\)\s*$/i;
+  function nomeBenefCfg(nome, desconto) { return 'Benefício padrão: ' + (desconto ? 'desconto no ' + nome.toLowerCase() : nome) + ' (R$ por mês)'; }
   function nomeEncargo(e) { return 'Encargo: ' + e.desc + (e.tipo === '%' ? ' (%)' : ' (valor)'); }
 
   /* ---------------- modelo para baixar ---------------- */
@@ -5257,6 +5625,12 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       else if (x[1] === 'entradaSinais') v = ent.filter(function (t) { return t.nome; }).map(function (t) { return t.sinal === '+' ? 'acrescentado' : 'deduzido'; }).join('; ');
       else if (cfgPadrao) { var w = R.folhas('cfg', cfgPadrao)[x[1]]; v = w === undefined ? '' : w; }
       l.push([x[0], v, x[3] || '']);
+    });
+    var B = (cfgPadrao && cfgPadrao.beneficios) || {};
+    Object.keys(B).forEach(function (k) {
+      if (k === 'va' || k === 'vt' || !B[k] || B[k].ativo === false) return;
+      l.push([nomeBenefCfg(M.nomeBeneficio(k, B[k]), false), B[k].valor === undefined ? '' : B[k].valor, 'Outro benefício da empresa. Para criar mais um, copie a linha com outro nome']);
+      l.push([nomeBenefCfg(M.nomeBeneficio(k, B[k]), true), B[k].desconto === undefined ? '' : B[k].desconto, '']);
     });
     ((cfgPadrao && cfgPadrao.encargos) || []).forEach(function (e) { l.push([nomeEncargo(e), e.vb, e.resumo || '']); });
     return l;
@@ -5298,7 +5672,11 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
       if (!m.length) return;
       res.abas.push(a.id);
       var tit = m[0].map(semAcento), idx = {}, faltam = [];
-      a.colunas.forEach(function (c) { var i = tit.indexOf(semAcento(c[0])); if (i >= 0) idx[c[1]] = i; else if (c[3]) faltam.push(c[0]); });
+      a.colunas.forEach(function (c) {
+        var i = tit.indexOf(semAcento(c[0]));
+        (c[5] || []).forEach(function (t) { if (i < 0) i = tit.indexOf(semAcento(t)); });   // títulos antigos ("Lote econômico")
+        if (i >= 0) idx[c[1]] = i; else if (c[3]) faltam.push(c[0]);
+      });
       if (faltam.length) { erro(res.erros, a.id, 1, 'Faltam as colunas ' + faltam.join(', ') + '. Baixe o modelo e use os mesmos títulos.'); return; }
       for (var r = 1; r < m.length; r++) {
         var cel = m[r], linha = { _linha: r + 1 }, algum = false;
@@ -5314,10 +5692,11 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
   }
   var LEITOR = {
     numero: lerNumero, inteiro: function (v) { var x = lerNumero(v); return x === null || isNaN(x) ? x : (Math.round(x) === x ? x : NaN); },
+    benef: function (v) { var t = semAcento(v); if (/^nao( recebe)?$/.test(t)) return 'nao'; return lerNumero(v); },
     lista5: lerLista5, horas: lerHoras, unidade: lerUnidade, situacao: lerSituacao, tipoPeca: lerTipoPeca, tipoLinha: lerTipoLinha, limpeza: lerLimpeza
   };
   var DICA = {
-    numero: 'não é um número', inteiro: 'precisa ser um número inteiro', data: 'não é uma data (use dd/mm/aaaa)', lista5: 'use até 5 percentuais separados por ponto e vírgula',
+    numero: 'não é um número', benef: 'use um valor em reais ou "não recebe"', inteiro: 'precisa ser um número inteiro', data: 'não é uma data (use dd/mm/aaaa)', lista5: 'use até 5 percentuais separados por ponto e vírgula',
     horas: 'use horas e minutos, ex.: 1:30', unidade: 'unidade desconhecida (use kg, g, L, mL, m, cm, mm, m2, un, mil, cx ou jg)', situacao: 'use ativo ou inativo',
     tipoPeca: 'use Produto acabado ou Semi-acabado', tipoLinha: 'use Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção', limpeza: 'use nenhuma, interna ou terceiro',
     alocacao: 'use o código do setor e o percentual, ex.: S03 70; S04 30'
@@ -5451,6 +5830,16 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     if (!cfgBase && opts.nomeEmpresa && !cfg.empresa) cfg.empresa = opts.nomeEmpresa;
     (L.cfg || []).forEach(function (l) {
       var it = semAcento(l.item), x = ITENS_CFG.filter(function (c) { return semAcento(c[0]) === it; })[0], v = l.valor;
+      var mb = !x && RE_BENEF_CFG.exec(txt(l.item));
+      if (mb) {
+        if (vazio(v)) return;
+        var nb = lerNumero(v); if (!isFinite(nb) || nb === null || nb < 0) { erro(erros, 'cfg', l._linha, txt(l.item) + ': "' + txt(v) + '" não é um valor válido.'); return; }
+        cfg.beneficios = cfg.beneficios || {};
+        var nomeB = txt(mb[2]), idB = null, maxB = 0;
+        Object.keys(cfg.beneficios).forEach(function (k) { if (semAcento(M.nomeBeneficio(k, cfg.beneficios[k])) === semAcento(nomeB)) idB = k; var mm = /^b(\d+)$/.exec(k); if (mm) maxB = Math.max(maxB, +mm[1]); });
+        if (!idB) { idB = 'b' + (maxB + 1); cfg.beneficios[idB] = { nome: nomeB.charAt(0).toUpperCase() + nomeB.slice(1), valor: 0, desconto: 0, ativo: true }; }
+        cfg.beneficios[idB][mb[1] ? 'desconto' : 'valor'] = nb; return;
+      }
       if (!x) {
         var enc = (cfg.encargos || []).filter(function (e) { return semAcento(nomeEncargo(e)) === it || semAcento(e.desc) === it || semAcento(e.ref) === it; })[0];
         if (!enc) { erro(erros, 'cfg', l._linha, 'Item desconhecido: "' + txt(l.item) + '". Use os itens do modelo.'); return; }
@@ -5521,6 +5910,7 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
     (L.func || []).forEach(function (l) {
       if (vazio(l.mat) || vazio(l.nome) || l.sb === null || !l.aloc) return;
       if (!(l.sb > 0)) { erro(erros, 'func', l._linha, 'O salário precisa ser maior que zero.'); return; }
+      if ([l.bVa, l.bVaD, l.bVt, l.bVtD].some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos.'); return; }
       var ruim = l.aloc.filter(function (a) { return !existe('setor', a.setor); });
       if (ruim.length) { erro(erros, 'func', l._linha, 'Setor ' + ruim.map(function (a) { return a.setor; }).join(', ') + ' não existe (cadastre na aba Setores e máquinas).'); return; }
       var soma = l.aloc.reduce(function (t, a) { return t + a.pct; }, 0);
@@ -5535,6 +5925,16 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
         var aloc = l.aloc.map(function (a) { return { setor: a.setor, pct: a.pct }; });
         reaproveitarIds(it.aloc, aloc, function (a) { return a.setor; }); it.aloc = aloc;
         setTxt(it, 'admissao', l.admissao); setTxt(it, 'situacao', l.situacao); setTxt(it, 'obs', l.obs);
+        // benefícios desta pessoa: em branco fica como está (o padrão); "não recebe" marca que não recebe
+        [['va', l.bVa, l.bVaD], ['vt', l.bVt, l.bVtD]].forEach(function (b) {
+          if ((b[1] === null || b[1] === undefined) && (b[2] === null || b[2] === undefined)) return;
+          it.benef = it.benef ? copia(it.benef) : {};
+          var x = it.benef[b[0]] = it.benef[b[0]] ? copia(it.benef[b[0]]) : {};
+          if (b[1] === 'nao') { x.nao = true; delete x.valor; delete x.desconto; return; }
+          delete x.nao;
+          if (b[1] !== null && b[1] !== undefined) x.valor = b[1];
+          if (b[2] !== null && b[2] !== undefined) x.desconto = b[2];
+        });
         return it;
       });
     });
@@ -5759,6 +6159,7 @@ var IC = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   lua: '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>',
+  trilho: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
   mais: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
   fabrica: '<path d="M3 21V10l6 4V10l6 4V6l6-3v18z"/><path d="M7 17h2M12 17h2M17 17h2"/>'
 };
@@ -6031,9 +6432,30 @@ function htmlNav() {
     '<div id="navPer" class="per-glob"></div><span class="nav-sep"></span>' +
     '<span id="navPend"></span>' +
     (dataFixada() ? '<span class="nav-data" title="Data de hoje fixada em Configuração › Geral e dados">' + ic('cal') + 'Hoje: ' + fmtData(hojeRef()) + '</span>' : '') +
-    '<span id="navSino"></span>' + htmlBotaoTema() +
+    '<span id="navSino"></span>' + htmlBotaoTrilho() + htmlBotaoTema() +
     htmlUsuarioBotao() + '</nav>';
 }
+/* ---------------- barra lateral: esconder e mostrar (botão no topo e tecla "["), guardado neste navegador ---------------- */
+var CHAVE_TRILHO = 'centralCustos.trilhoOculto';
+function trilhoOculto() { try { return localStorage.getItem(CHAVE_TRILHO) === '1'; } catch (e) { return false; } }
+function htmlBotaoTrilho() {
+  var oc = trilhoOculto(), rot = oc ? 'Mostrar a barra lateral ([)' : 'Esconder a barra lateral ([)';
+  return '<button class="ico-btn nav-trilho" id="navTrilho" data-a="trocarTrilho" aria-label="' + rot + '" title="' + rot + '" aria-pressed="' + oc + '">' + ic('trilho') + '</button>';
+}
+ACOES.trocarTrilho = function () {
+  var oc = !trilhoOculto();
+  try { localStorage.setItem(CHAVE_TRILHO, oc ? '1' : '0'); } catch (e) { }
+  S.ui.trilhoOculto = oc;
+  var a = $('.app'); if (a) a.classList.toggle('sem-trilho', oc);
+  var b = $('#navTrilho'); if (b) { b.outerHTML = htmlBotaoTrilho(); var nb = $('#navTrilho'); if (nb && document.activeElement === document.body) nb.focus(); }
+  try { window.dispatchEvent(new Event('resize')); } catch (e) { }   // os gráficos acompanham a largura nova
+};
+document.addEventListener('keydown', function (ev) {
+  if (ev.key !== '[' || ev.ctrlKey || ev.metaKey || ev.altKey || !$('.app')) return;
+  var t = ev.target, tag = t && t.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+  ev.preventDefault(); ACOES.trocarTrilho();
+});
 /* ---------------- tema: escuro (padrão) ou claro, guardado neste navegador ---------------- */
 var CHAVE_TEMA = 'centralCustos.tema';
 function temaAtual() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
@@ -6186,7 +6608,7 @@ function render() {
   if (!S.usuario || S.fase === 'login') { S.fase = 'login'; renderLogin(); return; }
   if (S.fase === 'empresas') { renderEmpresas(); return; }
   definirTema(S.db.ativa);
-  app.innerHTML = '<div class="app"><aside class="side-nav" id="side" aria-label="Menu">' + htmlSide() + '</aside><div class="sn-veu" data-a="fecharNav"></div>' +
+  app.innerHTML = '<div class="app' + (trilhoOculto() ? ' sem-trilho' : '') + '"><aside class="side-nav" id="side" aria-label="Menu">' + htmlSide() + '</aside><div class="sn-veu" data-a="fecharNav"></div>' +
     '<div class="app-col">' + htmlFaixa() + htmlNav() + '<div id="faixaAlertas"></div><main class="admin-panels"><div class="panel" id="painel"></div></main></div>' +
     '<nav class="barra-cel" id="barraCel" aria-label="Menu principal">' + htmlBarraCel() + '</nav></div><div class="toasts" id="toasts" aria-live="polite"></div><div id="modal"></div>';
   atualizarNav();
@@ -6812,7 +7234,7 @@ function primeiraRota(emp) {
 // ação → operação exigida no módulo da tela atual
 var ACAO_OP = { cadDesligar: 'alterar', novoProd: 'incluir', cfgGravar: 'alterar', diaLimpar: 'excluir', limpReajGravar: 'alterar', limpPrecoDesfazer: 'alterar', limpTerceiroGravar: 'alterar', limpSetorGravar: 'alterar' };
 // ações que mexem no registro aberto (exigem incluir, se é novo, ou alterar)
-var ACAO_EDICAO = { fxAdd: 1, fxDel: 1, fxMover: 1, fxTipo: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
+var ACAO_EDICAO = { fxSetupV: 1, fxSetupU: 1, fxQtdV: 1, fxQtdU: 1, benAdd: 1, benDel: 1, fxAdd: 1, fxDel: 1, fxMover: 1, fxTipo: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
 var ACAO_ADMIN = { restaurarTudo: 1, restaurarEmpresa: 1, dadosCopiar: 1, dadosImportar: 1, dadosColar: 1, usrNovo: 1, usrEditar: 1, usrCancelar: 1, usrPerfil: 1, usrCopiarEmp: 1, usrCopiarDe: 1, usrDir: 1, usrGravar: 1, usrExcluir: 1 };
 var ACAO_ROTA = { detalharTaxa: 'setores' };
 var ACAO_SEM_LOGIN = { lgDemo: 1, lgAlterarSenha: 1, modalFechar: 1, restaurarTudo: 1 };
@@ -7415,7 +7837,7 @@ function htmlContaTaxa(T) {
   var maqs = T.maq.itens.map(function (x) { var g = (x.detalhe || []).reduce(function (t, d) { return t + d.valor; }, 0); return esc(x.rotulo) + ' (depreciação ' + fmtR2(x.depr) + (g ? ' + gastos ' + fmtR2(g) : '') + ')'; });
   return '<ol class="conta-taxa" id="setConta">' +
     '<li><b>Mão de obra:</b> ' + fmtR2(T.mod.custo) + ' por mês de ' + T.mod.itens.length + (T.mod.itens.length === 1 ? ' pessoa' : ' pessoas') + ' ÷ ' + fmt(T.mod.horas, 1) + ' horas produtivas = <b>' + fmtR2(T.mod.taxa) + ' por hora</b>' + (T.mod.manual ? ' (taxa digitada)' : '') +
-      (pessoas.length ? '<div class="ct-pessoas">' + pessoas.join('; ') + '</div>' : '<div class="ct-pessoas">Ninguém alocado neste setor.</div>') + '</li>' +
+      (pessoas.length ? '<div class="ct-pessoas">' + pessoas.join('; ') + '</div>' : '<div class="ct-pessoas">Ninguém alocado neste setor.</div>') + (T.mod.beneficios ? '<div class="ct-pessoas">Benefícios: ' + fmtR2(T.mod.beneficios) + ' por mês dentro da mão de obra.</div>' : '') + '</li>' +
     '<li><b>Máquinas:</b> ' + fmtR2(T.maq.custo) + ' por mês ÷ ' + fmt(T.maq.horas, 1) + ' horas de máquina = <b>' + fmtR2(T.maq.taxa) + ' por hora</b>' + (T.maq.manual ? ' (taxa digitada)' : '') +
       (maqs.length ? '<div class="ct-pessoas">' + maqs.join('; ') + '</div>' : '<div class="ct-pessoas">Sem máquinas cadastradas.</div>') + '</li>' +
     '<li><b>Hora do setor</b> (1 pessoa + 1 máquina): ' + fmtR2(T.mod.taxa) + ' + ' + fmtR2(T.maq.taxa) + ' = <b>' + fmtR2(T.composta) + ' por hora</b></li></ol>' +
@@ -7533,21 +7955,21 @@ cadastroAcoes({
 });
 TELAS.funcionarios = {
   render: function () { return S.params.id ? telaFuncEditor(S.params.id) : telaFuncLista(); },
-  preview: function () { var el = $('#prevFunc'); if (el && S.draft) el.innerHTML = htmlCustoFunc(S.draft); var t = $('#alocTot'); if (t && S.draft) t.innerHTML = htmlAlocTot(S.draft); }
+  preview: function () { var el = $('#prevFunc'); if (el && S.draft) el.innerHTML = htmlCustoFunc(S.draft); var t = $('#alocTot'); if (t && S.draft) t.innerHTML = htmlAlocTot(S.draft); if (S.draft) atualizarContasHoras(M.custoFuncionario(S.draft, S.emp)); }
 };
 function telaFuncLista() {
   var e = S.emp, setor = S.filtros.fSetor, busca = S.filtros.fBusca;
   var lista = e.funcionarios.filter(function (f) { return (!setor || (f.aloc || []).some(function (a) { return a.setor === setor; })) && bate(f.mat + ' ' + f.nome + ' ' + f.cargo, busca); });
-  var tot = { st: 0, total: 0 };
+  var tot = { st: 0, total: 0, ben: 0 };
   var h = ph('Funcionários', 'Custo mensal de cada pessoa (salário, encargos, provisões e benefícios) e em quais setores ele entra. É a base da taxa de mão de obra.', btn('Incluir funcionário', 'ir', 'data-rota="funcionarios" data-id="__novo"', 'btn-accent', 'plus'));
   h += '<div class="tbl-tools">' + filtroTexto('fBusca', 'Matrícula, nome ou cargo') + filtroSelect('fSetor', 'Setor', e.setores.map(function (s) { return [s.cod, s.cod + ' — ' + s.desc]; })) + '</div>';
-  h += tabelaBox('', '<table><thead><tr><th>Matrícula</th><th>Nome / função</th><th class="r">Salário base</th><th class="r">Salário total</th><th class="r">Custo mensal</th><th class="r">Horas produtivas</th><th class="r">Custo por hora</th><th>Setores</th></tr></thead><tbody>' +
+  h += tabelaBox('', '<table><thead><tr><th>Matrícula</th><th>Nome / função</th><th class="r">Salário base</th><th class="r">Salário total</th><th class="r">Benefícios</th><th class="r">Custo mensal</th><th class="r">Horas produtivas</th><th class="r">Custo por hora</th><th>Setores</th></tr></thead><tbody>' +
     lista.map(function (f) {
-      var c = S.ctx.funcs[f.mat]; tot.st += c.ST; tot.total += c.total;
+      var c = S.ctx.funcs[f.mat]; tot.st += c.ST; tot.total += c.total; tot.ben += c.beneficios || 0;
       var alocTot = (f.aloc || []).reduce(function (s, a) { return s + n(a.pct); }, 0);
       var dest = (f.aloc || []).map(function (a) { return '<span class="chip">' + esc(a.setor) + ' ' + fmt(n(a.pct), 0) + '%</span>'; }).join('') + (Math.abs(alocTot - 100) > 0.001 ? ' ' + badge(fmt(alocTot, 0) + '%', alocTot > 100 ? 'b-crit' : 'b-warn') : '');
-      return '<tr class="click" data-a="ir" data-rota="funcionarios" data-id="' + esc(f.mat) + '" tabindex="0"><td class="cod">' + esc(f.mat) + '</td><td class="pri">' + esc(f.nome) + (f.situacao === 'inativo' ? ' ' + badge('desligado', 'b-mute') : '') + '<div class="muted" style="font-weight:400;font-size:11px">' + esc(f.cargo || '') + '</div></td><td class="r">' + fmtR2(n(f.sb)) + '</td><td class="r">' + fmtR2(c.ST) + '</td><td class="r"><b>' + orig(fmtR2(c.total), od('func', f.mat, hojeRef())) + '</b></td><td class="r">' + fmt(c.horasProdutivas, 1) + '</td><td class="r">' + orig(fmtR2(c.custoHora), od('func', f.mat, hojeRef())) + '</td><td>' + dest + (c.erros.length ? ' ' + badge('erro no cálculo', 'b-crit') : '') + '</td></tr>';
-    }).join('') + (lista.length ? '' : linhaVazia(e.funcionarios.length, 8, 'Nenhum funcionário ainda. Clique em Incluir funcionário.', 'Nenhum funcionário encontrado.')) + '</tbody><tfoot><tr><td colspan="3">' + lista.length + ' funcionários</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
+      return '<tr class="click" data-a="ir" data-rota="funcionarios" data-id="' + esc(f.mat) + '" tabindex="0"><td class="cod">' + esc(f.mat) + '</td><td class="pri">' + esc(f.nome) + (f.situacao === 'inativo' ? ' ' + badge('desligado', 'b-mute') : '') + '<div class="muted" style="font-weight:400;font-size:11px">' + esc(f.cargo || '') + '</div></td><td class="r">' + fmtR2(n(f.sb)) + '</td><td class="r">' + fmtR2(c.ST) + '</td><td class="r">' + (c.beneficios ? fmtR2(c.beneficios) : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR2(c.total), od('func', f.mat, hojeRef())) + '</b></td><td class="r">' + fmt(c.horasProdutivas, 1) + '</td><td class="r">' + orig(fmtR2(c.custoHora), od('func', f.mat, hojeRef())) + '</td><td>' + dest + (c.erros.length ? ' ' + badge('erro no cálculo', 'b-crit') : '') + '</td></tr>';
+    }).join('') + (lista.length ? '' : linhaVazia(e.funcionarios.length, 9, 'Nenhum funcionário ainda. Clique em Incluir funcionário.', 'Nenhum funcionário encontrado.')) + '</tbody><tfoot><tr><td colspan="3">' + lista.length + ' funcionários</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.ben) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
   return h;
 }
 function htmlAlocTot(d) {
@@ -7558,12 +7980,36 @@ function htmlCustoFunc(d) {
   var c = M.custoFuncionario(d, S.emp);
   var h = '<div class="kpi-lbl">Custo mensal</div><div class="big">' + fmtR2(c.total) + '</div>' +
     '<div class="lista-kv" style="margin-top:12px"><span>Salário base</span><b>' + fmtR2(c.SB) + '</b>' + (c.VH ? '<span>Horas extras (' + fmt(c.QE, 1) + ' h)</span><b>' + fmtR2(c.VH) + '</b>' : '') + (c.VA ? '<span>Adicionais que integram o salário</span><b>' + fmtR2(c.VA) + '</b>' : '') +
-    '<span>Salário total</span><b>' + fmtR2(c.ST) + '</b><span>Encargos</span><b>' + fmtR2(c.encargos) + '</b><span>Provisões</span><b>' + fmtR2(c.provisoes) + '</b><span>Outros (benefícios)</span><b>' + fmtR2(c.outros) + '</b><div class="sep"></div>' +
+    '<span>Salário total</span><b>' + fmtR2(c.ST) + '</b><span>Encargos</span><b>' + fmtR2(c.encargos) + '</b><span>Provisões</span><b>' + fmtR2(c.provisoes) + '</b>' + (Math.abs(c.outros) > 1e-9 ? '<span>Outros da tabela de encargos</span><b>' + fmtR2(c.outros) + '</b>' : '') +
+    '<span>Benefícios</span><b id="fcBenef">' + fmtR2(c.beneficios || 0) + '</b>' + (c.benefItens || []).map(function (b) { return '<span class="kv-sub">' + esc(b.nome) + (b.nao ? ' · não recebe' : (b.desconto ? ' (' + fmtR2(b.valor) + ' − ' + fmtR2(b.desconto) + ' de desconto)' : '') + (b.proprio ? '' : ' · padrão')) + '</span><b class="kv-sub">' + fmtR2(b.liquido) + '</b>'; }).join('') + '<div class="sep"></div>' +
     '<span>Horas trabalhadas + extras</span><b>' + fmt(c.horas, 1) + ' h</b><span>Eficiência</span><b>' + fmtP(c.efic, 0) + '</b><span>Horas produtivas</span><b>' + fmt(c.horasProdutivas, 1) + ' h</b><span>Custo por hora produtiva</span><b>' + fmtR2(c.custoHora) + '</b></div>';
   if (c.erros.length) h += alerta('err', c.erros.map(function (x) { return esc(x.ref + ': ' + x.msg); }).join('<br>'));
   if (c.linhas.length) h += '<details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-size:12px">Ver cada encargo e provisão</summary><div class="tbl-scroll" style="margin-top:8px"><table><thead><tr><th>Ref</th><th>Item</th><th>Grupo</th><th class="r">Valor</th></tr></thead><tbody>' +
     c.linhas.map(function (l) { return '<tr><td class="cod">' + l.ref + '</td><td>' + esc(l.desc) + '</td><td>' + esc(l.grupo) + '</td><td class="r">' + (l.erro ? badge('erro', 'b-crit') : fmtR2(l.valor)) + '</td></tr>'; }).join('') + '</tbody></table></div></details>';
   return h;
+}
+// as contas das horas com os números da própria pessoa (aparecem embaixo de cada campo e mudam ao digitar)
+function contasHorasFunc(c) {
+  var hh = function (v) { return fmt(v, Math.abs(v - Math.round(v)) < 1e-9 ? 0 : 1) + ' h'; };
+  return {
+    base: c.salHora > 0 ? fmtR2(c.SB) + ' ÷ ' + hh(c.SB / c.salHora) + ' = ' + fmtR2(c.salHora) + ' por hora; a hora extra de 50% vale ' + fmtR2(c.salHora * 1.5) + '.' : 'Informe o salário e as horas base.',
+    efic: c.horasProdutivas > 0 ? fmtR2(c.total) + ' ÷ (' + (c.QE ? '(' + hh(c.QH) + ' + ' + hh(c.QE) + ' extras)' : hh(c.QH)) + ' × ' + fmtP(c.efic, 0) + ') = <b>' + fmtR2(c.custoHora) + ' por hora produtiva</b>' : 'Informe as horas trabalhadas e a eficiência.'
+  };
+}
+function atualizarContasHoras(c) {
+  var x = contasHorasFunc(c), a = $('#fhBase'), b = $('#fhEfic');
+  if (a) a.innerHTML = x.base; if (b) b.innerHTML = x.efic;
+}
+// os benefícios da empresa (Ajustes) com o valor e o desconto desta pessoa; em branco = o padrão
+function htmlBenefFunc(d) {
+  var B = S.emp.config.beneficios || {}, ids = M.idsBeneficios(B).filter(function (k) { return B[k].ativo !== false; });
+  d.benef = d.benef || {};
+  if (!ids.length) return '<p class="desc">A empresa ainda não tem benefícios. Cadastre em Ajustes › Encargos e provisões › Benefícios padrão.</p>';
+  return '<p class="desc">Em branco, vale o padrão da empresa (Ajustes › Encargos e provisões › Benefícios padrão). O desconto do funcionário sai do custo.</p><div class="tbl-scroll"><table class="tbl-benef"><thead><tr><th>Benefício</th><th>Valor por mês</th><th>Desconto do funcionário por mês</th><th>Não recebe</th></tr></thead><tbody>' +
+    ids.map(function (k) {
+      var p = d.benef[k] || {}, dft = B[k], nao = !!p.nao;
+      return '<tr><td class="pri">' + esc(M.nomeBeneficio(k, dft)) + '</td><td style="min-width:140px">' + fNum('benef.' + k + '.valor', p.valor, { suf: 'R$', ph: 'padrão ' + fmt(n(dft.valor), 2), ro: nao }) + '</td><td style="min-width:140px">' + fNum('benef.' + k + '.desconto', p.desconto, { suf: 'R$', ph: 'padrão ' + fmt(n(dft.desconto), 2), ro: nao }) + '</td><td class="c">' + fCheck('benef.' + k + '.nao', nao, 'não recebe', { rr: true }) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
 }
 function telaFuncEditor(id) {
   var e = S.emp, cfg = e.config, tx = cfg.taxas;
@@ -7574,13 +8020,15 @@ function telaFuncEditor(id) {
   var h = ph(novo ? 'Novo funcionário' : esc(d.mat) + ' — ' + esc(d.nome), esc(d.cargo || '') + (d.situacao === 'inativo' ? ' · desligado: não entra mais no custo' : ''), botoesEdicao('func'), 'Cadastros › Funcionários');
   var he = tx.heExtras.map(function (p, i) { return n(p) ? fCampo('Horas extras a ' + fmt(n(p), 0) + '% por mês', fNum('he.' + i, d.he[i], { suf: 'h', ph: '0' })) : ''; }).join('');
   var varia = cfg.encargos.filter(function (x) { return x.variaFunc && x.tipo !== '#'; });
+  var ch = contasHorasFunc(M.custoFuncionario(d, e));
   h += '<div class="grid g-side"><div>' +
     caixa('Identificação', '<div class="grid g3">' + fCampo('Matrícula', fTexto('mat', d.mat, { ro: !novo })) + fCampo('Nome ou função', fTexto('nome', d.nome), '', 'span2') + fCampo('Cargo', fTexto('cargo', d.cargo || '')) +
       fCampo('Admissão', '<input class="i" type="date" id="b-admissao" data-b="admissao" value="' + esc(d.admissao || '') + '">') + '</div>') +
     caixa('Salário e horas', '<div class="grid g3">' + fCampo('Salário base', fNum('sb', d.sb, { suf: 'R$' })) +
-      fCampo('Horas trabalhadas por mês', fNum('horasTrab', d.horasTrab, { suf: 'h', ro: tx.origemHoras === 'padrao' }), tx.origemHoras === 'padrao' ? 'Configurado para usar o padrão do sistema (' + fmt(tx.padraoHorasTrab, 0) + ' h).' : '') +
-      fCampo('Horas base do mês', fNum('horasBase', d.horasBase, { suf: 'h' }), 'Divide o salário para achar o valor da hora extra.') +
-      fCampo('Eficiência', fNum('efic', d.efic, { suf: '%', ro: tx.origemEfic === 'padrao' }), 'Parte das horas que vira produção.') + he + '</div>') +
+      fCampo('Horas trabalhadas no mês', fNum('horasTrab', d.horasTrab, { suf: 'h', ro: tx.origemHoras === 'padrao' }), 'Horas que a pessoa realmente fica na fábrica no mês (sem férias e faltas).' + (tx.origemHoras === 'padrao' ? ' Configurado para usar o padrão do sistema (' + fmt(tx.padraoHorasTrab, 0) + ' h).' : '')) +
+      fCampo('Horas base do mês (para achar o salário-hora)', fNum('horasBase', d.horasBase, { suf: 'h' }), 'Só serve para calcular o valor da hora extra: salário ÷ horas base. Padrão CLT: 220.<div class="conta-viva" id="fhBase">' + ch.base + '</div>') +
+      fCampo('Eficiência (%)', fNum('efic', d.efic, { suf: '%', ro: tx.origemEfic === 'padrao' }), 'Quanto dessas horas vira produção. O resto é parada, troca, reunião, banheiro. O custo da hora produtiva = custo do mês ÷ (horas trabalhadas × eficiência).<div class="conta-viva" id="fhEfic">' + ch.efic + '</div>', 'span2') + he + '</div>') +
+    caixa('Benefícios', htmlBenefFunc(d)) +
     (varia.length ? caixa('Valores deste funcionário', tx.origemParams === 'funcionario' ? '<p class="desc">Itens que podem variar por pessoa. Em branco, vale o valor padrão.</p><div class="grid g3">' + varia.map(function (x) { return fCampo(esc(x.desc) + ' (' + x.ref + ')', fNum('vb.' + x.ref, d.vb[x.ref], { ph: 'padrão ' + fmt(n(x.vb), 2) })); }).join('') + '</div>' : '<p class="desc">A configuração está usando os mesmos valores para todos os funcionários (Configuração › Taxas hora).</p>') : '') +
     caixa('Alocação nos setores', '<p class="desc">Percentual do tempo que esta pessoa trabalha em cada setor. É por aqui que o custo dela entra na taxa de mão de obra — e daí no custo das peças.</p>' +
       d.aloc.map(function (a, i) { return '<div class="inline" style="margin-bottom:8px"><div class="campo" style="flex:2">' + fSelect('aloc.' + i + '.setor', a.setor, e.setores.map(function (s) { return [s.cod, s.cod + ' — ' + s.desc]; }), { vazio: 'Escolha o setor' }) + '</div><div class="campo" style="flex:0 0 130px">' + fNum('aloc.' + i + '.pct', a.pct, { suf: '%' }) + '</div><button class="ico-btn del" data-a="alocDel" data-i="' + i + '" aria-label="Remover alocação">' + ic('trash') + '</button></div>'; }).join('') +
@@ -7690,13 +8138,19 @@ function htmlResumoProd(c, d) {
     '<div class="card"><div class="kpi-lbl">Mão de obra e máquinas</div><div class="kpi-val">' + pct(conv) + '</div><div class="kpi-sub">' + fmtR(conv) + ', com a preparação</div></div>' +
     '<div class="card"><div class="kpi-lbl">Molde e limpeza</div><div class="kpi-val">' + pct(ml) + '</div><div class="kpi-sub">molde ' + fmtR(c.cats.MOL) + ' · limpeza ' + fmtR(c.cats.LIMP) + '</div></div>' +
     (m ? '<div class="card' + (m.valor < 0 ? ' card-crit' : m.pct < 10 ? ' card-warn' : '') + '"><div class="kpi-lbl">Margem bruta por peça</div><div class="kpi-val">' + fmtP(m.pct, 1) + '</div><div class="kpi-sub">líquido ' + fmtR(m.liquido) + ' − custo ' + fmtR(m.custo) + '</div></div>'
-      : '<div class="card"><div class="kpi-lbl">Lote econômico</div><div class="kpi-val">' + fmtQ(n(d.lote)) + '<span class="u">' + esc(unidadeExt(d.un, n(d.lote))) + '</span></div><div class="kpi-sub">' + (n(d.qf) !== 1 ? 'Fórmula para ' + fmtQ(n(d.qf)) + ' ' + esc(d.un) : 'Fórmula por unidade') + '</div></div>');
+      : '<div class="card"><div class="kpi-lbl">Peças por preparação</div><div class="kpi-val">' + fmtQ(n(d.lote)) + '<span class="u">' + esc(unidadeExt(d.un, n(d.lote))) + '</span></div><div class="kpi-sub">' + (n(d.qf) !== 1 ? 'Fórmula para ' + fmtQ(n(d.qf)) + ' ' + esc(d.un) : 'Fórmula por unidade') + '</div></div>');
 }
-function infoItemSP(it, L) {
+function infoItemSP(it, L, d) {
   var h = M.tempoHoras(it.tempo, false), partes = [];
   if (h > 0) partes.push(fmtQ(1 / h) + ' por hora', fmtH(h), fmt(h, 6) + ' h');
   if (L && !L.erro) partes.push('mão de obra ' + fmtR(L.cats.MOD), 'máquinas ' + fmtR(L.cats.MAQ + L.cats.GGF), 'preparação ' + fmtR(L.cats.SETUP));
-  return partes.join(' · ') + textoRefugo(L);
+  return partes.join(' · ') + textoPreparacao(L, d) + textoRefugo(L);
+}
+// preparação: 2 h × R$ 80,00 a hora = R$ 160,00 ÷ 4.000 peças = R$ 0,04 por peça
+function textoPreparacao(L, d) {
+  if (!L || L.erro || !(L.setupH > 0) || !L.taxas) return '';
+  var hora = L.homens * L.taxas.mod + L.maquinas * L.taxas.maq + L.fatorGGF * L.taxas.ggf, lote = n(d && d.lote) || 1, qf = n(d && d.qf) || 1;
+  return '<div class="fx-ref">Preparação: ' + esc(tempoExt(L.setupH)) + ' × ' + fmtR2(hora) + ' a hora = ' + fmtR2(L.setupH * hora) + ' ÷ ' + fmtQ(lote) + ' peças por preparação = <b>' + fmtR(L.cats.SETUP / qf) + ' por peça</b></div>';
 }
 // o refugo de uma etapa encarece tudo o que veio antes dela na lista — mostra sobre quanto
 function textoRefugo(L) {
@@ -7711,27 +8165,105 @@ function htmlFxItem(it, i, L, d) {
     '<select class="i" data-ch="fxTipo" data-i="' + i + '" aria-label="Tipo do item">' + tipos.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === it.tipo ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
     fSelect(p + 'ref', it.ref, opcoesItem(it.tipo, d.cod), { vazio: 'Escolha o item', rr: true, id: 'fx-ref-' + i }) +
     '<div class="fx-q">' + (it.tipo === 'SP' ? '<div class="tempo-box"><select class="i" data-ch="fxModo" data-i="' + i + '" aria-label="Formato do tempo"' + (S.emp.config.tempos.usuarioEscolhe ? '' : ' disabled') + '>' + MODOS_TEMPO_CURTO.map(function (m) { return '<option value="' + m[0] + '"' + (it.tempo && it.tempo.modo === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' + (it.tempo && it.tempo.modo === 'sex' ? fTexto(p + 'tempo.valor', it.tempo.valor, { ph: '0000:00:00.00', cls: 'mono', id: 'fx-t-' + i }) : fNum(p + 'tempo.valor', it.tempo ? it.tempo.valor : '', { ph: '0', id: 'fx-t-' + i })) + '</div>'
-      : fNum(p + 'qtd', it.qtd, { ph: 'Quantidade', id: 'fx-q-' + i })) + '</div>' +
+      : fQtdUn(it, i, 'qtd', unDaLinha(it.tipo, it.ref), 'fx-q-' + i, 'Quantidade')) + '</div>' +
     '<div class="fx-total" id="fxt-' + i + '">' + (L && !L.erro ? fmtR(L.total / (n(d.qf) || 1)) + '<small>por ' + esc(unidadeExt(d.un || 'un', 1)) + '</small>' : '—') + '</div>' +
     '<div class="fx-acts"><button class="ico-btn" data-a="fxMover" data-i="' + i + '" data-d="-1" aria-label="Subir"' + (i === 0 ? ' disabled' : '') + '>' + ic('up') + '</button><button class="ico-btn" data-a="fxMover" data-i="' + i + '" data-d="1" aria-label="Descer"' + (i === d.itens.length - 1 ? ' disabled' : '') + '>' + ic('down') + '</button><button class="ico-btn del" data-a="fxDel" data-i="' + i + '" aria-label="Remover item">' + ic('trash') + '</button></div></div>';
   var body = '<div class="fx-body">' + fCampo('Fase', fTexto(p + 'fase', it.fase || '', { ph: 'Ex.: Injeção' }));
-  if (it.tipo === 'MP') body += fCampo('Reaproveitamento', fSelect(p + 'reapMp', it.reapMp || '', opcoesItem('MP'), { vazio: 'Nenhum' })) + fCampo('Qtd reaproveitada', fNum(p + 'reapQtd', it.reapQtd || '', { ph: '0' }));
+  if (it.tipo === 'MP') body += fCampo('Reaproveitamento', fSelect(p + 'reapMp', it.reapMp || '', opcoesItem('MP'), { vazio: 'Nenhum', rr: true })) + fCampo('Qtd reaproveitada', fQtdUn(it, i, 'reapQtd', unDaLinha('MP', it.reapMp), 'fx-rq-' + i, '0'));
   if (it.tipo === 'PS') body += fCampo('Refugo', fNum(p + 'refugo', it.refugo, { suf: '%', ph: '0' }));
   if (it.tipo === 'SP') {
-    var sm = it.setup && it.setup.modo === 'cen' ? 'cen' : 'sex';
-    body += fCampo('Preparação por lote ' + (sm === 'sex' ? '(hh:mm:ss)' : '(h)'), sm === 'sex' ? fTexto(p + 'setup.valor', it.setup ? it.setup.valor : '', { ph: '0000:00:00.00', cls: 'mono' }) : fNum(p + 'setup.valor', it.setup ? it.setup.valor : '', { ph: '0' })) +
+    var su = setupParaTela(it.setup);
+    body += fCampo('Preparação da máquina', '<div class="tempo-box un-box"><input class="i num" type="text" inputmode="decimal" id="fx-su-' + i + '" data-ch="fxSetupV" data-i="' + i + '" data-un="' + su.un + '" value="' + esc(inputVal(su.valor)) + '" placeholder="0" autocomplete="off" aria-label="Tempo de preparação">' +
+      '<select class="i" id="fx-suu-' + i + '" data-ch="fxSetupU" data-i="' + i + '" aria-label="Unidade do tempo de preparação">' + [['h', 'horas'], ['min', 'minutos']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === su.un ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>', 'Cada vez que prepara a máquina para esta peça. Dividida pelas peças por preparação (' + fmtQ(n(d.lote)) + ').') +
       fCampo('Homens', fNum(p + 'homens', it.homens, { ph: '0' })) + fCampo('Máquinas', fNum(p + 'maquinas', it.maquinas, { ph: '0' })) + fCampo('Refugo', fNum(p + 'refugo', it.refugo, { suf: '%', ph: '0' }));
   }
   body += '</div>';
   var info = '<div class="fx-info" id="fxi-' + i + '">' + htmlInfoItem(it, L, d) + '</div>';
   return '<div class="fx-item' + (temErro ? ' erro' : '') + '" id="fx-' + i + '">' + head + body + info + '</div>';
 }
+/* ---- preparação: um tempo só, em horas ou minutos (os formatos antigos, hh:mm:ss e centesimal, viram horas ao abrir) ---- */
+function setupParaTela(su) {
+  if (!su || vazio(su.valor)) return { un: su && su.modo === 'min' ? 'min' : (S.emp.config.tempos || {}).setup === 'min' && !(su && su.modo === 'cen') ? 'min' : 'h', valor: '' };
+  if (su.modo === 'min') return { un: 'min', valor: n(su.valor) };
+  if (su.modo === 'cen') return { un: 'h', valor: n(su.valor) };
+  var h = 0; try { h = M.tempoHoras(su, false); } catch (e) { return { un: 'h', valor: '' }; }
+  var mi = h * 60;
+  if (h > 0 && h < 1 && Math.abs(mi - Math.round(mi)) < 1e-6) return { un: 'min', valor: Math.round(mi) };   // 0:45 → 45 minutos
+  return { un: 'h', valor: +h.toFixed(6) };
+}
+ACOES.fxSetupV = function (el) {
+  var it = S.draft && S.draft.itens[+el.dataset.i]; if (!it || rascunhoSomenteLeitura()) return;
+  var v = el.value.trim();
+  it.setup = { modo: el.dataset.un === 'min' ? 'min' : 'cen', valor: v === '' ? '' : n(v) };
+  marcarSujo(); agendarPreview();
+};
+ACOES.fxSetupU = function (el) {
+  var i = +el.dataset.i, it = S.draft && S.draft.itens[i]; if (!it) return;
+  var atual = setupParaTela(it.setup), novo = el.value === 'min' ? 'min' : 'h', v = atual.valor;
+  if (v !== '' && atual.un !== novo) v = +(novo === 'min' ? v * 60 : v / 60).toFixed(6);   // o mesmo tempo na outra unidade
+  it.setup = { modo: novo === 'min' ? 'min' : 'cen', valor: v };
+  marcarSujo(); renderPainel();
+};
+/* ---- quantidade com troca de unidade: kg | g, L | mL, m | cm | mm. O valor guardado fica sempre na unidade do item ---- */
+var GRUPOS_TROCA = { massa: 1, volume: 1, comprimento: 1 };
+function infoUn(cod) { var c = U.normalizar(cod), r = null; U.LISTA.forEach(function (u) { if (u.cod === c) r = u; }); return r; }
+function unDaLinha(tipo, ref) {
+  if (!ref) return '';
+  if (tipo === 'MP') { var m = porCod(S.emp.mps, ref); return m ? U.normalizar(m.un) : ''; }
+  if (tipo === 'SA' || tipo === 'PA') { var p = porCod(S.emp.produtos, ref); return p ? U.normalizar(p.un) : ''; }
+  return '';
+}
+function unidadesTroca(base) {
+  var u = infoUn(base); if (!u || !GRUPOS_TROCA[u.grupo]) return null;
+  var l = U.compativeis(u.cod); return l.length > 1 ? l : null;
+}
+// a unidade em que o campo aparece: a escolhida nesta linha; senão, para menos de 1 (kg, L, m), a menor em que o número passa de 1
+function unExibir(it, campo, base) {
+  var l = unidadesTroca(base); if (!l) return base;
+  var k = '_u_' + campo; if (it[k] && l.indexOf(it[k]) >= 0) return it[k];
+  var v = n(it[campo]);
+  if (v > 0 && v < 1) {
+    var menores = l.filter(function (c) { return infoUn(c).fator < infoUn(base).fator; }).sort(function (a, b) { return infoUn(b).fator - infoUn(a).fator; });
+    for (var j = 0; j < menores.length; j++) if (U.converter(v, base, menores[j]) >= 1) return menores[j];
+    if (menores.length) return menores[menores.length - 1];
+  }
+  return base;
+}
+function fQtdUn(it, i, campo, base, id, ph) {
+  var l = unidadesTroca(base), path = 'itens.' + i + '.' + campo;
+  if (!l) return fNum(path, campo === 'reapQtd' ? it[campo] || '' : it[campo], { ph: ph, id: id });
+  var u = unExibir(it, campo, base), v = vazio(it[campo]) ? '' : U.converter(n(it[campo]), base, u);
+  return '<div class="un-box"><input class="i num" type="text" inputmode="decimal" id="' + id + '" data-ch="fxQtdV" data-i="' + i + '" data-campo="' + campo + '" data-base="' + esc(base) + '" data-un="' + esc(u) + '" value="' + esc(inputVal(v)) + '" placeholder="' + esc(ph) + '" autocomplete="off" aria-label="Quantidade em ' + esc(U.nome(u)) + '">' +
+    '<select class="i" data-ch="fxQtdU" data-i="' + i + '" data-campo="' + campo + '" data-base="' + esc(base) + '" aria-label="Unidade da quantidade">' + l.map(function (c) { return '<option value="' + esc(c) + '"' + (c === u ? ' selected' : '') + '>' + esc(U.sigla(c)) + '</option>'; }).join('') + '</select></div>';
+}
+// "120 g = 0,120 kg": as duas unidades, quando a quantidade aparece em outra que não a do item
+function txtDuasUn(it, campo, base) {
+  if (vazio(it[campo]) || !unidadesTroca(base)) return '';
+  var u = unExibir(it, campo, base); if (u === base) return '';
+  return fmtQ(U.converter(n(it[campo]), base, u)) + ' ' + U.sigla(u) + ' = ' + fmtQ(n(it[campo])) + ' ' + U.sigla(base);
+}
+ACOES.fxQtdV = function (el) {
+  var it = S.draft && S.draft.itens[+el.dataset.i]; if (!it || rascunhoSomenteLeitura()) return;
+  var c = el.dataset.campo, v = el.value.trim();
+  it['_u_' + c] = el.dataset.un;
+  it[c] = v === '' ? '' : U.converter(n(v), el.dataset.un, el.dataset.base);
+  marcarSujo(); agendarPreview();
+};
+ACOES.fxQtdU = function (el) {
+  var it = S.draft && S.draft.itens[+el.dataset.i]; if (!it) return;
+  it['_u_' + el.dataset.campo] = el.value;   // o valor guardado não muda: só a unidade em que ele aparece
+  renderPainel();
+};
+document.addEventListener('input', function (ev) {
+  var el = ev.target, a = el && el.dataset && el.dataset.ch;
+  if ((a === 'fxQtdV' || a === 'fxSetupV') && acaoPermitida(a, el)) ACOES[a](el);
+});
 function htmlInfoItem(it, L, d) {
   if (L && L.erro) return '<span style="color:var(--red-t)">' + esc(L.erro) + '</span>';
   if (!L) return '';
-  if (it.tipo === 'SP') return infoItemSP(it, L);
-  if (it.tipo === 'MP') return fmtQ(L.qtd) + ' ' + esc(unidadeExt(L.un, L.qtd)) + ' × ' + fmtR(L.unit) + (L.reap ? ' − reaproveitamento ' + fmtQ(L.reap.qtd) + ' × ' + esc(L.reap.ref) + ' (' + fmtR(L.reap.valor) + ')' : '');
-  if (it.tipo === 'SA' || it.tipo === 'PA') return fmtQ(L.qtd) + ' ' + esc(unidadeExt(L.un, L.qtd)) + ' × ' + fmtR(L.unit) + (L.subErro ? ' · <span style="color:var(--red-t)">o componente ' + (L.subErro === 'sem fórmula' ? 'está sem fórmula (custo zero)' : 'tem erro no custo — este custo está incompleto') + '</span>' : '');
+  if (it.tipo === 'SP') return infoItemSP(it, L, d);
+  if (it.tipo === 'MP') return (txtDuasUn(it, 'qtd', U.normalizar(L.un)) ? '<b>' + esc(txtDuasUn(it, 'qtd', U.normalizar(L.un))) + '</b> · ' : '') + fmtQ(L.qtd) + ' ' + esc(unidadeExt(L.un, L.qtd)) + ' × ' + fmtR(L.unit) + (L.reap ? ' − reaproveitamento ' + fmtQ(L.reap.qtd) + ' × ' + esc(L.reap.ref) + ' (' + fmtR(L.reap.valor) + ')' : '');
+  if (it.tipo === 'SA' || it.tipo === 'PA') return (txtDuasUn(it, 'qtd', U.normalizar(L.un)) ? '<b>' + esc(txtDuasUn(it, 'qtd', U.normalizar(L.un))) + '</b> · ' : '') + fmtQ(L.qtd) + ' ' + esc(unidadeExt(L.un, L.qtd)) + ' × ' + fmtR(L.unit) + (L.subErro ? ' · <span style="color:var(--red-t)">o componente ' + (L.subErro === 'sem fórmula' ? 'está sem fórmula (custo zero)' : 'tem erro no custo — este custo está incompleto') + '</span>' : '');
   if (it.tipo === 'PS') return fmtQ(L.qtd) + ' ' + esc(unidadeExt(L.un, L.qtd)) + ' × ' + fmtR(L.unit) + textoRefugo(L);
   return '';
 }
@@ -7769,14 +8301,14 @@ function telaProdEditor(id) {
   var h = ph(novo ? 'Novo ' + (d.tipo === 'SA' ? 'semi-acabado' : 'produto') : esc(d.cod) + ' — ' + esc(d.desc), (d.tipo === 'SA' ? 'Semi-acabado' : 'Produto acabado') + ' · ' + esc(nomeGrupo(d.grupo)) + (d.molde ? ' · molde ' + esc(d.molde) : ''), botoesEdicao('prod'), 'Cadastros › Produtos e fórmulas');
   h += '<div class="resumo" id="prevResumo">' + htmlResumoProd(c, d) + '</div>';
   h += abas('prod', [['dados', 'Dados, molde e limpeza'], ['formula', 'Fórmula (' + d.itens.length + ')'], ['custo', 'Custo detalhado'], ['uso', 'Onde é usado']], aba);
-  if (!n(d.lote) && c.temSetup) h += alerta('err', 'Lote econômico em branco: a preparação (setup) está sendo cobrada inteira em cada unidade. Informe o lote na aba Dados.');
+  if (!n(d.lote) && c.temSetup) h += alerta('err', 'Peças por preparação (lote) em branco: a preparação está sendo cobrada inteira em cada peça. Informe quantas peças são feitas a cada preparação na aba Dados.');
   if (aba === 'dados') {
     var moldes = (e.moldes || []).map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; });
     var pctImp = n(e.config.impostosVendaPct);
     h += caixa('Dados do produto', '<div class="grid g4">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
       fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' })) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
-      fCampo('Lote econômico', fNum('lote', d.lote), 'Quantidade que dilui o tempo de preparação.') + fCampo('Quantidade de formulação', fNum('qf', d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
+      fCampo('Peças por preparação (lote)', fNum('lote', d.lote, { suf: 'peças' }), 'Quantas peças você costuma produzir cada vez que prepara a máquina. O custo da preparação é dividido por esse número: 2 h × R$ 80/h = R$ 160 ÷ 4.000 peças = R$ 0,04 por peça; com 500 peças, R$ 0,32.', 'span2') + fCampo('Quantidade de formulação', fNum('qf', d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
       fCampo('Descrição complementar', fTexto('descComp', d.descComp || ''), '', 'span2') + fCampo('Observações', fTexto('obs', d.obs || ''), '', 'span2') + '</div>');
     h += '<div class="grid g2">' + caixa('Molde e limpeza da peça', '<div class="grid g2">' +
       fCampo('Molde', fSelect('molde', d.molde || '', moldes, { vazio: 'Sem molde (kit, montagem ou corte)', rr: true }), 'Custo por peça boa = valor ÷ (vida útil × cavidades), corrigido pelo refugo da injeção.', 'span2') +
@@ -7787,7 +8319,7 @@ function telaProdEditor(id) {
         fCampo('Impostos sobre a venda', '<input class="i num" readonly value="' + esc(fmtP(pctImp, 2)) + '">', 'Configuração › Impostos e preço.') + '</div>') : caixa('Preço de venda', '<p class="desc">Semi-acabados não são vendidos: o custo deles entra no produto que os usa.</p>')) + '</div>';
   } else if (aba === 'formula') {
     h += (n(d.qf) !== 1 ? alerta('info', 'Quantidades e tempos desta fórmula valem para <b>' + fmtQ(n(d.qf)) + ' ' + esc(unidadeExt(d.un, n(d.qf))) + '</b> (quantidade de formulação). O custo é dividido por ' + fmtQ(n(d.qf)) + '.') : '') +
-      '<p class="sub muted" style="margin:-4px 0 12px;max-width:95ch">A ordem dos itens é a sequência de fabricação: o refugo de uma etapa perde tudo o que foi gasto até ela. A preparação é dividida pelo lote econômico (' + fmtQ(n(d.lote)) + '). Molde e limpeza entram fora da fórmula, na aba Dados.</p>';
+      '<p class="sub muted" style="margin:-4px 0 12px;max-width:95ch">A ordem dos itens é a sequência de fabricação: o refugo de uma etapa perde tudo o que foi gasto até ela. A preparação é dividida pelas peças por preparação (' + fmtQ(n(d.lote)) + '). Molde e limpeza entram fora da fórmula, na aba Dados.</p>';
     h += '<div class="fx-lista">' + (d.itens.length ? d.itens.map(function (it, i) { return htmlFxItem(it, i, c.linhas[i], d); }).join('') : '<div class="vazio card">A fórmula está vazia. Adicione matérias-primas, componentes e setores.</div>') + '</div>';
     h += '<div class="fx-add">' + btn('Matéria-prima', 'fxAdd', 'data-tipo="MP"', 'btn-ghost btn-sm', 'plus') + btn('Semi-acabado', 'fxAdd', 'data-tipo="SA"', 'btn-ghost btn-sm', 'plus') + btn('Produto (kit)', 'fxAdd', 'data-tipo="PA"', 'btn-ghost btn-sm', 'plus') + btn('Etapa de produção (tempo no setor)', 'fxAdd', 'data-tipo="SP"', 'btn-ghost btn-sm', 'plus') + '</div>';
   } else if (aba === 'custo') {
@@ -7827,7 +8359,7 @@ function graficoCustoProd() {
 }
 ACOES.fxAdd = function (el) {
   var tipo = el.dataset.tipo, cfg = S.emp.config.tempos, it = { tipo: tipo, ref: '', qtd: tipo === 'SP' ? '' : 1, fase: '' };
-  if (tipo === 'SP') { it.tempo = { modo: cfg.fabricacao, valor: '' }; it.setup = { modo: cfg.setup === 'cen' ? 'cen' : 'sex', valor: '' }; it.homens = 1; it.maquinas = 1; it.fatorGGF = 1; it.refugo = 0; }
+  if (tipo === 'SP') { it.tempo = { modo: cfg.fabricacao, valor: '' }; it.setup = { modo: cfg.setup === 'min' ? 'min' : 'cen', valor: '' }; it.homens = 1; it.maquinas = 1; it.fatorGGF = 1; it.refugo = 0; }
   S.draft.itens.push(it); S.sujo = true; S.aba.prod = 'formula'; renderPainel();
   var sel = document.getElementById('fx-ref-' + (S.draft.itens.length - 1)); if (sel) sel.focus();
 };
@@ -7836,7 +8368,7 @@ ACOES.fxMover = function (el) { var i = +el.dataset.i, j = i + (+el.dataset.d), 
 ACOES.fxTipo = function (el) {
   var it = S.draft.itens[+el.dataset.i], tipo = el.value, cfg = S.emp.config.tempos;
   it.tipo = tipo; it.ref = '';
-  if (tipo === 'SP') { it.tempo = it.tempo || { modo: cfg.fabricacao, valor: '' }; it.setup = it.setup || { modo: 'sex', valor: '' }; if (vazio(it.homens)) it.homens = 1; if (vazio(it.maquinas)) it.maquinas = 1; if (vazio(it.fatorGGF)) it.fatorGGF = 1; }
+  if (tipo === 'SP') { it.tempo = it.tempo || { modo: cfg.fabricacao, valor: '' }; it.setup = it.setup || { modo: cfg.setup === 'min' ? 'min' : 'cen', valor: '' }; if (vazio(it.homens)) it.homens = 1; if (vazio(it.maquinas)) it.maquinas = 1; if (vazio(it.fatorGGF)) it.fatorGGF = 1; }
   else if (vazio(it.qtd)) it.qtd = 1;
   S.sujo = true; renderPainel();
 };
@@ -7940,7 +8472,7 @@ function fichaCompleta(cod, modo) {
     var c = custoDe(p.cod), un = p.un || 'un', unN = unidadeExt(un, 1), own = proprioMolLimp(c), m = margemPeca(p, c);
     var md = p.molde ? porCod(e.moldes || [], p.molde) : null;
     h += '<div class="ficha"><div class="muted td-sub" style="margin-bottom:8px">' + esc(e.razao) + ' · ficha de ' + fmtData(hojeRef()) + '</div>' +
-      '<div class="lista-kv" style="max-width:560px;margin-bottom:14px"><span>Tipo</span><b>' + (p.tipo === 'PA' ? 'Produto acabado' : 'Semi-acabado') + '</b><span>Lote econômico</span><b>' + fmtQ(n(p.lote)) + ' ' + esc(unidadeExt(un, n(p.lote))) + '</b><span>Quantidade de formulação</span><b>' + fmtQ(n(p.qf) || 1) + ' ' + esc(unidadeExt(un, n(p.qf) || 1)) + '</b>' +
+      '<div class="lista-kv" style="max-width:560px;margin-bottom:14px"><span>Tipo</span><b>' + (p.tipo === 'PA' ? 'Produto acabado' : 'Semi-acabado') + '</b><span>Peças por preparação (lote)</span><b>' + fmtQ(n(p.lote)) + ' ' + esc(unidadeExt(un, n(p.lote))) + '</b><span>Quantidade de formulação</span><b>' + fmtQ(n(p.qf) || 1) + ' ' + esc(unidadeExt(un, n(p.qf) || 1)) + '</b>' +
       (md ? '<span>Molde</span><b>' + esc(md.cod) + ' · ' + fmtQ(n(md.cavidades)) + ' cavidades</b>' : '') + '<span>Limpeza</span><b>' + txtLimpeza(p) + (p.limpeza && n(p.limpeza.pph) ? ' · ' + fmtQ(n(p.limpeza.pph)) + ' peças/h' : '') + '</b>' +
       '<span>Custo unitário</span><b>' + fmtR(c.total) + '</b>' + (m ? '<span>Preço · líquido · margem</span><b>' + fmtR(m.preco) + ' · ' + fmtR(m.liquido) + ' · ' + fmtP(m.pct, 1) + '</b>' : '') + '</div>';
     var extras = (own.MOL > 0 ? '<tr><td>' + tipoTag('MD') + '</td><td><span class="cod">' + esc(p.molde) + '</span> molde — valor ÷ (vida útil × cavidades)' + (c.molde && c.molde.fatorRefugo > 1.00001 ? ' × refugo da injeção' : '') + '</td><td></td><td class="r">1 injetada</td><td class="r">' + (c.molde ? fmtR(c.molde.porPeca) : '') + '</td><td class="r"><b>' + fmtR(own.MOL) + '</b></td></tr>' : '') +
@@ -8740,7 +9272,12 @@ TELAS['cfg-taxas'] = {
   render: function () {
     var d = cfgRascunho(), t = d.taxas;
     var h = ph('Taxas hora', 'Padrões para novos funcionários, parâmetros dos encargos e de onde vêm horas e eficiência (manual PR-05).', botoesCfg(), 'Configuração');
-    h += '<div class="grid g2"><div>' + caixa('Padrões para novos funcionários', '<div class="grid g2">' + fCampo('Horas trabalhadas por mês', fNum('taxas.padraoHorasTrab', t.padraoHorasTrab, { suf: 'h' })) + fCampo('Horas base do mês', fNum('taxas.padraoHorasBase', t.padraoHorasBase, { suf: 'h' })) + fCampo('Eficiência', fNum('taxas.padraoEfic', t.padraoEfic, { suf: '%' })) + fCampo('Salário padrão', fNum('taxas.salarioPadrao', t.salarioPadrao, { suf: 'R$' })) + '</div>') +
+    var ch = contasHorasFunc(funcExemplo(d));
+    h += '<div class="grid g2"><div>' + caixa('Padrões para novos funcionários', '<div class="grid g2">' + fCampo('Salário padrão', fNum('taxas.salarioPadrao', t.salarioPadrao, { suf: 'R$' })) +
+      fCampo('Horas trabalhadas no mês', fNum('taxas.padraoHorasTrab', t.padraoHorasTrab, { suf: 'h' }), 'Horas que a pessoa realmente fica na fábrica no mês (sem férias e faltas).') +
+      fCampo('Horas base do mês (para achar o salário-hora)', fNum('taxas.padraoHorasBase', t.padraoHorasBase, { suf: 'h' }), 'Só serve para calcular o valor da hora extra: salário ÷ horas base. Padrão CLT: 220.<div class="conta-viva" id="fhBase">' + ch.base + '</div>') +
+      fCampo('Eficiência (%)', fNum('taxas.padraoEfic', t.padraoEfic, { suf: '%' }), 'Quanto dessas horas vira produção. O resto é parada, troca, reunião, banheiro. O custo da hora produtiva = custo do mês ÷ (horas trabalhadas × eficiência).<div class="conta-viva" id="fhEfic">' + ch.efic + '</div>', 'span2') + '</div>' +
+      '<div class="hint">Exemplo com o salário padrão, sem horas extras, com os encargos e os benefícios padrão.</div>') +
       caixa('Parâmetros dos encargos', '<div class="grid g2">' + fCampo('Permanência média (rotatividade)', fNum('taxas.rotatividade', t.rotatividade, { suf: 'meses' }), 'Variável RT — provisão do aviso prévio.') + fCampo('Dias úteis no mês', fNum('taxas.diasUteis', t.diasUteis, { suf: 'dias' }), 'Variável DU.') + fCampo('Troca de uniformes a cada', fNum('taxas.uniformesMeses', t.uniformesMeses, { suf: 'meses' }), 'Variável FU.') + fCampo('Exames periódicos a cada', fNum('taxas.examesMeses', t.examesMeses, { suf: 'meses' }), 'Variável EP.') + '</div>') +
       caixa('Base das taxas', '<div class="grid g2">' + fCampo('Mês de referência', '<input class="i" type="month" id="b-mesref" data-b="mesReferencia" value="' + esc(d.mesReferencia) + '">', 'Define Q1…Q7 (quantas segundas, terças… o mês tem) nas fórmulas dos encargos.') + '</div>') + '</div><div>' +
       caixa('Como calcular os encargos', '<div class="radio-lista">' + radio('taxas.modoEncargos', t.modoEncargos, 'formulas', '<b>Pelas fórmulas</b> da tabela de encargos e provisões (padrão).') + radio('taxas.modoEncargos', t.modoEncargos, 'percentuais', '<b>Por percentuais fixos</b> sobre o salário total.') + '</div>' +
@@ -8751,8 +9288,14 @@ TELAS['cfg-taxas'] = {
       caixa('Horas extras e validações', '<label>Percentuais de acréscimo (do menor para o maior; 0 = não usar)</label><div class="grid g-auto">' + t.heExtras.map(function (p, i) { return fNum('taxas.heExtras.' + i, p, { suf: '%', id: 'he-' + i }); }).join('') + '</div>' +
         '<div class="radio-lista" style="margin-top:12px">' + fCheck('taxas.limite240', t.limite240, 'Não permitir mais que 240 horas por mês por funcionário.') + fCheck('taxas.alocacao100', t.alocacao100, 'A alocação de cada funcionário nos setores não pode passar de 100%.') + '</div>') + '</div></div>';
     return h;
-  }
+  },
+  preview: function () { if (S.draft && S.draft.taxas) atualizarContasHoras(funcExemplo(S.draft)); }
 };
+// uma pessoa com os padrões (salário, horas, eficiência) para mostrar as contas das horas
+function funcExemplo(cfg) {
+  var t = cfg.taxas || {};
+  return M.custoFuncionario({ mat: 'exemplo', sb: t.salarioPadrao, horasTrab: t.padraoHorasTrab, horasBase: t.padraoHorasBase, efic: t.padraoEfic, he: [0, 0, 0, 0, 0], vb: {} }, Object.assign({}, S.emp, { config: cfg }));
+}
 function radio(path, val, v, rotulo) { return '<label class="chk"><input type="radio" name="r-' + path.replace(/\./g, '-') + '" data-b="' + path + '" data-rr value="' + v + '"' + (val === v ? ' checked' : '') + '><span>' + rotulo + '</span></label>'; }
 
 /* ------------------------ Encargos e provisões ------------------------ */
@@ -8760,6 +9303,7 @@ TELAS['cfg-encargos'] = {
   render: function () {
     var d = cfgRascunho();
     var h = ph('Encargos e provisões', 'Fórmulas que transformam o salário no custo mensal do funcionário (manual PR-06). Até 50 itens; cada um vira uma variável V01…V50.', botoesCfg() + btn('Restaurar fórmulas padrão', 'encPadrao', '', 'btn-ghost', 'refresh'), 'Configuração');
+    h += htmlBenefPadrao(d);
     if (d.taxas.modoEncargos === 'percentuais') h += alerta('warn', 'A configuração está usando percentuais fixos: esta tabela não está sendo usada. Mude em Configuração › Taxas hora.');
     h += '<div class="tbl-box"><div class="tbl-scroll"><table><thead><tr><th>Ref</th><th></th><th>Descrição</th><th>Tipo</th><th class="c">Varia por funcionário</th><th class="c">Integra o salário</th><th class="r">Valor (VB)</th><th>Fórmula</th><th>Vai para</th><th></th></tr></thead><tbody>' +
       d.encargos.map(function (x, i) {
@@ -8775,13 +9319,39 @@ TELAS['cfg-encargos'] = {
       '<div class="card"><label for="encFunc">Testar com o funcionário</label><select class="i" id="encFunc" data-ch="encFunc">' + funcs.map(function (f) { return '<option value="' + esc(f.mat) + '"' + (f.mat === fm ? ' selected' : '') + '>' + esc(f.mat + ' — ' + f.nome) + '</option>'; }).join('') + '</select><div id="prevEnc" style="margin-top:12px">' + htmlTesteEnc(fm) + '</div></div></div>';
     return h;
   },
-  preview: function () { var el = $('#prevEnc'); if (el && S.draft) el.innerHTML = htmlTesteEnc(S.aba.encFunc || (S.emp.funcionarios[0] || {}).mat); }
+  preview: function () {
+    var el = $('#prevEnc'); if (el && S.draft) el.innerHTML = htmlTesteEnc(S.aba.encFunc || (S.emp.funcionarios[0] || {}).mat);
+    if (S.draft && S.draft.beneficios) Object.keys(S.draft.beneficios).forEach(function (k) { var b = S.draft.beneficios[k], c = document.getElementById('bn-l-' + k); if (c) c.textContent = fmtR2(b.ativo === false ? 0 : Math.max(0, n(b.valor) - n(b.desconto))); });
+  }
 };
+/* ---------------- Benefícios padrão: lista aberta (vale alimentação e vale transporte já vêm criados) ---------------- */
+function htmlBenefPadrao(d) {
+  if (!d.beneficios || typeof d.beneficios !== 'object') d.beneficios = {};
+  ['va', 'vt'].forEach(function (k) { if (!d.beneficios[k]) d.beneficios[k] = { nome: M.BENEF_PADRAO[k], valor: '', desconto: '', ativo: true }; });
+  var B = d.beneficios, gravados = (S.emp.config && S.emp.config.beneficios) || {}, ids = M.idsBeneficios(B);
+  var dup = (d.encargos || []).filter(function (e) { return e.tipo !== '#' && /transporte|sa[uú]de|alimenta/i.test(e.desc || ''); });
+  return caixa('Benefícios padrão', '<p class="desc">Quanto a empresa paga por mês a cada funcionário. Cada pessoa pode ter valor próprio ou não receber (no cadastro dela). O desconto do funcionário sai do custo. Entra no custo do funcionário e na hora de mão de obra dos setores; não entra na base dos encargos.</p>' +
+    (dup.length ? alerta('warn', 'A tabela abaixo ainda tem ' + dup.map(function (e) { return esc(e.ref + ' ' + e.desc); }).join(', ') + ' ativo. Se for o mesmo benefício, desative lá (tipo “inativo”) para não contar duas vezes.') : '') +
+    '<div class="tbl-scroll"><table class="tbl-benef" id="benefPadrao"><thead><tr><th>Benefício</th><th>Valor por mês (padrão)</th><th>Desconto do funcionário por mês</th><th>Entra no custo</th><th class="c">Ativo</th><th></th></tr></thead><tbody>' +
+    ids.map(function (k) {
+      var b = B[k], p = 'beneficios.' + k + '.', liq = Math.max(0, n(b.valor) - n(b.desconto));
+      return '<tr' + (b.ativo === false ? ' class="muted"' : '') + '><td style="min-width:200px">' + fTexto(p + 'nome', b.nome || '', { ph: M.nomeBeneficio(k, b), id: 'bn-n-' + k }) + '</td><td style="min-width:130px">' + fNum(p + 'valor', b.valor, { suf: 'R$', ph: '0,00', id: 'bn-v-' + k }) + '</td><td style="min-width:130px">' + fNum(p + 'desconto', b.desconto, { suf: 'R$', ph: '0,00', id: 'bn-d-' + k }) + '</td>' +
+        '<td class="r nw" id="bn-l-' + k + '">' + fmtR2(b.ativo === false ? 0 : liq) + '</td><td class="c">' + fCheck(p + 'ativo', b.ativo !== false, 'ativo', { rr: true, id: 'bn-a-' + k }) + '</td><td>' + (gravados[k] ? '' : '<button class="ico-btn del" data-a="benDel" data-k="' + esc(k) + '" aria-label="Tirar este benefício">' + ic('trash') + '</button>') + '</td></tr>';
+    }).join('') + '</tbody></table></div><div class="fx-add">' + btn('Adicionar benefício', 'benAdd', '', 'btn-ghost btn-sm', 'plus') + '</div><div class="hint">Um benefício já gravado não sai da lista: desmarque “ativo” para ele deixar de entrar no custo (a partir da data da gravação; o histórico guarda).</div>');
+}
+ACOES.benAdd = function () {
+  var B = S.draft.beneficios = S.draft.beneficios || {}, max = 0;
+  Object.keys(B).concat(Object.keys((S.emp.config && S.emp.config.beneficios) || {})).forEach(function (k) { var m = /^b(\d+)$/.exec(k); if (m) max = Math.max(max, +m[1]); });
+  B['b' + (max + 1)] = { nome: '', valor: '', desconto: '', ativo: true };
+  S.sujo = true; renderPainel();
+  var el = document.getElementById('bn-n-b' + (max + 1)); if (el) el.focus();
+};
+ACOES.benDel = function (el) { delete S.draft.beneficios[el.dataset.k]; S.sujo = true; renderPainel(); };
 function htmlTesteEnc(mat) {
   var f = porCod(S.emp.funcionarios, mat, 'mat'); if (!f) return '';
   var e2 = Object.assign({}, S.emp, { config: S.draft });
   var c = M.custoFuncionario(f, e2);
-  return '<div class="big">' + fmtR2(c.total) + '</div><div class="kpi-sub">ST ' + fmtR2(c.ST) + ' · encargos ' + fmtR2(c.encargos) + ' · provisões ' + fmtR2(c.provisoes) + ' · outros ' + fmtR2(c.outros) + '</div>' +
+  return '<div class="big">' + fmtR2(c.total) + '</div><div class="kpi-sub">ST ' + fmtR2(c.ST) + ' · encargos ' + fmtR2(c.encargos) + ' · provisões ' + fmtR2(c.provisoes) + ' · outros ' + fmtR2(c.outros) + ' · benefícios ' + fmtR2(c.beneficios || 0) + '</div>' +
     (c.erros.length ? alerta('err', c.erros.map(function (x) { return esc(x.ref + ': ' + x.msg); }).join('<br>')) : '') +
     '<div class="tbl-scroll" style="margin-top:10px;max-height:300px"><table><tbody>' + c.linhas.map(function (l) { return '<tr><td class="cod">' + l.ref + '</td><td>' + esc(l.desc) + '</td><td class="r">' + (l.erro ? badge('erro', 'b-crit') : fmtR2(l.valor)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
 }
@@ -8818,7 +9388,7 @@ TELAS['cfg-tempos'] = {
   render: function () {
     var d = cfgRascunho(), t = d.tempos, p = d.precisao;
     var h = ph('Tempos, cálculos e precisão', 'Como os tempos entram nas fórmulas e quantas casas decimais cada valor guarda (manual PR-09).', botoesCfg(), 'Configuração');
-    h += '<div class="grid g2"><div>' + caixa('Tempos nas fórmulas', '<div class="grid g2">' + fCampo('Fabricação', fSelect('tempos.fabricacao', t.fabricacao, MODOS_TEMPO)) + fCampo('Setup (preparação)', fSelect('tempos.setup', t.setup, [['sex', 'Tempo (hh:mm:ss)'], ['cen', 'Hora centesimal']]), 'Setup não aceita peças por hora: a máquina não produz.') + '</div><div class="radio-lista" style="margin-top:12px">' +
+    h += '<div class="grid g2"><div>' + caixa('Tempos nas fórmulas', '<div class="grid g2">' + fCampo('Fabricação', fSelect('tempos.fabricacao', t.fabricacao, MODOS_TEMPO)) + fCampo('Preparação (unidade das linhas novas)', fSelect('tempos.setup', t.setup === 'min' ? 'min' : 'cen', [['cen', 'Horas'], ['min', 'Minutos']]), 'A preparação é só um tempo, em horas ou minutos; cada linha da fórmula pode trocar.') + '</div><div class="radio-lista" style="margin-top:12px">' +
       fCheck('tempos.usuarioEscolhe', t.usuarioEscolhe, 'Quem digita a fórmula pode escolher outro formato em cada item.') + fCheck('tempos.validarConversao', t.validarConversao, 'Ao converter hh:mm:ss para centesimal, arredondar para cima na 8ª casa (0:00:12 vira 0,00333334).') + '</div>') +
       '<div class="card">' + htmlConversor() + '</div></div><div>' +
       caixa('Precisão numérica', '<div class="grid g2">' + fCampo('Quantidades', fNum('precisao.quantidades', p.quantidades, { suf: 'casas' })) + fCampo('Valores (custos e preços)', fNum('precisao.valores', p.valores, { suf: 'casas' }), 'Produtos baratos, como anéis, pedem 4 ou mais casas.') + fCampo('Percentuais', fNum('precisao.percentuais', p.percentuais, { suf: 'casas' })) + fCampo('Horas centesimais', fNum('precisao.horas', p.horas, { suf: 'casas' })) + '</div>' +
@@ -8913,7 +9483,7 @@ TELAS.motor = {
       '<h2>3. Taxas hora dos setores ' + M1 + '</h2><code class="formula">Mão de obra (R$/h) = Σ custo das pessoas × % alocado  ÷  Σ horas produtivas × % alocado\nMáquinas (R$/h)   = Σ [ (valor − residual) ÷ (vida útil × 12) + energia e manutenção do mês ]  ÷  Σ horas das máquinas\nHora do setor     = mão de obra + máquinas  (1 pessoa + 1 máquina por uma hora)</code>' +
       '<p>' + P1 + ' depreciação linear com valor residual. Esta versão não tem plano de contas: energia e manutenção entram como gastos mensais das máquinas (Configuração › Gastos dos equipamentos) e os gastos gerais de fabricação ficam zerados. Setor com gasto e sem horas é alerta crítico (a taxa zera e o gasto some do custo).</p>' +
       '<h2>4. Custo padrão da peça</h2><p>' + M1 + ' A fórmula (ficha técnica) tem matérias-primas, semi-acabados, produtos (kits) e setores produtivos, informados para a quantidade de formulação e divididos por ela.</p>' +
-      '<code class="formula">Matéria-prima:   qtd × valor líquido − reaproveitamento\nComponente:      qtd × custo do componente (as categorias sobem junto)\nSetor produtivo: tempo × (homens × taxa de mão de obra + máquinas × taxa de máquinas)\nPreparação:      tempo de setup × qtd de formulação ÷ lote econômico × as mesmas taxas\nRefugo r%:       (tudo o que veio antes na lista + a própria etapa) × r ÷ (100 − r)</code>' +
+      '<code class="formula">Matéria-prima:   qtd × valor líquido − reaproveitamento\nComponente:      qtd × custo do componente (as categorias sobem junto)\nSetor produtivo: tempo × (homens × taxa de mão de obra + máquinas × taxa de máquinas)\nPreparação:      tempo de preparação × qtd de formulação ÷ peças por preparação (lote) × as mesmas taxas\nRefugo r%:       (tudo o que veio antes na lista + a própria etapa) × r ÷ (100 − r)</code>' +
       '<p>' + X1 + ' <b>Molde.</b> O molde é um cadastro à parte: valor, número de cavidades e vida útil em injetadas.</p><code class="formula">Molde por peça boa = valor ÷ (vida útil × cavidades) × fator de refugo da etapa do molde</code>' +
       '<p>' + P1 + ' depois de passar da vida útil, o custo continua sendo cobrado por peça — o molde já se pagou, mas está consumindo o molde que vai substituí-lo. Por isso o alerta crítico: hora de orçar o molde novo. O refugo antes da etapa do molde (pré-forma, mistura) não gasta injetada.</p>' +
       '<p>' + X1 + ' <b>Limpeza da peça.</b> Cada peça diz se não passa por limpeza, se é limpa na empresa ou se vai para o terceiro.</p><code class="formula">Limpeza interna = hora do setor de limpeza ÷ peças limpas por hora\nLimpeza no terceiro = preço daquela peça na tabela do terceiro, na data de hoje</code>' +
@@ -9045,8 +9615,8 @@ function linhasPecas(D) {
     var x = numerosPeca(p.cod, hoje), ca = trA.custo(p.cod);
     var c12 = ca && ca.total > 1e-9 ? (x.custo - ca.total) / ca.total * 100 : null;
     var st = x.sobra === null ? 'sem-preco' : x.sobra < 0 ? 'prejuizo' : x.margem < 10 ? 'baixa' : 'ok';
-    var cats = x.c ? x.c.cats : {}, md = p.limpeza && p.limpeza.modo;
-    return { cod: p.cod, desc: p.desc, custo: x.custo, preco: x.preco || null, liquido: x.preco ? x.liquido : null, sobra: x.sobra, margem: x.margem, c12: c12, st: st, erro: x.c && x.c.erro,
+    var cats = x.c ? x.c.cats : {}, md = p.limpeza && p.limpeza.modo, ph = M.porHora(x.c, x.preco ? x.liquido : null, x.sobra);
+    return { pph: ph.pph, fatHora: ph.fatHora, margemHora: ph.margemHora, etapa: ph.etapa, cod: p.cod, desc: p.desc, custo: x.custo, preco: x.preco || null, liquido: x.preco ? x.liquido : null, sobra: x.sobra, margem: x.margem, c12: c12, st: st, erro: x.c && x.c.erro,
       cats: cats, limp: cats.LIMP || 0, limpModo: md === 'interna' || md === 'terceiro' ? md : '', mol: cats.MOL || 0, molde: p.molde || '' };
   });
 }
@@ -9166,12 +9736,12 @@ function montarResumoMes() {
 /* ---------------- uma mudança em português ---------------- */
 var CAMPOS_TXT = {
   mp: { vc: 'preço de compra', v1: 'frete e seguro', v2: 'outros valores', liquidoManual: 'custo líquido digitado', situacao: 'situação', p: 'imposto de entrada', a: 'imposto do frete', b: 'imposto de outros valores', desc: 'descrição', fornecedor: 'fornecedor', un: 'unidade' },
-  func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo' },
+  func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo', benef: 'benefícios desta pessoa' },
   setor: { horasOperacao: 'horas de operação no mês', manual: 'taxa digitada', equipamentos: 'máquinas', despTotal: 'gastos das máquinas', desc: 'nome' },
   molde: { valor: 'valor do molde', vida: 'vida útil', cavidades: 'cavidades', setor: 'setor', situacao: 'situação', desc: 'descrição' },
-  prod: { preco: 'preço de venda', itens: 'fórmula', molde: 'molde', limpeza: 'limpeza', lote: 'lote', qf: 'quantidade de formulação', situacao: 'situação', desc: 'descrição' },
+  prod: { preco: 'preço de venda', itens: 'fórmula', molde: 'molde', limpeza: 'limpeza', lote: 'peças por preparação (lote)', qf: 'quantidade de formulação', situacao: 'situação', desc: 'descrição' },
   terceiro: { preco: 'preço da limpeza no terceiro' },
-  cfg: { impostosVendaPct: 'impostos sobre a venda', encargos: 'encargos e provisões', taxas: 'regras das taxas hora', gastosEquip: 'gastos dos equipamentos', limpeza: 'setor da limpeza', impostos: 'impostos de entrada', tempos: 'tempos', precisao: 'precisão', dataReferencia: 'data de hoje' }
+  cfg: { impostosVendaPct: 'impostos sobre a venda', encargos: 'encargos e provisões', taxas: 'regras das taxas hora', gastosEquip: 'gastos dos equipamentos', limpeza: 'setor da limpeza', impostos: 'impostos de entrada', tempos: 'tempos', precisao: 'precisão', dataReferencia: 'data de hoje', beneficios: 'benefícios padrão' }
 };
 var CAMPOS_REAIS = { 'mp:vc': 1, 'mp:v1': 1, 'mp:v2': 1, 'mp:liquidoManual': 1, 'func:sb': 1, 'molde:valor': 1, 'prod:preco': 1, 'terceiro:preco': 1 };
 var CAMPOS_PCT = { 'cfg:impostosVendaPct': 1, 'func:efic': 1 };
@@ -9181,6 +9751,22 @@ function nomeItem(tipo, ref) {
   if (tipo === 'cfg') return 'Configuração';
   if (tipo === 'terceiro') return 'Limpeza no terceiro de ' + ref;
   return TIPO_TXT[tipo] + ' ' + ref + (x && (x.desc || x.nome) ? ' — ' + (x.desc || x.nome) : '');
+}
+// chaves de benefício: beneficios.<id>.<campo> (padrão da empresa) e benef.<id>.<campo> (a pessoa)
+var RE_BENEF = /^(beneficios|benef)\.([^.]+)\.(valor|desconto|nome|ativo|nao)$/;
+function campoBenef(k) {
+  var m = RE_BENEF.exec(k || ''); if (!m) return null;
+  var nome = M.nomeBeneficio(m[2], ((S.emp && S.emp.config && S.emp.config.beneficios) || {})[m[2]]);
+  var dono = m[1] === 'beneficios' ? ' (padrão da empresa)' : ' desta pessoa';
+  var oque = { valor: nome + dono + ', R$ por mês', desconto: 'desconto do funcionário no ' + nome.toLowerCase() + dono, nome: 'nome do benefício ' + nome, ativo: nome + ' ativo', nao: nome + ': não recebe' }[m[3]];
+  return { nome: oque, campo: m[3] };
+}
+function valorBenef(cb, v) {
+  if (v === null || v === undefined || v === '') return 'vazio';
+  if (cb.campo === 'valor' || cb.campo === 'desconto') return fmtR2(n(v));
+  if (cb.campo === 'ativo') return v === false ? 'não' : 'sim';
+  if (cb.campo === 'nao') return v ? 'sim' : 'não';
+  return String(v);
 }
 function valorCampo(tipo, campo, v) {
   if (v === null || v === undefined || v === '') return 'vazio';
@@ -9200,6 +9786,14 @@ function descMudanca(ev) {
   ks.forEach(function (k) { if (!escolhido && Object.prototype.hasOwnProperty.call(nomes, k)) escolhido = k; });
   if (!escolhido) ks.forEach(function (k) { if (!escolhido && Object.prototype.hasOwnProperty.call(nomes, k.split('.')[0])) escolhido = k; });
   var listas = Object.keys(ev.linhas || {}).filter(function (c) { return (ev.linhas[c] || []).length; });
+  var cbx = null; ks.forEach(function (k) { if (!cbx && campoBenef(k)) cbx = k; });
+  if (cbx && (!escolhido || escolhido.split('.')[0] === cbx.split('.')[0])) {
+    var cb = campoBenef(cbx), a0 = (ev.antes || {})[cbx], b0 = cs[cbx];
+    r.campo = cb.nome; r.de = valorBenef(cb, a0); r.para = valorBenef(cb, b0);
+    if (typeof a0 === 'number' && typeof b0 === 'number' && Math.abs(a0) > 1e-12) r.pct = (b0 - a0) / a0 * 100;
+    r.mais = ks.length - 1 + listas.length;
+    return r;
+  }
   if (escolhido) {
     var raiz = escolhido.split('.')[0], simples = raiz === escolhido;
     r.campo = nomes[raiz] || raiz;
@@ -9236,7 +9830,7 @@ function ultimasMudancas(k) {
 TELAS.painel = TELAS.resumo;   // o painel do mês agora é parte do Resumo
 
 /* ============================ PEÇAS ============================ */
-var COLS_PECAS = [['cod', 'Peça'], ['custo', 'Custo'], ['comp', 'De onde vem o custo'], ['preco', 'Preço'], ['liquido', 'Preço sem impostos'], ['sobra', 'Sobra por peça'], ['margem', 'Margem'], ['limp', 'Limpeza'], ['mol', 'Molde por peça'], ['c12', 'Custo em 12 meses']];
+var COLS_PECAS = [['cod', 'Peça'], ['custo', 'Custo'], ['comp', 'De onde vem o custo'], ['preco', 'Preço'], ['liquido', 'Preço sem impostos'], ['sobra', 'Sobra por peça'], ['margem', 'Margem'], ['limp', 'Limpeza'], ['mol', 'Molde por peça'], ['pph', 'Peças por hora'], ['fatHora', 'Faturamento por hora'], ['margemHora', 'Margem por hora'], ['c12', 'Custo em 12 meses']];
 // o que mudou no último cálculo (a rota antiga "calculo" abre aqui, com esta caixa aberta)
 function htmlUltimoCalculo() {
   var dif = S.ultimaDif, aqui = S.rota === 'calculo';
@@ -9281,9 +9875,11 @@ TELAS.pecas = {
           '<td class="r"><b class="' + (x.sobra !== null && x.sobra < 0 ? 'neg' : '') + '">' + (x.sobra === null ? '—' : orig(fmtR(x.sobra), od('preco', x.cod, hj, 'sobra'))) + '</b></td>' +
           '<td class="r">' + (x.margem === null ? '—' : fmtP(x.margem, 1)) + (x.st === 'prejuizo' ? ' ' + badge('prejuízo', 'b-crit') : x.st === 'baixa' ? ' ' + badge('baixa', 'b-warn') : '') + '</td>' +
           '<td class="nw">' + (x.limpModo ? (x.limpModo === 'interna' ? 'na empresa ' : 'terceiro ') + orig(fmtR(x.limp), od('limp', x.cod, hj)) : '<span class="muted">não limpa</span>') + '</td><td class="r">' + (x.mol ? (x.molde && veValores() ? orig(fmtR(x.mol), od('molde', x.molde, hj)) : fmtR(x.mol)) : '<span class="muted">—</span>') + '</td>' +
+          '<td class="r">' + (x.pph === null ? '<span class="muted">sem etapa</span>' : orig(fmtQ(Math.round(x.pph * 10) / 10), od('hora', x.cod, hj, 'pph'))) + '</td><td class="r">' + (x.fatHora === null ? '—' : orig(fmtR2(x.fatHora), od('hora', x.cod, hj, 'fat'))) + '</td>' +
+          '<td class="r"><b class="' + (x.margemHora !== null && x.margemHora < 0 ? 'neg' : '') + '">' + (x.margemHora === null ? '—' : orig(fmtR2(x.margemHora), od('hora', x.cod, hj, 'margem'))) + '</b></td>' +
           '<td class="r">' + setaVar(x.c12) + '</td></tr>';
-      }).join('') : '<tr><td colspan="10" class="vazio">Nenhuma peça encontrada.</td></tr>') + '</tbody></table>', l.length + ' de ' + todas.length + ' peças');
-    h += '<div class="hint">Clique num valor para ver de onde ele vem; “+ Comparar” põe a peça na comparação. Preço sem impostos = preço − impostos sobre a venda. Sobra por peça = preço sem impostos − custo de fazer. Margem = sobra ÷ preço sem impostos. Custo em 12 meses compara o custo de ' + fmtData(D) + ' com o de ' + fmtData(umAnoAntes(D)) + '.</div>';
+      }).join('') : '<tr><td colspan="13" class="vazio">Nenhuma peça encontrada.</td></tr>') + '</tbody></table>', l.length + ' de ' + todas.length + ' peças');
+    h += '<div class="hint">Clique num valor para ver de onde ele vem; “+ Comparar” põe a peça na comparação. Preço sem impostos = preço − impostos sobre a venda. Sobra por peça = preço sem impostos − custo de fazer. Margem = sobra ÷ preço sem impostos. Custo em 12 meses compara o custo de ' + fmtData(D) + ' com o de ' + fmtData(umAnoAntes(D)) + '. Peças por hora: na etapa mais lenta da fórmula (o gargalo); faturamento e margem por hora = preço sem impostos e sobra por peça × peças por hora. Ordene por margem por hora para escolher o que pôr na máquina.</div>';
     return h;
   },
   montar: function () {
@@ -9325,7 +9921,7 @@ function contaDaPeca(cod, tr) {
       if (L.maquinas) partes.push(fmtQ(L.maquinas) + (L.maquinas === 1 ? ' máquina' : ' máquinas') + ' a ' + fmtR2(L.taxas.maq) + ' a hora');
       if (L.taxas.ggf && L.fatorGGF) partes.push('gastos gerais a ' + fmtR2(L.taxas.ggf * L.fatorGGF) + ' a hora');
       t = L.desc + ': ' + tempoExt(tp) + ' por peça (' + fmtQ(tp) + ' hora) × (' + (partes.join(' + ') || 'sem pessoas nem máquinas') + ') = ' + fmtR((L.cats.MOD + L.cats.MAQ + L.cats.GGF) / qf);
-      if (L.cats.SETUP > 1e-12) t += ' + preparação das máquinas ' + fmtR(L.cats.SETUP / qf) + ' (' + tempoExt(L.setupH) + ' por lote de ' + fmtQ(c.lote) + ' peças)';
+      if (L.cats.SETUP > 1e-12) t += ' + preparação das máquinas ' + fmtR(L.cats.SETUP / qf) + ' (' + tempoExt(L.setupH) + ' a cada preparação, dividido por ' + fmtQ(c.lote) + ' peças por preparação)';
       if (L.cats.REF > 1e-12) t += ' + refugo de ' + fmtP(L.refugoPct, 1) + ' nesta etapa ' + fmtR(L.cats.REF / qf) + ' (o que se perde de tudo o que veio antes)';
       linhas.push({ cat: L.cats.MOD >= L.cats.MAQ ? 'MOD' : 'MAQ', texto: t, valor: v, tipo: 'SP', ref: L.ref });
     }
@@ -9387,6 +9983,7 @@ TELAS.peca = {
     h += '<div class="kpi-row" id="pcTopo">' + kpi('Custo de fazer', orig(fmtR(x.custo), od('custo', cod, hoje)), 'por ' + unidadeExt(x.p.un, 1) + ', hoje') +
       kpi('Preço de venda', x.preco ? orig(fmtR(x.preco), od('preco', cod, hoje, 'preco')) : '—', x.preco ? 'menos ' + orig(fmtR(x.impostos), od('preco', cod, hoje, 'imp')) + ' de impostos (' + fmtP(x.impPct, 2) + ') = ' + orig(fmtR(x.liquido), od('preco', cod, hoje, 'liquido')) : 'sem preço no cadastro') +
       kpi('Sobra por peça', x.sobra === null ? '—' : orig(fmtR(x.sobra), od('preco', cod, hoje, 'sobra')), x.sobra === null ? '' : (x.margem !== null ? fmtP(x.margem, 1) + ' do preço sem impostos' : '') + (x.sobra < 0 ? ' · vende com prejuízo' : ''), x.sobra !== null && x.sobra < 0 ? 'crit' : x.margem !== null && x.margem < 10 ? 'warn' : '') + '</div>';
+    h += htmlPorHoraPeca(cod, x, hoje);
     // a cascata: do preço de venda até a sobra
     var P = passosCascataPeca(cod, hoje);
     S._pcCasc = P;
@@ -9451,6 +10048,19 @@ TELAS.peca = {
     cliqueNaLinha(g, function (d, si) { abrirOrigem(si === 1 ? od('preco', X.cod, d, 'preco') : od('custo', X.cod, d)); }, [0, 1]);
   }
 };
+// faturamento e margem por hora: o que a peça rende em cada hora da etapa mais lenta, e a posição dela entre as peças
+function rankPorHora(D) {
+  var l = linhasPecas(D).filter(function (y) { return y.margemHora !== null; }).sort(function (a, b) { return b.margemHora - a.margemHora; });
+  return l.map(function (y) { return y.cod; });
+}
+function htmlPorHoraPeca(cod, x, D) {
+  var ph = M.porHora(x.c, x.preco ? x.liquido : null, x.sobra);
+  if (ph.pph === null) return '<div class="kpi-row" id="pcHora">' + kpi('Peças por hora', '—', 'sem etapa de produção na fórmula') + '</div>';
+  var rk = rankPorHora(D), pos = rk.indexOf(cod), et = ph.etapa;
+  return '<div class="kpi-row" id="pcHora">' + kpi('Peças por hora', orig(fmtQ(Math.round(ph.pph * 10) / 10), od('hora', cod, D, 'pph')), 'na etapa mais lenta: ' + esc(et.ref + ' ' + et.desc)) +
+    kpi('Faturamento por hora', ph.fatHora === null ? '—' : orig(fmtR2(ph.fatHora), od('hora', cod, D, 'fat')), ph.fatHora === null ? 'sem preço de venda' : 'preço sem impostos × peças por hora') +
+    kpi('Margem por hora', ph.margemHora === null ? '—' : orig(fmtR2(ph.margemHora), od('hora', cod, D, 'margem')), ph.margemHora === null ? 'sem preço de venda' : (pos >= 0 ? (pos + 1) + 'ª de ' + rk.length + ' peças em margem por hora' : 'sobra por peça × peças por hora'), ph.margemHora !== null && ph.margemHora < 0 ? 'crit' : '') + '</div>';
+}
 // os degraus da peça: preço − impostos − cada tipo de gasto do custo = sobra (na casa decimal dos valores, somando exato)
 var CASC_CATS = [['MP', 'Matéria-prima'], ['MOD', 'Mão de obra'], ['MAQ', 'Máquinas'], ['SETUP', 'Preparação das máquinas'], ['MOL', 'Ferramenta (molde)'], ['PS', 'Serviços de terceiros'], ['LIMP', 'Limpeza'], ['REF', 'Refugo']];
 function passosCascataPeca(cod, D) {
@@ -10269,19 +10879,31 @@ var CAMPOS_MUDAR = {
   limpeza: [['preco', 'Preço da limpeza no terceiro (R$ por peça)']], cfg: [['impostosVendaPct', 'Impostos sobre a venda (%)']]
 };
 ACAO_OP.hiMudar = 'alterar'; ACAO_OP.hiMudarGravar = 'alterar';
-function podeMudarH(tipo) { return !!CAMPOS_MUDAR[tipo] && pode(MOD_DO_HIST[tipo], 'alterar'); }
+// os campos de Mudar valor, com os benefícios ativos da empresa (padrão na configuração; o valor de cada pessoa no funcionário)
+function camposMudar(tipo) {
+  var l = (CAMPOS_MUDAR[tipo] || []).slice(), B = (S.emp.config && S.emp.config.beneficios) || {};
+  if (tipo === 'cfg' || tipo === 'func') M.idsBeneficios(B).forEach(function (k) {
+    if (B[k].ativo === false) return;
+    var nm = M.nomeBeneficio(k, B[k]);
+    if (tipo === 'cfg') l.push(['beneficios.' + k + '.valor', nm + ' padrão (R$ por mês)'], ['beneficios.' + k + '.desconto', 'Desconto do funcionário no ' + nm.toLowerCase() + ' (R$ por mês)']);
+    else l.push(['benef.' + k + '.valor', nm + ' desta pessoa (R$ por mês)']);
+  });
+  return l.length ? l : null;
+}
+function podeMudarH(tipo) { return !!camposMudar(tipo) && pode(MOD_DO_HIST[tipo], 'alterar'); }
 // datas passadas: só administrador e gestor (perfis.js); os outros mudam a partir de hoje
 function podeDataPassada() { return ehAdmin() || PF.nomePerfil(direitosEm() || {}) === 'Gestor'; }
 function valorHojeCampo(tipo, ref, campo) {
   if (tipo === 'limpeza') { var pt = M.precoTerceiroEm(S.emp, ref, hojeRef()); return pt ? pt.valor : null; }
-  if (tipo === 'cfg') return n(S.emp.config[campo]);
-  var x = porCod(S.emp[R.COLECAO[tipo]] || [], ref, R.CHAVE[tipo]);
-  return x && !vazio(x[campo]) ? n(x[campo]) : null;
+  if (tipo === 'cfg') return n(getPath(S.emp.config, campo));
+  var x = porCod(S.emp[R.COLECAO[tipo]] || [], ref, R.CHAVE[tipo]), v = x ? getPath(x, campo) : null;
+  return !vazio(v) ? n(v) : null;
 }
 function fmtCampoMudar(tipo, campo, v) {
   if (v === null || v === undefined || !isFinite(v)) return '—';
   if (campo === 'vida' || campo === 'cavidades' || campo === 'horasOperacao') return fmtQ(v);
   if (campo === 'impostosVendaPct') return fmtP(v, 2);
+  if (/^benef/.test(campo)) return fmtR2(v);
   return fmtPreciso(v);
 }
 // os pedidos como gravarMudanca grava (quem e o hoje de cada um), para a prévia e a gravação serem as mesmas
@@ -10333,7 +10955,7 @@ function htmlImpacto(r, titulo) {
 var _tMv = null;
 function agendarPreviaMudar() { clearTimeout(_tMv); _tMv = setTimeout(function () { var el = $('#mvPrevia'), x = lerMudar(); if (el && x) el.innerHTML = htmlPreviaMudar(x); }, 250); }
 ACOES.hiMudar = function (el) {
-  var tipo = el.dataset.tipo, ref = el.dataset.ref, campos = CAMPOS_MUDAR[tipo];
+  var tipo = el.dataset.tipo, ref = el.dataset.ref, campos = camposMudar(tipo);
   if (!podeMudarH(tipo)) { semPermissao(); return; }
   if (S.sujo) { toast('Há alterações não gravadas', 'Grave ou descarte as alterações do cadastro antes de mudar um valor com data.', { tipo: 'warn', tempo: 6000 }); return; }
   var hoje = hojeRef(), passado = podeDataPassada(), c = R.criacao(S.emp, TIPO_HIST_EV[tipo], ref);
@@ -10356,7 +10978,7 @@ ACOES.hiMudarGravar = function () {
   var p = problemaMudar(x);
   if (p) { toast('Não foi possível gravar', p, { tipo: 'err', tempo: 6000 }); return; }
   var reqs = reqsMudar(x), nomeC = '';
-  CAMPOS_MUDAR[x.tipo].forEach(function (k) { if (k[0] === x.campo) nomeC = k[1]; });
+  camposMudar(x.tipo).forEach(function (k) { if (k[0] === x.campo) nomeC = k[1]; });
   gravarMudanca(reqs, function () {
     $('#modal').innerHTML = ''; S.sujo = false; S.draft = null; S.draftInfo = null; S._mv = null;
     aposGravar('Valor alterado', x.ref + ': ' + nomeC + ' ' + fmtCampoMudar(x.tipo, x.campo, x.valor) + ' a partir de ' + fmtData(x.desde), { silencioso: true });
@@ -10423,6 +11045,7 @@ function nomeToque(ev, t) {
   }
   if (ev.tipo === 'mp' && (m = /^([pab])\.(\d)$/.exec(t.k))) return nomeImpostoEntrada(+m[2]) + ' sobre ' + { p: 'o preço de compra', a: 'o frete', b: 'outros valores' }[m[1]] + ' (%)';
   if (ev.tipo === 'terceiro') return 'Preço da limpeza no terceiro, por peça';
+  if (campoBenef(t.k)) return maiusc(campoBenef(t.k).nome);
   return maiusc(nomes[t.k] || nomes[t.raiz] || t.k);
 }
 function valorToque(ev, t, v) {
@@ -10431,9 +11054,10 @@ function valorToque(ev, t, v) {
   if (ev.tipo === 'mp' && /^[pab]\.\d$/.test(t.k)) return fmtP(n(v), 2);
   if (ev.tipo === 'terceiro') return fmtPreciso(n(v));
   if (t.campo === 'refugo' || t.campo === 'pct') return fmtP(n(v), 2);
-  if (t.campo === 'tempo' || t.campo === 'setup') return typeof v === 'object' ? (v.modo === 'pph' ? fmtQ(n(v.valor)) + ' peças por hora' : String(v.valor)) : String(v);
+  if (t.campo === 'tempo' || t.campo === 'setup') return typeof v === 'object' ? (v.modo === 'pph' ? fmtQ(n(v.valor)) + ' peças por hora' : v.modo === 'min' ? fmtQ(n(v.valor)) + ' minutos' : v.modo === 'cen' ? fmtQ(n(v.valor)) + ' horas' : String(v.valor)) : String(v);
   if (t.lista && t.campo === 'qtd') return fmtQ(n(v));
   if (ev.tipo === 'mp' && t.k === 'vc') return fmtPreciso(n(v));
+  if (campoBenef(t.k)) { var vb = valorBenef(campoBenef(t.k), v); return vb === 'vazio' ? '—' : vb; }
   var x = valorCampo(ev.tipo, t.raiz, v);
   return x === 'alterado' ? 'alterado' : x === 'vazio' ? '—' : x;
 }
@@ -11253,6 +11877,7 @@ TELAS.comparar = { render: function () { S.aba.hiVista = 'comparar'; return TELA
      molde|código|data          custo do molde por peça: valor ÷ (vida × cavidades)
      limp|peça|data, terc|peça|data   custo da limpeza por peça (na empresa ou no terceiro)
      imp|config|data            impostos sobre a venda (%)
+     hora|peça|data|foco        peças por hora (no gargalo), faturamento e margem por hora (foco: pph, fat, margem)
    alvo: o número mostrado na tela (já arredondado no centavo); as linhas são
    arredondadas de modo a somar exatamente esse número.
    Uma fonte por tela (fonteTela) e o lucro guardado (apurarGuardado): o painel abre na hora.
@@ -11388,6 +12013,7 @@ function explicar(desc) {
     case 'limp': return exLimp(a[1], D);
     case 'terc': return exTerc(a[1], D);
     case 'imp': return exImp(D);
+    case 'hora': return exHora(a[1], D, a[3] || 'margem');
   }
   return vazioOr('Número', 'Não sei explicar este número.');
 }
@@ -11507,8 +12133,9 @@ function exTaxa(cod, D) {
     return { op: k === 'mod' ? '' : '+', rot: nome + (x.manual ? ': taxa digitada no cadastro do setor' : ': ' + fmtR2(x.custo) + ' por mês ÷ ' + horasTxt + ' (' + hh(x.horas) + ')'), v: x.taxa, soma: true, f: fmtR, o: x.manual ? null : o, m: x.manual ? mudDoCampo('setor', cod, 'manual.' + k, D) : null };
   };
   var ls = [parte('mod', 'Hora de mão de obra', 'horas produtivas de quem trabalha no setor', od('mod', cod, D)), parte('maq', 'Hora das máquinas', 'horas das máquinas', od('maq', cod, D)), parte('ggf', 'Hora de gastos gerais', 'horas de operação × postos', null),
-    { op: '=', rot: 'Hora do setor (mão de obra + máquinas + gastos gerais)', v: T.composta, tot: true, f: fmtR },
-    { op: '', rot: 'Horas de operação no mês (cadastro do setor)', txt: hh(n(s.horasOperacao)), info: true, m: mudDoCampo('setor', cod, 'horasOperacao', D) }];
+    { op: '=', rot: 'Hora do setor (mão de obra + máquinas + gastos gerais)', v: T.composta, tot: true, f: fmtR }].concat(T.mod.beneficios ? [
+    { op: '', rot: 'Benefícios na mão de obra: ' + fmtR2(T.mod.beneficios) + ' por mês ÷ ' + fmtQ(T.mod.horas) + ' horas produtivas', txt: fmtR(T.mod.horas > 0 ? T.mod.beneficios / T.mod.horas : 0) + ' da hora', info: true, o: od('mod', cod, D) }] : []).concat([
+    { op: '', rot: 'Horas de operação no mês (cadastro do setor)', txt: hh(n(s.horasOperacao)), info: true, m: mudDoCampo('setor', cod, 'horasOperacao', D) }]);
   return { titulo: 'Hora do setor ' + cod, curto: 'Hora de ' + cod, sub: esc(s.desc || '') + ' · com os valores de ' + fmtData(D), valor: T.composta, fval: fmtR, dataConta: fmtData(D),
     oque: 'O que o setor custa por hora: o custo do mês de cada parte dividido pelas horas. Cada peça paga a hora do setor pelo tempo que passa nele.', linhas: ls };
 }
@@ -11516,9 +12143,10 @@ function exModMaq(cod, D, k) {
   var tr = trEm(D), T = tr.ctx && tr.ctx.taxas[cod];
   if (!T) return vazioOr('Setor ' + cod, 'O setor ' + cod + ' não existia em ' + fmtData(D) + '.');
   var x = T[k], ls = [];
-  if (k === 'mod') x.itens.forEach(function (it, i) { ls.push({ op: i ? '+' : '', rot: it.ref + ' — ' + it.rotulo + ': ' + fmt(it.pct, 0) + '% do tempo no setor', v: it.valor, soma: true, o: od('func', it.ref, D), nota: fmt(it.horas, 1) + ' horas produtivas' }); });
+  if (k === 'mod') x.itens.forEach(function (it, i) { ls.push({ op: i ? '+' : '', rot: it.ref + ' — ' + it.rotulo + ': ' + fmt(it.pct, 0) + '% do tempo no setor', v: it.valor, soma: true, o: od('func', it.ref, D), nota: fmt(it.horas, 1) + ' horas produtivas' + (it.beneficios ? ' · inclui ' + fmtR2(it.beneficios) + ' de benefícios' : '') }); });
   else x.itens.forEach(function (it, i) { ls.push({ op: i ? '+' : '', rot: it.rotulo + (it.qtd !== 1 ? ' (' + fmtQ(it.qtd) + ')' : '') + ': depreciação ' + fmtR2(it.depr) + ' + gastos ' + fmtR2(it.desp), v: it.valor, soma: true }); });
   ls.push({ op: '=', rot: (k === 'mod' ? 'Mão de obra do setor' : 'Máquinas do setor') + ' por mês', v: x.custo, tot: true });
+  if (k === 'mod' && x.beneficios) ls.push({ op: '', rot: 'Benefícios dentro da mão de obra (vale alimentação, transporte…)', txt: fmtR2(x.beneficios), info: true });
   ls.push({ op: '÷', rot: k === 'mod' ? 'Horas produtivas no mês' : 'Horas das máquinas no mês', txt: fmt(x.horas, 1) + ' horas', info: true });
   ls.push({ op: '=', rot: k === 'mod' ? 'Hora de mão de obra' : 'Hora das máquinas', txt: fmtR(x.taxa), info: true });
   return { titulo: (k === 'mod' ? 'Mão de obra de ' : 'Máquinas de ') + cod, curto: (k === 'mod' ? 'Mão de obra ' : 'Máquinas ') + cod, sub: 'Com os valores de ' + fmtData(D), valor: x.custo,
@@ -11529,7 +12157,13 @@ function exFunc(mat, D) {
   if (!c || !f) return vazioOr('Funcionário ' + mat, mat + ' não existia em ' + fmtData(D) + '.');
   if (f.situacao === 'inativo') return { titulo: 'Custo de ' + mat, valor: 0, oque: 'Desligado nesta data: não custa nada.', linhas: [{ op: '', rot: 'Situação: desligado', txt: '', info: true, m: mudDoCampo('func', mat, 'situacao', D) }] };
   var ls = [{ op: '', rot: 'Salário', v: c.salario, soma: true, m: mudDoCampo('func', mat, 'sb', D) }, { op: '+', rot: 'Encargos', v: c.encargos, soma: true }, { op: '+', rot: 'Provisões (férias, 13º…)', v: c.provisoes, soma: true }];
-  if (Math.abs(c.outros || 0) > 1e-9) ls.push({ op: '+', rot: 'Outros valores', v: c.outros, soma: true });
+  if (Math.abs(c.outros || 0) > 1e-9) ls.push({ op: '+', rot: 'Outros valores da tabela de encargos', v: c.outros, soma: true });
+  // Benefícios: uma linha por benefício, com a mudança que pôs o valor (o padrão da empresa ou o desta pessoa)
+  (c.benefItens || []).forEach(function (b) {
+    var campo = b.nao ? 'nao' : b.proprioValor ? 'valor' : null, m = b.nao || b.proprioValor ? mudDoCampo('func', mat, 'benef.' + b.id + '.' + (campo || 'valor'), D) : mudDoCampo('cfg', 'config', 'beneficios.' + b.id + '.valor', D);
+    var txt = 'Benefício: ' + b.nome + (b.nao ? ' (não recebe)' : (b.desconto ? ' ' + fmtR2(b.valor) + ' − ' + fmtR2(b.desconto) + ' de desconto do funcionário' : '') + (b.proprio ? ' (valor desta pessoa)' : ' (padrão da empresa)'));
+    ls.push({ op: '+', rot: txt, v: b.liquido, soma: true, m: m });
+  });
   var s = ls.reduce(function (t, l) { return t + l.v; }, 0);
   if (Math.abs(s - c.total) > 1e-9) ls.push({ op: '+', rot: 'Arredondamento', v: c.total - s, soma: true });
   ls.push({ op: '=', rot: 'Custo por mês', v: c.total, tot: true });
@@ -11537,7 +12171,7 @@ function exFunc(mat, D) {
   ls.push({ op: '=', rot: 'Custo por hora', txt: fmtR(c.custoHora), info: true });
   (f.aloc || []).forEach(function (a) { if (a && ctx.taxas[a.setor]) ls.push({ op: '', rot: fmt(n(a.pct), 0) + '% do tempo no setor ' + a.setor + ' → hora do setor', txt: fmtR(ctx.taxas[a.setor].composta), info: true, o: od('taxa', a.setor, D) }); });
   return { titulo: 'Custo de ' + mat + ' — ' + (f.nome || ''), curto: 'Custo de ' + mat, sub: esc(f.cargo || '') + ' · com os valores de ' + fmtData(D), valor: c.total, dataConta: fmtData(D),
-    oque: 'Salário com encargos e provisões. Dividido pelas horas produtivas e pelo % do tempo em cada setor, entra na hora de mão de obra do setor.', linhas: ls };
+    oque: 'Salário com encargos, provisões e benefícios' + (c.beneficios ? ' (' + fmtR2(c.beneficios) + ' de benefícios)' : '') + '. Dividido pelas horas produtivas (horas trabalhadas × eficiência: ' + fmtQ(c.horas) + ' h × ' + fmtP(c.efic, 0) + ') e pelo % do tempo em cada setor, entra na hora de mão de obra do setor.', linhas: ls };
 }
 function exMp(cod, D) {
   var tr = trEm(D), v = tr.ctx && tr.ctx.mpVal[cod], mp = tr.ctx && tr.ctx.mp[cod];
@@ -11595,6 +12229,31 @@ function exImp(D) {
     oque: 'Um valor da configuração: o % que sai do preço de venda de todas as peças.',
     linhas: [{ op: '', rot: 'Impostos sobre a venda (Configuração › Impostos)', txt: fmtP(pct, 2), tot: true, v: pct, f: function (v) { return fmtP(v, 2); }, m: mudDoCampo('cfg', 'config', 'impostosVendaPct', D) }] };
 }
+function exHora(cod, D, foco) {
+  var x = numerosPeca(cod, D);
+  if (!x) return vazioOr('Por hora de ' + cod, cod + ' não existia em ' + fmtData(D) + '.');
+  var ph = M.porHora(x.c, x.preco ? x.liquido : null, x.sobra), c = x.c, qf = (c && c.qf) || 1;
+  if (ph.pph === null) return vazioOr('Peças por hora de ' + cod, 'A fórmula de ' + cod + ' não tem etapa de produção com tempo: não dá para saber quantas peças saem por hora.');
+  var et = ph.etapa, tit = { pph: 'Peças por hora de ', fat: 'Faturamento por hora de ', margem: 'Margem por hora de ' }[foco] || 'Margem por hora de ';
+  var ls = [];
+  // as etapas da fórmula, cada uma com o tempo por peça; a mais lenta manda
+  (c.linhas || []).forEach(function (L) {
+    if (L.tipo !== 'SP' || L.erro || !(L.tempoH > 0)) return;
+    var t = L.tempoH / qf, gargalo = L.idx === et.idx;
+    ls.push({ op: '', rot: 'Etapa ' + (L.idx + 1) + ': ' + L.ref + ' ' + L.desc + (L.fase ? ' (' + L.fase + ')' : '') + ': ' + tempoExt(t) + ' por peça' + (gargalo ? ' — a mais lenta' : ''), txt: fmtQ(Math.round(1 / t * 10) / 10) + ' por hora', info: true, foco: gargalo && foco === 'pph', o: od('custo', cod, D) });
+  });
+  ls.push({ op: '=', rot: 'Peças por hora na etapa mais lenta (' + et.ref + ' ' + et.desc + ')', v: ph.pph, tot: foco === 'pph', sub: foco !== 'pph', f: function (v) { return fmtQ(Math.round(v * 10) / 10); } });
+  if (foco !== 'pph') {
+    var porPeca = foco === 'fat' ? x.liquido : x.sobra, val = foco === 'fat' ? ph.fatHora : ph.margemHora;
+    if (val === null) return vazioOr(tit + cod, cod + ' não tem preço de venda em ' + fmtData(D) + '.');
+    ls.push({ op: '×', rot: foco === 'fat' ? 'Preço sem impostos por peça' : 'Sobra por peça (preço sem impostos − custo de fazer)', v: porPeca, info: true, f: fmtR, o: od('preco', cod, D, foco === 'fat' ? 'liquido' : 'sobra') });
+    ls.push({ op: '=', rot: foco === 'fat' ? 'Faturamento por hora (sem impostos)' : 'Margem por hora', v: val, tot: true, f: fmtR2 });
+  }
+  return { titulo: tit + cod, curto: tit.replace(/ de $/, '') + ' ' + cod, sub: esc(x.p.desc || '') + ' · com os valores de ' + fmtData(D), valor: foco === 'pph' ? ph.pph : foco === 'fat' ? ph.fatHora : ph.margemHora,
+    fval: foco === 'pph' ? function (v) { return fmtQ(Math.round(v * 10) / 10) + ' peças'; } : fmtR2, dataConta: fmtData(D),
+    oque: 'Quantas peças saem por hora na etapa mais lenta da fórmula (o gargalo: as outras esperam por ela) e quanto isso rende por hora de máquina. Serve para escolher o que pôr na máquina: a peça com a maior margem por hora paga mais a hora parada.',
+    linhas: ls, depois: 'O tempo de cada etapa vem da fórmula da peça (peças por hora ou tempo por peça, já contando as cavidades do molde); a preparação não entra.' };
+}
 
 /* =====================================================================
    VERSÃO OFICIAL — a tela ligada ao banco da Central no Supabase
@@ -11612,10 +12271,12 @@ function exImp(D) {
    ===================================================================== */
 var NV = {
   api: null, papeis: {}, nomes: {}, ret: {}, fila: Promise.resolve(), geracao: 0, pendentes: 0, gravouEm: 0,
-  parar: {}, timers: {}, quem: {}, acessos: {}, histProd: {}, imp: null, recuperacao: false
+  parar: {}, timers: {}, quem: {}, acessos: {}, histProd: {}, imp: null, recuperacao: false,
+  aoCarregar: []   // depois de entrar e de cada recarga (outra pessoa gravou): as notificações conferem o que é novo
 };
+function nvAvisarCarga(k) { NV.aoCarregar.forEach(function (fn) { try { fn(k); } catch (e) { console.error(e); } }); }
 var CFG_NUVEM = window.CENTRAL_SUPABASE || null;
-var ROTAS_VAZIA = { 'boas-vindas': 1, importar: 1, usuarios: 1, motor: 1, auditoria: 1 };
+var ROTAS_VAZIA = { 'boas-vindas': 1, importar: 1, usuarios: 1, motor: 1, auditoria: 1, notificacoes: 1 };
 function nvPlaceholder(v) { return !v || /^COLE_AQUI/.test(String(v)); }
 function nvVazia() { return !!(S.emp && !S.emp.somenteProducao && (!S.emp.config || S.emp.cfgProvisoria)); }
 function nvCfgPadrao(emp) { var c = clone(window.CONFIG_PADRAO || {}); c.empresa = emp.nome; return c; }
@@ -11842,7 +12503,7 @@ function nvEntrarComSessao(u) {
       else if (emps.length === 1) entrarEmpresa(emps[0]);
       else { S.fase = 'empresas'; salvarSessao(); render(); return; }
       if (TELAS[h] && h !== S.rota && podeRota(h)) ir(h, {}, true);
-    }).then(function () { if (NV.aviso && S.usuario) { toast(NV.aviso[0], NV.aviso[1]); NV.aviso = null; } });
+    }).then(function () { if (NV.aviso && S.usuario) { toast(NV.aviso[0], NV.aviso[1]); NV.aviso = null; } if (S.usuario) nvAvisarCarga(null); });
   }).then(null, function (e) {
     console.error(e);
     S.usuario = null; S.fase = 'login'; NV.msgLogin = 'Não foi possível carregar os dados: ' + e.message; render();
@@ -11871,6 +12532,7 @@ function nvRecarregar(k) {
       if (!podeRota(S.rota)) S.rota = primeiraRota();
       renderPainel(); atualizarNav();
     } else if (S.fase === 'empresas') render();
+    nvAvisarCarga(k);
   }, function (e) { console.error(e); toast('Sem conexão com o servidor', e.message, { tipo: 'err', tempo: 7000 }); });
 }
 function nvLimpar(msg) {
@@ -12160,6 +12822,311 @@ if (CFG_NUVEM) {
 }
 
 /* =====================================================================
+   NOTIFICAÇÕES (só a versão oficial: dist/index.html e dist/oficial/)
+   Só administrador e gestor (custos são sensíveis). Duas formas:
+   (A) com a Central aberta, mesmo minimizada: depois de cada carga e de
+       cada atualização em tempo real (e a cada 5 minutos, pela hora da
+       produção), confere os 4 avisos (Notificacoes.avisosDaEmpresa, as
+       mesmas contas dos alertas) e mostra o que é novo — notificação do
+       sistema com a aba escondida, aviso na tela com ela à vista;
+   (B) no celular com a Central instalada (PWA): "Ativar no celular" inscreve
+       o aparelho (Web Push) e a função "alertas" do Supabase manda a cada
+       30 minutos, com a Central fechada.
+   Nunca repete: as chaves já avisadas ficam neste navegador (localStorage)
+   e no banco (notificacoes_enviadas, o que a função já mandou).
+   Permissão do navegador só pelo botão da tela Notificações, nunca ao abrir.
+   ===================================================================== */
+var NF = window.Notificacoes;
+var NT = { prefs: null, enviadas: null, cache: {}, reg: null, regP: null, inscrito: null, conferindo: false, timer: null, link: null };
+var NT_CHAVE = 'centralCustos.notificacoes.';
+var NT_TEMPO = 5 * 60 * 1000;
+
+// o service worker só com https (GitHub Pages) ou no próprio computador (localhost)
+function ntPodeSW(loc) { loc = loc || location; return loc.protocol === 'https:' || ((loc.protocol === 'http:') && (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1')); }
+function ntTemNotificacao() { return typeof window.Notification === 'function'; }
+function ntTemPush() { return false; }
+function ntVapid() { var v = CFG_NUVEM && CFG_NUVEM.vapidPublica; return nvPlaceholder(v) ? null : String(v).trim(); }
+function ntPermissao() { return ntTemNotificacao() ? Notification.permission : 'indisponivel'; }
+// as empresas em que esta pessoa recebe (administrador ou gestor)
+function ntEmpresas() { return Object.keys(NV.papeis || {}).filter(function (k) { return NF.PAPEIS[NV.papeis[k]] && S.db && S.db.empresas[k]; }).sort(); }
+function ntRecebe() { return !!S.usuario && ntEmpresas().length > 0; }
+
+/* ---------------- o que já foi avisado neste navegador ---------------- */
+function ntLidas() { try { var o = JSON.parse(localStorage.getItem(NT_CHAVE + S.usuario.id) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+function ntGravarLidas(o) { try { localStorage.setItem(NT_CHAVE + S.usuario.id, JSON.stringify(o)); } catch (e) { } }
+
+/* ---------------- service worker ---------------- */
+function ntRegistrarSW() {
+  if (NT.regP || !ntTemPush() || !ntPodeSW()) return NT.regP;
+  NT.regP = navigator.serviceWorker.register('sw.js').then(function () { return navigator.serviceWorker.ready; }).then(function (reg) { NT.reg = reg; return reg; },
+    function (e) { console.warn('Central de Custos: service worker não registrado (' + e.message + '). Notificações no celular precisam do sw.js na mesma pasta do index.html.'); NT.regP = null; return null; });
+  navigator.serviceWorker.addEventListener('message', function (ev) { if (ev.data && ev.data.central === 'abrir') ntAbrir(ev.data.url); });
+  return NT.regP;
+}
+// a chave VAPID pública (base64url) no formato que o navegador pede
+function ntChave(b64) {
+  var s = String(b64).replace(/-/g, '+').replace(/_/g, '/'); s += '==='.slice(0, (4 - s.length % 4) % 4);
+  var bin = atob(s), u = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+function ntConferirInscricao() {
+  if (!NT.regP) { NT.inscrito = false; return Promise.resolve(false); }
+  return NT.regP.then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (s) {
+    var antes = NT.inscrito; NT.inscrito = s ? s.endpoint : false;
+    if (antes !== NT.inscrito && S.rota === 'notificacoes' && S.fase === 'app') renderPainel();
+    return NT.inscrito;
+  }, function () { NT.inscrito = false; return false; });
+}
+
+/* ---------------- abrir a tela do aviso: #ir/<empresa>/<rota>[/<id>] ---------------- */
+var NT_ROTAS = { peca: 1, pecas: 1, moldes: 1, 'producao-dia': 1, mudanca: 1, historico: 1, notificacoes: 1 };
+function ntAbrir(url) {
+  var h = String(url || ''), i = h.indexOf('#'); h = i >= 0 ? h.slice(i) : h;
+  if (h === '#notificacoes') { if (S.fase === 'app' && podeRota('notificacoes')) ir('notificacoes', {}, true); return; }
+  var l = NF.lerLink(h);
+  if (!l || !NT_ROTAS[l.rota]) return;
+  if (!S.usuario) { NT.link = l; return; }   // depois de entrar
+  NT.link = null;
+  if (empresasPermitidas().indexOf(l.empresa) < 0) return;
+  try { window.focus(); } catch (e) { }
+  comConfirmacao(function () {
+    if (S.fase !== 'app' || S.db.ativa !== l.empresa) entrarEmpresa(l.empresa);
+    if (!podeRota(l.rota)) return;
+    ir(l.rota, l.id ? { id: l.id } : {}, true);
+  });
+}
+window.addEventListener('hashchange', function () { if (NUVEM && NF.lerLink(location.hash)) ntAbrir(location.hash); });
+NT.link = NF.lerLink(location.hash);   // aberta pelo clique numa notificação (Central fechada)
+
+/* ---------------- conferir e avisar ---------------- */
+function ntCarregar() {
+  if (!ntRecebe()) return Promise.resolve();
+  var dono = S.usuario.id;
+  if (NT.dono !== dono) { NT.prefs = null; NT.enviadas = null; NT.cache = {}; }   // outra pessoa entrou nesta aba
+  NT.dono = dono;
+  return Promise.all([
+    NV.api.notifPrefs().then(function (p) { NT.prefs = p; }, function (e) { console.warn(e); NT.prefs = NT.prefs || []; }),
+    NV.api.notifEnviadas().then(function (o) { NT.enviadas = o; }, function (e) { console.warn(e); NT.enviadas = NT.enviadas || {}; })
+  ]);
+}
+// os avisos de uma empresa: a aberta usa os alertas já calculados; as outras, uma vez por carga (o objeto muda a cada recarga)
+function ntAvisosDe(k, rel) {
+  var emp = S.db.empresas[k];
+  if (!emp) return null;
+  if (emp === S.emp && S.fase === 'app') {
+    if (semContas() || !(emp.produtos || []).length) return null;
+    return NF.avisosDaEmpresa(emp, { relogio: rel, hoje: hojeRef(), alertas: S.alertas, fonte: S.fonte || undefined });
+  }
+  var c = NT.cache[k];
+  if (!c || c.emp !== emp || c.data !== rel.data) {
+    var materializada = !emp.somenteProducao && emp.config && !emp.cfgProvisoria;
+    c = NT.cache[k] = { emp: emp, data: rel.data, r: materializada ? NF.avisosDaEmpresa(emp, { relogio: rel }) : null };
+  }
+  return c.r;
+}
+function ntConferir() {
+  // só dentro de uma empresa (na escolha da empresa não há onde mostrar o aviso: espera entrar)
+  if (!ntRecebe() || !NT.prefs || !NT.enviadas || NT.conferindo || S.fase !== 'app' || NT.dono !== S.usuario.id) return [];
+  NT.conferindo = true;
+  try {
+    var rel = NF.agoraSP(new Date()), itens = [], lidas = ntLidas(), ja = {};
+    ntEmpresas().forEach(function (k) {
+      var r;
+      try { r = ntAvisosDe(k, rel); } catch (e) { console.error(e); return; }
+      if (!r || !r.calculado) return;
+      itens = itens.concat(r.itens);
+      NF.esquecer(r.itens, lidas, k).forEach(function (c) { delete lidas[c]; });   // a situação acabou: se voltar, avisa de novo
+    });
+    Object.keys(NT.enviadas).forEach(function (c) { ja[c] = true; });
+    Object.keys(lidas).forEach(function (c) { ja[c] = true; });
+    var novos = NF.novosPara(itens, { id: S.usuario.id, nome: S.usuario.nome }, NT.prefs, ja, rel);
+    novos.forEach(function (x) { x.chaves.forEach(function (c) { lidas[c] = Date.now(); }); });
+    ntGravarLidas(lidas);
+    // com a tela à vista e muitos de uma vez (ao entrar, por exemplo): um aviso só, com a lista
+    if (novos.length > 2 && document.visibilityState !== 'hidden') toastResumo(novos);
+    else novos.forEach(ntMostrar);
+    return novos;
+  } finally { NT.conferindo = false; }
+}
+function ntMostrar(x) {
+  var escondida = document.visibilityState === 'hidden';
+  if (escondida && ntPermissao() === 'granted') {
+    var op = { body: x.corpo, tag: x.tag, icon: 'icon-192.png', lang: 'pt-BR', data: { url: x.url } };
+    try {
+      if (NT.reg && NT.reg.showNotification) {   // Android só mostra pelo service worker
+        Promise.resolve(NT.reg.showNotification(x.titulo, op)).then(null, function (e) { console.warn(e); toastAviso(x); });
+        return;
+      }
+      var n = new Notification(x.titulo, op);
+      n.onclick = function () { try { window.focus(); } catch (e) { } ntAbrir(x.url); n.close(); };
+      return;
+    } catch (e) { console.warn(e); }
+  }
+  toastAviso(x);
+}
+// com a tela à vista: o aviso na própria tela, com o botão para abrir
+function toastAviso(x) {
+  var box = $('#toasts'); if (!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast warn nt-toast'; el.setAttribute('role', 'status');
+  el.innerHTML = '<b>' + esc(x.titulo) + '</b>' + esc(x.corpo) + '<div><button class="btn btn-ghost btn-xs" type="button">Abrir</button></div>';
+  el.querySelector('button').onclick = function () { el.remove(); ntAbrir(x.url); };
+  box.appendChild(el);
+  setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; setTimeout(function () { el.remove(); }, 450); }, 12000);
+}
+function toastResumo(l) {
+  var box = $('#toasts'); if (!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast warn nt-toast nt-resumo'; el.setAttribute('role', 'status');
+  el.innerHTML = '<b>' + l.length + ' avisos novos</b>' + l.slice(0, 4).map(function (x) { return '<div class="nt-linha">· ' + esc(x.titulo) + '</div>'; }).join('') + (l.length > 4 ? '<div class="nt-linha">· e mais ' + (l.length - 4) + '</div>' : '') +
+    (podeRota('alertas') ? '<div><button class="btn btn-ghost btn-xs" type="button">Ver alertas</button></div>' : '');
+  var b = el.querySelector('button'); if (b) b.onclick = function () { el.remove(); ir('alertas', {}); };
+  box.appendChild(el);
+  setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; setTimeout(function () { el.remove(); }, 450); }, 12000);
+}
+// depois de entrar (k nulo) e de cada recarga de uma empresa
+NV.aoCarregar.push(function (k) {
+  if (!ntRecebe()) return;
+  if (k) delete NT.cache[k];
+  var pronto = k && NT.prefs && NT.enviadas ? Promise.resolve() : ntCarregar();
+  pronto.then(function () {
+    if (!k) {
+      ntRegistrarSW(); ntConferirInscricao();
+      clearInterval(NT.timer); NT.timer = setInterval(function () { if (S.usuario) ntConferir(); }, NT_TEMPO);
+      if (NT.link) ntAbrir('#ir/' + encodeURIComponent(NT.link.empresa) + '/' + NT.link.rota + (NT.link.id ? '/' + encodeURIComponent(NT.link.id) : ''));
+    }
+    // o que a função já mandou (por outro aparelho) entra antes de conferir
+    return k ? NV.api.notifEnviadas().then(function (o) { NT.enviadas = o; }, function () { }) : null;
+  }).then(function () { setTimeout(ntConferir, 0); });
+});
+// a pessoa voltou a olhar a tela depois de horas: confere de novo (a hora da produção pode ter passado)
+document.addEventListener('visibilitychange', function () { if (NUVEM && S.usuario && document.visibilityState === 'visible') setTimeout(ntConferir, 500); });
+
+/* ---------------- tela Notificações (menu do usuário) ---------------- */
+function ntPrefDe(k, tipo) { return NF.prefDe(NT.prefs || [], S.usuario.id, k, tipo); }
+function ntNomeAparelho() { return /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '') ? 'neste celular' : 'neste computador'; }
+TELAS.notificacoes = {
+  render: function () {
+    var h = ph('Notificações', 'Avisos no computador (com a Central aberta, mesmo minimizada) e no celular (com a Central instalada como app, mesmo fechada).');
+    if (!ntRecebe()) return h + alerta('info', 'Só administrador e gestor recebem notificações: elas falam de custos.');
+    if (!NT.prefs) { ntCarregar().then(function () { if (S.rota === 'notificacoes') renderPainel(); }); return h + '<div class="vazio">Carregando as suas preferências…</div>'; }
+    var perm = ntPermissao(), sw = ntTemPush() && ntPodeSW(), vapid = ntVapid();
+    // neste aparelho
+    var pc = perm === 'granted' ? '<p class="desc" id="ntPerm">' + badge('Permitidas', 'b-ok') + ' O navegador mostra as notificações da Central ' + ntNomeAparelho() + '.</p>'
+      : perm === 'denied' ? '<p class="desc" id="ntPerm">' + badge('Bloqueadas', 'b-crit') + ' O navegador está bloqueando. Libere no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.</p>'
+      : perm === 'indisponivel' ? '<p class="desc" id="ntPerm">' + badge('Indisponível', 'b-mute') + ' Este navegador não mostra notificações.</p>'
+      : '<p class="desc" id="ntPerm">O navegador ainda não pode mostrar notificações da Central.</p><div class="inline">' + btn('Permitir notificações ' + ntNomeAparelho(), 'ntPermitir', 'id="ntPermitir"', 'btn-accent', 'bell') + '</div>';
+    var push;
+    if (!ntTemPush()) push = '<p class="hint">Nesta versão as notificações aparecem só com a Central aberta (ou minimizada) no computador.</p>';
+    else if (!ntPodeSW()) push = '<p class="hint" id="ntSemHttps">Para receber com a Central fechada, abra a Central pelo endereço publicado (https, GitHub Pages).</p>';
+    else if (!vapid) push = '<p class="hint" id="ntSemVapid">Falta a chave pública das notificações no index.html (supabase/NOTIFICACOES.md, passo 2). Avise o administrador.</p>';
+    else if (NT.inscrito) push = '<p class="desc" id="ntInscrito">' + badge('Ativado', 'b-ok') + ' Este aparelho recebe as notificações mesmo com a Central fechada.</p><div class="inline">' + btn('Desativar neste aparelho', 'ntDesativar', 'id="ntDesativar"', 'btn-ghost', 'x') + '</div>';
+    else push = '<p class="desc">Para receber com a Central fechada: no Android, instale a Central (Chrome → menu ⋮ → <b>Instalar app</b>), abra pelo ícone e toque abaixo.</p><div class="inline">' + btn('Ativar no celular', 'ntAtivar', 'id="ntAtivar"', 'btn-accent', 'bell') + '</div>';
+    h += '<div class="grid g2"><div>' + caixa('Com a Central aberta', pc) + '</div><div>' + caixa('Com a Central fechada (celular)', push +
+      '<div class="inline" style="margin-top:8px">' + btn('Enviar notificação de teste', 'ntTestar', 'id="ntTestar"', 'btn-ghost', 'bell') + '</div><p class="hint">O teste vai só para os seus aparelhos ativados.</p>') + '</div></div>';
+    // o que avisar, por empresa
+    var emps = ntEmpresas();
+    h += tabelaBox('O que avisar', '<table id="ntPrefs"><thead><tr><th>Aviso</th>' + emps.map(function (k) { return '<th class="c">' + esc(S.db.empresas[k].nome) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      NF.TIPOS.map(function (t) {
+        return '<tr><td><b>' + esc(t.nome) + '</b><div class="hint">' + esc(t.desc) + '</div></td>' + emps.map(function (k) {
+          var p = ntPrefDe(k, t.id), id = 'nt-' + k + '-' + t.id;
+          var hora = t.id === 'producao_nao_lancada' ? '<div class="inline" style="justify-content:center;margin-top:4px"><label class="hint" for="' + id + '-h">a partir de</label><input class="i" type="time" id="' + id + '-h" style="width:auto" data-ch="ntHora" data-emp="' + esc(k) + '" value="' + esc(p.hora) + '"' + (p.ligado ? '' : ' disabled') + '></div>' : '';
+          return '<td class="c"><label class="chk" style="justify-content:center"><input type="checkbox" id="' + id + '" data-ch="ntPref" data-emp="' + esc(k) + '" data-tipo="' + t.id + '"' + (p.ligado ? ' checked' : '') + ' aria-label="' + esc(t.nome + ' — ' + S.db.empresas[k].nome) + '"><span>' + (p.ligado ? 'Ligado' : 'Desligado') + '</span></label>' + hora + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table>', 'cada aviso uma vez só');
+    h += '<p class="hint">A hora da produção é a de Brasília, em dias úteis (segunda a sexta). Só administrador e gestor recebem notificações: elas falam de custos.</p>';
+    return h;
+  },
+  montar: function () { ntConferirInscricao(); }
+};
+ACOES.ntPermitir = function () {
+  if (!ntTemNotificacao()) return;
+  var p = Notification.requestPermission(function () { });
+  Promise.resolve(p).then(function (r) {
+    if ((r || Notification.permission) === 'granted') toast('Notificações permitidas', 'Com a Central aberta (mesmo minimizada), os avisos aparecem ' + ntNomeAparelho() + '.');
+    else toast('Notificações não permitidas', 'O navegador não vai mostrar os avisos. Dá para mudar no cadeado ao lado do endereço.', { tipo: 'warn', tempo: 7000 });
+    renderPainel();
+  });
+};
+ACOES.ntAtivar = function (el) {
+  var vapid = ntVapid();
+  if (!ntTemPush() || !ntPodeSW() || !vapid) { renderPainel(); return; }
+  if (el) { el.disabled = true; el.textContent = 'Ativando…'; }
+  var falhou = function (msg) { toast('Não foi possível ativar', msg, { tipo: 'err', tempo: 9000 }); renderPainel(); };
+  Promise.resolve(Notification.requestPermission(function () { })).then(function (r) {
+    if ((r || Notification.permission) !== 'granted') { falhou('O aparelho não permitiu as notificações. Libere nas configurações do Chrome (Notificações → Central de Custos) e tente de novo.'); return; }
+    return (ntRegistrarSW() || Promise.resolve(null)).then(function (reg) {
+      if (!reg) throw new Error('o service worker (sw.js) não carregou.');
+      var nova = function () { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: ntChave(vapid) }); };
+      // inscrição antiga com outra chave: troca
+      return reg.pushManager.getSubscription().then(function (s) { return s ? s.unsubscribe().then(nova) : nova(); });
+    }).then(function (sub) {
+      return NV.api.inscreverPush(sub.toJSON(), navigator.userAgent).then(function (r2) {
+        if (!r2.ok) { sub.unsubscribe(); falhou(r2.motivo); return; }
+        NT.inscrito = sub.endpoint;
+        toast('Notificações ativadas', 'Este aparelho recebe os avisos mesmo com a Central fechada. Use "Enviar notificação de teste" para conferir.', { tempo: 7000 });
+        renderPainel();
+      });
+    });
+  }).then(null, function (e) { console.error(e); falhou(e && e.message ? e.message : String(e)); });
+};
+ACOES.ntDesativar = function () {
+  (NT.regP || Promise.resolve(null)).then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (s) {
+    if (!s) { NT.inscrito = false; renderPainel(); return; }
+    return NV.api.tirarInscricao(s.endpoint).then(function () { return s.unsubscribe(); }).then(function () {
+      NT.inscrito = false; toast('Desativado', 'Este aparelho não recebe mais as notificações com a Central fechada.'); renderPainel();
+    });
+  }).then(null, function (e) { toast('Não foi possível desativar', e.message, { tipo: 'err' }); });
+};
+ACOES.ntTestar = function (el) {
+  if (el) el.disabled = true;
+  NV.api.testarNotificacao().then(function (r) {
+    if (el) el.disabled = false;
+    if (r.ok) toast('Notificação de teste enviada', 'Enviada para ' + r.enviados + (r.enviados === 1 ? ' aparelho.' : ' aparelhos.') + ' Ela chega em alguns segundos.', { tempo: 7000 });
+    else toast('Teste não enviado', r.motivo, { tipo: 'warn', tempo: 9000 });
+  });
+};
+function ntGravarPref(k, tipo, campos) {
+  NT.prefs = (NT.prefs || []).filter(function (p) { return !(p.empresa_id === k && p.tipo === tipo); })
+    .concat([{ user_id: S.usuario.id, empresa_id: k, tipo: tipo, ligado: campos.ligado, hora_producao: campos.hora }]);
+  renderPainel();
+  NV.api.gravarNotifPref(k, tipo, campos).then(function (r) {
+    if (!r.ok) { toast('Não foi gravado', r.motivo, { tipo: 'err', tempo: 8000 }); NT.prefs = null; renderPainel(); }
+  });
+}
+ACOES.ntPref = function (el) {
+  var k = el.dataset.emp, t = el.dataset.tipo, p = ntPrefDe(k, t);
+  ntGravarPref(k, t, { ligado: el.checked, hora: p.hora });
+};
+ACOES.ntHora = function (el) {
+  if (!/^\d{2}:\d{2}$/.test(el.value)) return;
+  var k = el.dataset.emp, p = ntPrefDe(k, 'producao_nao_lancada');
+  ntGravarPref(k, 'producao_nao_lancada', { ligado: p.ligado, hora: el.value });
+};
+
+/* ---------------- ligar ---------------- */
+if (CFG_NUVEM && NF) {
+  var ntPodeOrig = pode;
+  pode = function (mod, op, emp) { return mod === 'notificacoes' ? ntRecebe() : ntPodeOrig(mod, op, emp); };
+  // Notificações no menu do usuário (administrador e gestor)
+  var ntMenuOrig = ACOES.menuUsuario;
+  ACOES.menuUsuario = function (el, ev) {
+    ntMenuOrig(el, ev);
+    var m = $('.menu-u'), senha = m && m.querySelector('[data-a="trocarMinhaSenha"]');
+    if (!senha || S.fase !== 'app' || !ntRecebe()) return;
+    var b = document.createElement('button');
+    b.className = 'btn btn-ghost'; b.setAttribute('data-a', 'ir'); b.setAttribute('data-rota', 'notificacoes'); b.id = 'menuNotificacoes';
+    b.innerHTML = ic('bell') + 'Notificações';
+    senha.parentNode.insertBefore(b, senha);
+  };
+  // entrou numa empresa (depois da escolha, ou pelo link de uma notificação): confere
+  var ntEntrarOrig = entrarEmpresa;
+  entrarEmpresa = function (k) { ntEntrarOrig(k); if (S.fase === 'app') setTimeout(ntConferir, 0); };
+  window.CentralNotificacoes = { podeSW: ntPodeSW, conferir: ntConferir, abrir: ntAbrir, estado: NT, chave: ntChave };
+}
+
+/* =====================================================================
    INICIALIZAÇÃO
    ===================================================================== */
 function iniciar() {
@@ -12179,7 +13146,7 @@ function iniciar() {
   recalcular(false);
   render();
 }
-window.CentralCustos = { S: S, ir: ir, abrirRastro: abrirRastro, TELAS: TELAS, recalcular: recalcular, render: render, pode: pode, perAtual: perAtual };
+window.CentralCustos = { S: S, ir: ir, abrirRastro: abrirRastro, TELAS: TELAS, recalcular: recalcular, render: render, pode: pode, perAtual: perAtual, abrirOrigem: abrirOrigem, fecharRastro: function () { fecharRastro(); }, hojeRef: hojeRef };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
 })();
