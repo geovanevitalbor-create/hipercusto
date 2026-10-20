@@ -1338,6 +1338,24 @@ html[data-theme="light"] .tg-m.ok{color:#15803d}html[data-theme="light"] .tg-m.b
   .tbl-pecas td:first-child .td-sub{max-width:150px}
 }
 
+/* ===================== histórico de um tipo: lista dos itens à esquerda, o item escolhido à direita ===================== */
+.hm-topo{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.hm{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+.hm-lista{position:sticky;top:76px;max-height:calc(100vh - 96px);display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(var(--vidro-rgb),.36);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+html[data-theme="light"] .hm-lista{background:var(--surf);border-color:var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.hm-itens{overflow-y:auto;display:flex;flex-direction:column;gap:3px;margin:0 -6px;padding:0 6px 2px}
+.hm-item{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:2px 8px;width:100%;text-align:left;padding:9px 10px;border-radius:10px;border:1px solid transparent;border-left:3px solid transparent;background:transparent;color:var(--text2);cursor:pointer;font:inherit}
+.hm-item:hover{background:var(--hover)}
+.hm-item.on{background:rgba(var(--acc-rgb),.14);border-color:rgba(var(--acc-rgb),.4);border-left-color:var(--acc)}
+.hm-cod{font:700 11.5px var(--f-mono);color:var(--text)}
+.hm-nome{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-meta{grid-column:1/-1;font-size:11px;color:var(--text3)}
+.hm-meta b{color:var(--text2)}
+.hm-item.inativo{opacity:.55}
+.hm-det{min-width:0}
+.hm-det>.hi-atual:first-child{margin-top:0}
+@media (max-width:1100px){.hm{grid-template-columns:minmax(0,1fr)}.hm-lista{position:static;max-height:none}.hm-itens{max-height:260px}}
+
 </style>
 </head>
 <body style="margin:0">
@@ -11500,6 +11518,32 @@ function htmlEscolhaH(tipo, sel) {
   }
   return h + '</div>';
 }
+// o histórico de um tipo de cadastro: à esquerda a lista dos itens (com quantas mudanças cada um teve), à direita o item escolhido;
+// ou, em "Todas as mudanças", a linha do tempo só deste tipo
+var TIPOS_HIST_ABA = [['molde', 'Moldes'], ['mp', 'Matérias-primas'], ['prod', 'Peças'], ['limpeza', 'Limpeza'], ['func', 'Funcionários'], ['setor', 'Setores'], ['cfg', 'Impostos']];
+var UM_TIPO_H = { molde: 'Por molde', mp: 'Por matéria-prima', prod: 'Por peça', limpeza: 'Por peça', func: 'Por funcionário', setor: 'Por setor', cfg: 'Impostos' };
+function vistaHistTipo(tipo) {
+  S.filtros.hiTipo = tipo;   // os botões de escolher e comparar agem neste tipo
+  var modo = tipo === 'cfg' ? 'item' : abaAtual('hm-' + tipo, 'item');
+  var h = tipo === 'cfg' ? '' : '<div class="hm-topo">' + seg('hm-' + tipo, [['item', UM_TIPO_H[tipo] || 'Por item'], ['tempo', 'Todas as mudanças']], modo) + '</div>';
+  if (modo === 'tempo') return h + vistaTempo(tipo);
+  var itens = itensHist(tipo);
+  if (!itens.length) return h + '<div class="card vazio">Nenhum cadastro deste tipo ainda.</div>';
+  var sel = selecaoH(tipo), busca = S.filtros['hmBusca_' + tipo] || '', tEv = TIPO_HIST_EV[tipo], cont = {}, ult = {};
+  fonteTela().efetivos.forEach(function (ev) { if (ev.tipo === tEv && ev.acao === 'alterar') { cont[ev.ref] = (cont[ev.ref] || 0) + 1; if (!ult[ev.ref] || ev.desde > ult[ev.ref]) ult[ev.ref] = ev.desde; } });
+  var lista = itens.filter(function (it) { return bate(it.ref + ' ' + (it.nome || ''), busca); });
+  var det = blocoHistorico(tipo, sel, 'hi', { mudar: true, marca: S.filtros.hiMarca || null });
+  S.filtros.hiMarca = null;
+  if (itens.length === 1) return h + '<div class="hm-det">' + det + '</div>';
+  return h + '<div class="hm"><aside class="hm-lista" aria-label="Itens">' +
+    '<div class="campo busca"><label for="f-hmBusca_' + tipo + '">Buscar</label><input class="i" id="f-hmBusca_' + tipo + '" data-f="hmBusca_' + tipo + '" value="' + esc(busca) + '" placeholder="Código ou nome" autocomplete="off"></div>' +
+    '<div class="hm-itens">' + lista.map(function (it) {
+      var on = sel.indexOf(it.ref) >= 0;
+      return '<button class="hm-item' + (on ? ' on' : '') + (it.inativo ? ' inativo' : '') + '" data-a="hiVer" data-ref="' + esc(it.ref) + '"' + (on ? ' aria-current="true"' : '') + '><span class="hm-cod">' + esc(it.ref) + '</span><span class="hm-nome">' + esc(it.nome || '') + '</span>' +
+        '<span class="hm-meta">' + (cont[it.ref] ? '<b>' + cont[it.ref] + '</b>' + (cont[it.ref] === 1 ? ' mudança' : ' mudanças') + ' · última em ' + fmtData(ult[it.ref]) : 'sem mudanças') + (it.inativo ? ' · inativo' : '') + '</span></button>';
+    }).join('') + (lista.length ? '' : '<div class="vazio">Nada com essa busca.</div>') + '</div></aside>' +
+    '<div class="hm-det">' + det + '</div></div>';
+}
 function vistaPorItem() {
   var tipo = S.filtros.hiTipo || 'mp';
   if (!nomeTipoHist(tipo)) tipo = 'mp';
@@ -11516,12 +11560,13 @@ function vistaPorItem() {
   return h;
 }
 var FILTRO_TIPO_H = TIPOS_HIST.map(function (t) { return [t[0], t[1]]; });
-function vistaTempo() {
-  var f = S.filtros, hoje = hojeRef(), per = f.hiPer || '12', tipo = f.hiTTipo || '';
+// tipoFixo: a linha do tempo de um tipo só (sub-item Histórico das listas): sem o filtro "O que"
+function vistaTempo(tipoFixo) {
+  var f = S.filtros, hoje = hojeRef(), per = f.hiPer || '12', tipo = tipoFixo !== undefined ? tipoFixo : (f.hiTTipo || '');
   var ini = per === 'tudo' ? '0000-00-00' : per === '3' ? mesesAntes(hoje.slice(0, 7), 2) + '-01' : mesesAntes(hoje.slice(0, 7), 11) + '-01', fimT = '9999-12-31', px = perAtual();
   if (per === 'topo') { ini = px.ini; fimT = px.fim; }
   var todos = fonteTela().efetivos.filter(function (ev) { return (!tipo || HIST_DO_EV[ev.tipo] === tipo) && ev.desde >= ini && ev.desde <= fimT && (f.hiCriar || ev.acao !== 'criar'); }).slice().reverse();
-  var h = '<div class="tbl-tools">' + filtroSelect('hiTTipo', 'O que', FILTRO_TIPO_H, 'Tudo') +
+  var h = '<div class="tbl-tools">' + (tipoFixo !== undefined ? '' : filtroSelect('hiTTipo', 'O que', FILTRO_TIPO_H, 'Tudo')) +
     '<div class="campo"><label for="f-hiPer">Período</label><select class="i" id="f-hiPer" data-f="hiPer">' + [['topo', 'O período do topo (' + px.nome + ')'], ['3', 'Últimos 3 meses'], ['12', 'Últimos 12 meses'], ['tudo', 'Desde o começo']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === per ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
     '<label class="chk"><input type="checkbox" data-f="hiCriar"' + (f.hiCriar ? ' checked' : '') + '><span>Mostrar cadastros novos</span></label></div>';
   if (!todos.length) return h + '<div class="card vazio">Nenhuma mudança neste filtro.</div>';
@@ -11541,10 +11586,11 @@ function vistaTempo() {
 TELAS.historico = {
   render: function () {
     var vista = abaAtual('hiVista', S.rota === 'mudancas' ? 'tempo' : 'item');
+    if (vista === 'item' || (vista !== 'tempo' && vista !== 'comparar' && !nomeTipoHist(vista))) vista = nomeTipoHist(S.filtros.hiTipo) ? S.filtros.hiTipo : 'molde';
     var nC = itensCmp().length;
     var h = mancheteHist();
-    h += abas('hiVista', [['item', 'Por item'], ['tempo', 'Linha do tempo'], ['comparar', 'Comparar' + (nC ? ' (' + nC + ')' : '')]], vista);
-    return h + (vista === 'tempo' ? vistaTempo() : vista === 'comparar' ? vistaComparar() : vistaPorItem());
+    h += abas('hiVista', [['tempo', 'Tudo']].concat(TIPOS_HIST_ABA).concat([['comparar', 'Comparar' + (nC ? ' (' + nC + ')' : '')]]), vista);
+    return h + (vista === 'tempo' ? vistaTempo() : vista === 'comparar' ? vistaComparar() : vistaHistTipo(vista));
   },
   montar: function () { if (abaAtual('hiVista', 'item') === 'comparar') montarComparar(); else montarHist(); }
 };
@@ -11575,7 +11621,7 @@ ACOES.hiComparar = function (el) {
 ACOES.hiTirar = function (el) { var t = S.filtros.hiTipo || 'mp', r = el.dataset.ref; S.filtros['hiSel_' + t] = selecaoH(t).filter(function (x) { return x !== r; }); if (naCmp(t, r)) tirarDaCmp(t, r); renderPainel(); };
 ACOES.hiAbrir = function (el) {
   var t = el.dataset.tipo, ref = el.dataset.ref;
-  S.filtros.hiTipo = t; S.filtros['hiSel_' + t] = [t === 'cfg' ? 'config' : ref]; S.filtros.hiMarca = el.dataset.desde; S.filtros.hiBusca = ''; S.aba.hiVista = 'item';
+  S.filtros.hiTipo = t; S.filtros['hiSel_' + t] = [t === 'cfg' ? 'config' : ref]; S.filtros.hiMarca = el.dataset.desde; S.filtros.hiBusca = ''; S.aba.hiVista = t; S.aba['hm-' + t] = 'item';
   if (S.rota !== 'historico') ir('historico'); else { renderPainel(); window.scrollTo(0, 0); }
 };
 ACOES.hiTempo = function () { S.aba.hiVista = 'tempo'; ir('historico'); };
@@ -11587,6 +11633,7 @@ function secaoHistorico(tipo, ref) {
 }
 (function () {
   // tela do cadastro → [tipo do histórico, o código aberto] (null: não mostra)
+  var HIST_DA_LISTA = { moldes: 'molde', mps: 'mp', produtos: 'prod', funcionarios: 'func', setores: 'setor' };
   var NOME_VALORES = { mps: 'Preço e impostos', funcionarios: 'Salário e benefícios', setores: 'Gastos e taxa hora', moldes: 'Custo e vida útil' };
   var TIPO_PAGINA = { mps: 'mp', funcionarios: 'func', setores: 'setor', moldes: 'molde' };
   var PAGINAS = {
@@ -11600,6 +11647,12 @@ function secaoHistorico(tipo, ref) {
     var t = TELAS[rota], r0 = t.render, m0 = t.montar;
     t.render = function () {
       var h = r0.apply(this, arguments), x = PAGINAS[rota];
+      if (!(S.params && S.params.id) && HIST_DA_LISTA[rota] && (rota !== 'moldes' || veValores())) {
+        var i0 = h.indexOf('<!--/ph-->');
+        if (i0 < 0) return h;
+        var abaL = abaAtual('lst-' + rota, 'lista'); i0 += '<!--/ph-->'.length;
+        return h.slice(0, i0) + abas('lst-' + rota, [['lista', 'Lista'], ['hist', 'Histórico']], abaL, abaL === 'hist' ? 'hist' : '') + h.slice(i0) + (abaL === 'hist' ? '<div class="reg-hist">' + vistaHistTipo(HIST_DA_LISTA[rota]) + '</div>' : '');
+      }
       x = x ? x() : null;
       var temHist = !!(x && x[1] && x[1] !== '__novo' && S.draftInfo && !S.draftInfo.novo && porCod(S.emp[R.COLECAO[x[0]]] || [], x[1], R.CHAVE[x[0]]));
       // produto e setor já têm as abas deles: o Histórico entra como mais uma aba
