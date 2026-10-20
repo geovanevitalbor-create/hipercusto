@@ -1096,6 +1096,15 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 .tbl-pecas thead th:first-child{z-index:3}
 .tbl-pecas tbody tr.click:hover td:first-child,.tbl-pecas tbody tr.sel td:first-child{background:color-mix(in srgb,rgb(var(--acc-rgb)) 9%,var(--surf))}
 
+/* equipamentos do setor (usam a mesma linha da fórmula, mas não são uma sequência): grade com o rótulo em cima, campos do mesmo tamanho */
+.fx-item:has(>.eq-head){--tc:var(--c-maq)}
+.fx-item:has(>.eq-head)::before{display:none}
+.fx-item:has(>.eq-head) .fx-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px 14px;align-items:end;margin:12px 0 0 38px}
+.fx-item:has(>.eq-head) .fx-body .campo{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:5px}
+.fx-item:has(>.eq-head) .fx-body .campo>label,.fx-item:has(>.eq-head) .fx-body .lbl-row,.fx-item:has(>.eq-head) .fx-body .lbl-row>label{white-space:normal;text-align:left;line-height:1.3}
+.fx-item:has(>.eq-head) .fx-body .sufixo,.fx-item:has(>.eq-head) .fx-body .i{width:100%}
+@media (max-width:760px){.fx-item:has(>.eq-head) .fx-body{margin-left:0;grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -1238,6 +1247,95 @@ html:not([data-theme="light"]) .seg{background:rgba(var(--vidro-rgb),.5);border-
   .kpi-lbl{white-space:normal}
   .man-frase{font-size:23px}
   .ph h1{font-size:21px}
+}
+
+/* botão de esconder o menu: no topo do menu, ao lado da logo; na barra de cima só quando o menu está escondido */
+.sn-emp .nav-trilho{margin-left:auto;width:30px!important;height:30px!important;border-radius:8px!important;flex-shrink:0}
+.sn-emp .nav-trilho svg{width:15px!important;height:15px!important}
+@media (min-width:761px){
+  .nav>.nav-trilho{display:none}
+  .app.sem-trilho .nav>.nav-trilho{display:inline-flex;order:-1}
+}
+@media (max-width:760px){.sn-emp .nav-trilho{display:none!important}}
+
+/* ===================== sub-itens do cadastro (Cadastro | Valores | Histórico) ===================== */
+.subtabs[data-reg="cadastro"]~[data-sec="valores"],.subtabs[data-reg="cadastro"]~* [data-sec="valores"],
+.subtabs[data-reg="valores"]~[data-sec="cadastro"],.subtabs[data-reg="valores"]~* [data-sec="cadastro"]{display:none}
+.subtabs[data-reg="hist"]~:not(.reg-hist){display:none}
+#prevResumo~.subtabs[data-reg]~.grid.g2{grid-template-columns:minmax(0,1fr)}
+.reg-hist>.sec-tit:first-child{margin-top:0}
+
+/* a faixa do estado do cadastro: valor em vigor (verde), registrando valor novo (âmbar), cadastro novo (cor da empresa) */
+.vig{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:10px 12px 10px 14px;border-radius:12px;border:1px solid rgba(22,163,74,.35);background:rgba(22,163,74,.08)}
+.vig-ic{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;flex-shrink:0;background:rgba(22,163,74,.18);color:#86efac}
+.vig-ic svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.vig-t{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.vig-t b{font-size:13px;font-weight:700;color:var(--text)}
+.vig-t span{font-size:12.5px;color:var(--text2)}
+.vig .vig-b{display:none}
+.vig.vig-on{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.10)}
+.vig.vig-on .vig-ic{background:rgba(245,158,11,.22);color:#fcd34d}
+.vig.vig-on .vig-a{display:none}
+.vig.vig-on .vig-b{display:inline-flex}
+.vig.vig-on b.vig-b{color:#fcd34d}
+.vig.vig-novo{border-color:rgba(var(--acc-rgb),.5);background:rgba(var(--acc-rgb),.10)}
+.vig.vig-novo .vig-ic{background:rgba(var(--acc-rgb),.22);color:var(--acc-t)}
+html[data-theme="light"] .vig-ic{color:#15803d}
+html[data-theme="light"] .vig.vig-on .vig-ic,html[data-theme="light"] .vig.vig-on b.vig-b{color:#b45309}
+@media (max-width:560px){.vig{flex-wrap:wrap}.vig .btn{width:100%}}
+
+/* ===================== Tabelas de preço ===================== */
+.vig-data{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.vig-data label{margin:0;white-space:nowrap}
+.vig-data .i{width:auto;min-height:34px;padding:6px 10px}
+.tg-tabelas{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:0 0 16px}
+.tg-card{--tc:var(--acc);position:relative;display:flex;flex-direction:column;gap:10px;padding:14px 14px 12px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(var(--vidro-rgb),.36);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden}
+html[data-theme="light"] .tg-card{background:var(--surf);border-color:var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.tg-card::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 2px 2px 0;background:var(--tc)}
+.tg-card.off{opacity:.6}
+.tg-card-top{display:flex;align-items:center;gap:8px}
+.tg-card-top .i{font-weight:700;font-size:14px}
+.tg-dot{width:9px;height:9px;border-radius:50%;background:var(--tc);flex-shrink:0;display:inline-block}
+.tg-card-row{display:flex;align-items:flex-end;gap:12px}
+.tg-card-row .campo{flex:1;min-width:0}
+.tg-card-row .chk{margin-bottom:9px;white-space:nowrap}
+.tg-card-pe{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text3)}
+.tg-card-pe b{color:var(--text)}
+.tg-card-pe b.neg{color:var(--neg-t)}
+.tg-geral{color:var(--acc-t);font-weight:600}
+.tg-nova{align-items:center;justify-content:center;flex-direction:row;min-height:120px;cursor:pointer;border-style:dashed;color:var(--text2);font:700 13px var(--f)}
+.tg-nova::before{display:none}
+.tg-nova svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tg-nova:hover{border-color:var(--acc);color:var(--acc-t)}
+.tg-tools{align-items:center}
+.tg-tools .busca{flex:1 1 280px;max-width:420px}
+.tg-filtro{align-self:flex-end;margin-bottom:10px}
+.tg-filtro b{display:inline-flex;min-width:20px;justify-content:center;padding:0 6px;border-radius:999px;background:var(--surf2);color:var(--text);font-size:11px}
+.tg-cont{margin-left:auto;align-self:flex-end;margin-bottom:10px;font-size:12px;color:var(--text3)}
+.tg-box{padding:0;overflow:hidden}
+.tg-scroll{max-height:calc(100vh - 230px);overflow:auto}
+.tg-grade{border-collapse:separate;border-spacing:0}
+.tg-grade thead th{position:sticky;top:0;z-index:2}
+.tg-grade th.tg-th{min-width:190px;white-space:nowrap}
+.tg-grade th.tg-th .tg-dot{margin-right:7px;vertical-align:0}
+.tg-uf{display:inline-block;margin-left:8px;padding:1px 6px;border-radius:5px;border:1px solid rgba(255,255,255,.18);font-size:9px;letter-spacing:.5px;color:var(--text2)}
+.tg-grade th.off,.tg-grade td.off{opacity:.55}
+.tg-grade .tg-peca{position:sticky;left:0;z-index:1;min-width:220px;max-width:280px;background:var(--surf);box-shadow:1px 0 0 var(--line)}
+.tg-grade thead .tg-peca{z-index:3;background:color-mix(in srgb,var(--acc) 10%,var(--surf))}
+.tg-grade td.tg-peca .td-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}
+.tg-cel-in{display:flex;align-items:center;gap:8px}
+.tg-cel-in .sufixo{flex:1;min-width:110px}
+.tg-m{flex-shrink:0;min-width:52px;text-align:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.tg-m.ok{background:rgba(22,163,74,.14);color:#86efac}
+.tg-m.baixa{background:rgba(245,158,11,.16);color:#fcd34d}
+.tg-m.neg{background:rgba(220,38,38,.16);color:#fca5a5}
+html[data-theme="light"] .tg-m.ok{color:#15803d}html[data-theme="light"] .tg-m.baixa{color:#b45309}html[data-theme="light"] .tg-m.neg{color:#b91c1c}
+@media (max-width:760px){.vig-data{width:100%}.vig-data .i{flex:1}.tg-scroll{max-height:none}.tg-cont,.tg-filtro{margin-left:0}}
+@media (max-width:760px){
+  .tg-grade .tg-peca{min-width:128px;max-width:150px}
+  .tg-grade td.tg-peca .td-sub{max-width:128px}
+  .tbl-pecas td:first-child{min-width:140px;max-width:170px}
+  .tbl-pecas td:first-child .td-sub{max-width:150px}
 }
 
 </style>
@@ -1541,9 +1639,9 @@ html:not([data-theme="light"]) .seg{background:rgba(var(--vidro-rgb),.5);border-
   function sexParaHoras(str) {
     var s = String(str || '').trim();
     if (!s) return 0;
-    var m = s.match(/^(\d{1,4}):(\d{1,2}):(\d{1,2})(?:[.:,](\d{1,2}))?$/);
-    if (!m) throw erro('Tempo inválido "' + s + '" (use HHHH:MM:SS.CC)');
-    var h = +m[1], mi = +m[2], se = +m[3], cc = m[4] ? +(m[4].length === 1 ? m[4] + '0' : m[4]) : 0;
+    var m = s.match(/^(\d{1,4}):(\d{1,2})(?::(\d{1,2})(?:[.:,](\d{1,2}))?)?$/);   // h:mm (segundos só nos dados antigos)
+    if (!m) throw erro('Tempo inválido "' + s + '" (use horas:minutos, ex.: 1:30)');
+    var h = +m[1], mi = +m[2], se = m[3] ? +m[3] : 0, cc = m[4] ? +(m[4].length === 1 ? m[4] + '0' : m[4]) : 0;
     if (mi > 59 || se > 59) throw erro('Minutos e segundos vão de 0 a 59');
     return h + mi / 60 + (se + cc / 100) / 3600;
   }
@@ -6634,7 +6732,9 @@ function fmtQ(v) {
   var c = Math.abs(x) >= 100 ? 2 : Math.abs(x) >= 1 ? 4 : Math.abs(x) >= 0.001 ? 6 : 9;
   return x.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: c });
 }
-function fmtH(h) { return M.horasParaSex(h); }
+// tempo em horas e minutos ("1:30 h"); abaixo de um minuto, em minutos com casas ("0,08 min")
+function fmtH(h) { h = +h || 0; if (h > 0 && h < 1 / 60) return fmt(h * 60, 2) + ' min'; var t = Math.round(h * 60), hh = Math.floor(t / 60), mm = t - hh * 60; return hh + ':' + (mm < 10 ? '0' : '') + mm + ' h'; }
+function hmDoTexto(v) { try { var h = M.tempoHoras({ modo: 'sex', valor: v }, false); var t = Math.round(h * 60); return Math.floor(t / 60) + ':' + ('0' + t % 60).slice(-2); } catch (e) { return v; } }
 function fmtData(iso) { if (!iso) return '—'; var s = String(iso).slice(0, 10).split('-'); return s.length === 3 ? s[2] + '/' + s[1] + '/' + s[0] : iso; }
 function fmtDataHora(iso) { try { var d = new Date(iso); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso; } }
 var MESES_ABR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -6849,8 +6949,25 @@ ACOES.modalFechar = function (el, ev) { if (el.classList.contains('modal-fundo')
 // sub: frase de explicação (fica atrás do "?") ou dado do registro ("Grupo X · unidade: kg", fica à vista); fixo: sempre à vista
 function ph(titulo, sub, acoes, crumb, fixo) {
   var t = String(sub || '').replace(/<[^>]*>/g, ''), exp = !fixo && t.indexOf(' · ') < 0 && /\.(\s|$)/.test(t);
-  return '<div class="ph"><div>' + (crumb ? '<div class="crumb">' + esc(crumb) + '</div>' : '') + '<h1>' + titulo + '</h1>' + (sub ? '<div class="sub' + (exp ? ' sub-exp' : '') + '">' + sub + '</div>' : '') + '</div>' + (acoes ? '<div class="ph-acoes">' + acoes + '</div>' : '') + '</div>';
+  return '<div class="ph"><div>' + (crumb ? '<div class="crumb">' + esc(crumb) + '</div>' : '') + '<h1>' + titulo + '</h1>' + (sub ? '<div class="sub' + (exp ? ' sub-exp' : '') + '">' + sub + '</div>' : '') + '</div>' + (acoes ? '<div class="ph-acoes">' + acoes + '</div>' : '') + '</div><!--/ph-->';
 }
+// a faixa embaixo do título do cadastro: diz se o que está na tela é o valor em vigor ou um valor novo sendo registrado
+function faixaEdicao() {
+  if (!S.draftInfo || rascunhoSomenteLeitura()) return '';
+  var novo = S.draftInfo.novo, hoje = fmtData(hojeRef()), cls = novo ? ' vig-novo' : S.sujo ? ' vig-on' : '';
+  return '<div class="vig' + cls + '" id="vigEd" role="status">' +
+    '<span class="vig-ic vig-a">' + ic(novo ? 'plus' : 'check') + '</span><span class="vig-ic vig-b">' + ic('edit') + '</span>' +
+    '<div class="vig-t">' + (novo ? '<b>Cadastro novo</b><span>começa a valer hoje, ' + hoje + '</span>'
+      : '<b class="vig-a">Valores em vigor</b><span class="vig-a">mudanças gravadas aqui valem a partir de hoje, ' + hoje + '</span>' +
+        '<b class="vig-b">Registrando valor novo</b><span class="vig-b">vale a partir de hoje, ' + hoje + ' · o valor anterior fica no histórico</span>') + '</div>' +
+    (!novo && podeRota('historico') ? '<button class="btn btn-ghost btn-sm vig-a" data-a="regOutraData">' + ic('cal') + 'Registrar com outra data</button>' : '') + '</div>';
+}
+ACOES.regOutraData = function () {
+  if (S.sujo) { toast('Há alterações não gravadas', 'Grave ou descarte antes de registrar com outra data.', { tipo: 'warn', tempo: 6000 }); return; }
+  if (S.rota === 'produtos') S.aba.prod = 'hist'; else S.aba['reg-' + S.rota] = 'hist';
+  renderPainel();
+  var b = document.querySelector('.reg-hist [data-a="hiMudar"]'); if (b) b.click();
+};
 // a frase-manchete que abre as telas principais: o número principal dentro da frase (clicável: "De onde vem este número")
 // nota: explicação (atrás do "?"); notaFixa: dado que fica à vista (descrição da peça, números do período)
 function manchete(id, frase, nota, acoes, crumb, notaFixa) {
@@ -6944,8 +7061,11 @@ function kpi(lbl, val, sub, tom, attrs, extra) {
   var t = { crit: ' kpi-crit', warn: ' kpi-warn', ok: ' kpi-ok' }[tom] || '';
   return '<div class="kpi' + t + (attrs ? ' click' : '') + '" ' + (attrs || '') + '><div class="kpi-lbl">' + (t ? ic(tom === 'ok' ? 'check' : 'alert') : '') + esc(lbl) + '</div><div class="kpi-val' + longo + '">' + val + '</div>' + (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + (extra || '') + '</div>';
 }
-function caixa(titulo, conteudo, dir, cls) { return '<div class="fbox ' + (cls || '') + '"><h2>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h2>' + conteudo + '</div>'; }
-function tabelaBox(titulo, conteudo, dir) { return '<div class="tbl-box">' + (titulo ? '<h3>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h3>' : '') + '<div class="tbl-scroll">' + conteudo + '</div></div>'; }
+// caixas de valores (preço, impostos, custo, salário) ficam no sub-item "Valores" do cadastro; o resto no sub-item "Cadastro"
+var SEC_VALORES = { 'Impostos da compra': 1, 'Custo e vida útil': 1, 'Vida útil': 1, 'Gastos mensais de todos os equipamentos do setor': 1, 'Taxa digitada (opcional)': 1, 'A conta da taxa hora': 1, 'Salário e horas': 1, 'Benefícios': 1, 'Valores deste funcionário': 1, 'Preços e impostos': 1 };
+function secaoDaCaixa(t) { return SEC_VALORES[t] ? 'valores' : 'cadastro'; }
+function caixa(titulo, conteudo, dir, cls) { return '<div class="fbox ' + (cls || '') + '" data-sec="' + secaoDaCaixa(titulo) + '"><h2>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h2>' + conteudo + '</div>'; }
+function tabelaBox(titulo, conteudo, dir) { return '<div class="tbl-box" data-sec="' + secaoDaCaixa(titulo) + '">' + (titulo ? '<h3>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h3>' : '') + '<div class="tbl-scroll">' + conteudo + '</div></div>'; }
 function alerta(tipo, texto) {
   var icn = { err: 'alert', warn: 'alert', ok: 'check', info: 'info' }[tipo] || 'info';
   return '<div class="alert alert-' + tipo + '">' + ic(icn) + '<div>' + texto + '</div></div>';
@@ -6955,8 +7075,8 @@ function badge(txt, cls) { return '<span class="badge ' + (cls || 'b-mute') + '"
 var NOME_TIPO_ITEM = { MP: 'Matéria-prima', SA: 'Semi-acabado', PA: 'Produto acabado', SP: 'Etapa de produção', PS: 'Serviço de terceiro', MD: 'Molde', LP: 'Limpeza' };
 function nomeTipoItem(t, longo) { return t === 'SP' && longo ? 'Etapa de produção (tempo no setor)' : NOME_TIPO_ITEM[t] || t; }
 function tipoTag(t) { return '<span class="tipo-tag t-' + t + '"' + (t === 'SP' ? ' title="Tempo no setor"' : '') + '>' + esc(nomeTipoItem(t)) + '</span>'; }
-function abas(chave, lista, atual) {
-  return '<div class="subtabs" role="tablist">' + lista.map(function (a) {
+function abas(chave, lista, atual, reg) {
+  return '<div class="subtabs" role="tablist"' + (reg ? ' data-reg="' + reg + '"' : '') + '>' + lista.map(function (a) {
     return '<button class="tab' + (a[0] === atual ? ' on' : '') + '" role="tab" aria-selected="' + (a[0] === atual) + '" data-a="aba" data-chave="' + chave + '" data-v="' + a[0] + '">' + esc(a[1]) + '</button>';
   }).join('') + '</div>';
 }
@@ -7071,16 +7191,17 @@ function htmlNav() {
 /* ---------------- barra lateral: esconder e mostrar (botão no topo e tecla "["), guardado neste navegador ---------------- */
 var CHAVE_TRILHO = 'centralCustos.trilhoOculto';
 function trilhoOculto() { try { return localStorage.getItem(CHAVE_TRILHO) === '1'; } catch (e) { return false; } }
-function htmlBotaoTrilho() {
-  var oc = trilhoOculto(), rot = oc ? 'Mostrar a barra lateral ([)' : 'Esconder a barra lateral ([)';
-  return '<button class="ico-btn nav-trilho" id="navTrilho" data-a="trocarTrilho" aria-label="' + rot + '" title="' + rot + '" aria-pressed="' + oc + '">' + ic('trilho') + '</button>';
+function htmlBotaoTrilho(onde) {
+  var oc = trilhoOculto(), rot = oc ? 'Mostrar o menu ([)' : 'Esconder o menu ([)';
+  return '<button class="ico-btn nav-trilho' + (onde ? ' ' + onde : '') + '"' + (onde ? '' : ' id="navTrilho"') + ' data-a="trocarTrilho" aria-label="' + rot + '" title="' + rot + '" aria-pressed="' + oc + '">' + ic('trilho') + '</button>';
 }
 ACOES.trocarTrilho = function () {
   var oc = !trilhoOculto();
   try { localStorage.setItem(CHAVE_TRILHO, oc ? '1' : '0'); } catch (e) { }
   S.ui.trilhoOculto = oc;
   var a = $('.app'); if (a) a.classList.toggle('sem-trilho', oc);
-  var b = $('#navTrilho'); if (b) { b.outerHTML = htmlBotaoTrilho(); var nb = $('#navTrilho'); if (nb && document.activeElement === document.body) nb.focus(); }
+  $$('.nav-trilho').forEach(function (b) { b.outerHTML = htmlBotaoTrilho(b.classList.contains('sn-trilho') ? 'sn-trilho' : ''); });
+  var nb = oc ? $('#navTrilho') : $('.sn-trilho'); if (nb && document.activeElement === document.body) nb.focus();
   try { window.dispatchEvent(new Event('resize')); } catch (e) { }   // os gráficos acompanham a largura nova
 };
 document.addEventListener('keydown', function (ev) {
@@ -7203,7 +7324,7 @@ ACOES.abrirAlertas = function () {
 function htmlSide() {
   var c = contarAlertas(), nCrit = c.critico, nAv = c.critico + c.aviso;
   var aceso = function (r) { return S.rota === r || ROTA_ACESA[S.rota] === r || (S.params && S.params.pai === r); };
-  return '<div class="sn-emp">' + htmlMarca(S.db.ativa, 'simbolo') + '<span class="sn-emp-t">' + esc(S.emp.nome) + '</span></div>' +
+  return '<div class="sn-emp">' + htmlMarca(S.db.ativa, 'simbolo') + '<span class="sn-emp-t">' + esc(S.emp.nome) + '</span>' + htmlBotaoTrilho('sn-trilho') + '</div>' +
     MENU.map(function (g) {
       if (g.ajuda) return '<button class="sn-ajuda' + (aceso(g.ajuda[0]) ? ' on' : '') + '" data-a="ir" data-rota="' + g.ajuda[0] + '"' + (aceso(g.ajuda[0]) ? ' aria-current="page"' : '') + '>' + ic(g.icone) + '<span>' + esc(g.ajuda[1]) + '</span></button>';
       if (g.item) {
@@ -7331,7 +7452,7 @@ ACOES.restaurarTudo = function () {
 };
 
 /* ---------------- eventos globais ---------------- */
-function marcarSujo() { if (!(S.draftInfo && S.draftInfo.semSujo)) S.sujo = true; }
+function marcarSujo() { if (!(S.draftInfo && S.draftInfo.semSujo)) S.sujo = true; var v = document.getElementById('vigEd'); if (v && S.sujo && !v.classList.contains('vig-novo')) v.classList.add('vig-on'); }
 // telas de processo guardam o formulário em S.proc[rota] e não pedem confirmação ao sair
 function formProc(chave, padrao) {
   S.proc = S.proc || {};
@@ -8421,7 +8542,7 @@ function telaMpEditor(id) {
 function htmlOndeUsado(tipo, cod) {
   var r = M.localizar(S.ctx, tipo, cod);
   if (!r.diretos.length && !r.indiretos.length) return tabelaBox('Onde é usado', '<div class="vazio">Não está em nenhuma fórmula.</div>');
-  var linhas = r.diretos.map(function (x) { var it = x.item; return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r">' + (it.tipo === 'SP' ? fmtH(M.tempoHoras(it.tempo, false)) + ' h' : fmtQ(n(it.qtd))) + '</td><td>direto</td></tr>'; }).join('') +
+  var linhas = r.diretos.map(function (x) { var it = x.item; return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r">' + (it.tipo === 'SP' ? fmtH(M.tempoHoras(it.tempo, false)) : fmtQ(n(it.qtd))) + '</td><td>direto</td></tr>'; }).join('') +
     r.indiretos.map(function (x) { return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r muted">—</td><td>via ' + esc(x.via.join(', ')) + '</td></tr>'; }).join('');
   return tabelaBox('Onde é usado', '<table><thead><tr><th>Produto</th><th>Descrição</th><th class="r">Qtd / tempo</th><th>Uso</th></tr></thead><tbody>' + linhas + '</tbody></table>');
 }
@@ -8501,10 +8622,10 @@ function telaSetorEditor(id) {
   if (!d) return naoEncontrado('Setor', 'setores');
   d.manual = d.manual || { mod: '', maq: '' };
   var novo = S.draftInfo.novo, aba = abaAtual('setor', 'dados');
-  if (aba === 'ggf') aba = 'dados';
+  if (aba === 'ggf' || (aba === 'hist' && novo)) aba = 'dados';
   var T = taxasComDraftSetor();
   var h = ph(novo ? 'Novo setor' : esc(d.cod) + ' — ' + esc(d.desc), 'Mão de obra ' + fmtR2(T.mod.taxa) + '/h · máquina ' + fmtR2(T.maq.taxa) + '/h' + (d.cod === setorLimpeza() ? ' · setor da limpeza interna' : ''), botoesEdicao('setor'), 'Cadastros › Setores e máquinas');
-  h += abas('setor', [['dados', 'Dados e taxas'], ['maquinas', 'Máquinas e equipamentos (' + (d.equipamentos || []).length + ')'], ['mod', 'Mão de obra'], ['comp', 'Composição da taxa']], aba);
+  h += abas('setor', [['dados', 'Dados e taxas'], ['maquinas', 'Máquinas e equipamentos (' + (d.equipamentos || []).length + ')'], ['mod', 'Mão de obra'], ['comp', 'Composição da taxa']].concat(novo ? [] : [['hist', 'Histórico']]), aba, aba === 'hist' ? 'hist' : '');
   if (aba === 'dados') {
     h += '<div class="grid g-side"><div>' + caixa('Dados do setor', '<div class="grid g3">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
       fCampo('Horas de operação por mês', fNum('horasOperacao', d.horasOperacao, { suf: 'h' }), 'Ex.: 2 turnos × 8 h × 22 dias = 352 h.') + '</div>') +
@@ -8753,8 +8874,8 @@ function opcoesItem(tipo, self) {
   if (tipo === 'PS') return e.prestadores.map(function (s) { return [s.cod, s.cod + ' — ' + s.desc]; });
   return [];
 }
-var MODOS_TEMPO = [['pph', 'Peças por hora'], ['sex', 'Tempo (hh:mm:ss)'], ['cen', 'Hora centesimal']];
-var MODOS_TEMPO_CURTO = [['pph', 'peças/hora'], ['sex', 'hh:mm:ss'], ['cen', 'h centesimal']];
+var MODOS_TEMPO = [['pph', 'Peças por hora'], ['sex', 'Horas e minutos (h:mm)'], ['cen', 'Hora centesimal']];
+var MODOS_TEMPO_CURTO = [['pph', 'peças/hora'], ['sex', 'h:mm'], ['cen', 'h centesimal']];
 // contexto novo com o rascunho no lugar do produto gravado: pega fórmula circular e mudanças em componentes
 function ctxComDraftProd() {
   var d = S.draft, info = S.draftInfo, e = S.emp;
@@ -8804,7 +8925,7 @@ function htmlFxItem(it, i, L, d) {
   var head = '<div class="fx-head"><div class="fx-num">' + (i + 1) + '</div>' +
     '<select class="i" data-ch="fxTipo" data-i="' + i + '" aria-label="Tipo do item">' + tipos.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === it.tipo ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
     fSelect(p + 'ref', it.ref, opcoesItem(it.tipo, d.cod), { vazio: 'Escolha o item', rr: true, id: 'fx-ref-' + i }) +
-    '<div class="fx-q">' + (it.tipo === 'SP' ? '<div class="tempo-box"><select class="i" data-ch="fxModo" data-i="' + i + '" aria-label="Formato do tempo"' + (S.emp.config.tempos.usuarioEscolhe ? '' : ' disabled') + '>' + MODOS_TEMPO_CURTO.map(function (m) { return '<option value="' + m[0] + '"' + (it.tempo && it.tempo.modo === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' + (it.tempo && it.tempo.modo === 'sex' ? fTexto(p + 'tempo.valor', it.tempo.valor, { ph: '0000:00:00.00', cls: 'mono', id: 'fx-t-' + i }) : fNum(p + 'tempo.valor', it.tempo ? it.tempo.valor : '', { ph: '0', id: 'fx-t-' + i })) + '</div>'
+    '<div class="fx-q">' + (it.tipo === 'SP' ? '<div class="tempo-box"><select class="i" data-ch="fxModo" data-i="' + i + '" aria-label="Formato do tempo"' + (S.emp.config.tempos.usuarioEscolhe ? '' : ' disabled') + '>' + MODOS_TEMPO_CURTO.map(function (m) { return '<option value="' + m[0] + '"' + (it.tempo && it.tempo.modo === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' + (it.tempo && it.tempo.modo === 'sex' ? fTexto(p + 'tempo.valor', vazio(it.tempo.valor) ? '' : hmDoTexto(it.tempo.valor), { ph: '0:00', id: 'fx-t-' + i }) : fNum(p + 'tempo.valor', it.tempo ? it.tempo.valor : '', { ph: '0', id: 'fx-t-' + i })) + '</div>'
       : fQtdUn(it, i, 'qtd', unDaLinha(it.tipo, it.ref), 'fx-q-' + i, 'Quantidade')) + '</div>' +
     '<div class="fx-total" id="fxt-' + i + '">' + (L && !L.erro ? fmtR(L.total / (n(d.qf) || 1)) + '<small>por ' + esc(unidadeExt(d.un || 'un', 1)) + '</small>' : '—') + '</div>' +
     '<div class="fx-acts"><button class="ico-btn" data-a="fxMover" data-i="' + i + '" data-d="-1" aria-label="Subir"' + (i === 0 ? ' disabled' : '') + '>' + ic('up') + '</button><button class="ico-btn" data-a="fxMover" data-i="' + i + '" data-d="1" aria-label="Descer"' + (i === d.itens.length - 1 ? ' disabled' : '') + '>' + ic('down') + '</button><button class="ico-btn del" data-a="fxDel" data-i="' + i + '" aria-label="Remover item">' + ic('trash') + '</button></div></div>';
@@ -8937,13 +9058,13 @@ function telaProdEditor(id) {
   if (!d) return naoEncontrado('Produto', 'produtos');
   d.itens = d.itens || []; d.limpeza = d.limpeza || { modo: 'nenhuma', pph: '' };
   var novo = S.draftInfo.novo, aba = abaAtual('prod', novo ? 'dados' : 'formula');
-  if (['dados', 'formula', 'custo', 'uso'].indexOf(aba) < 0) aba = 'dados';
+  if (['dados', 'precos', 'formula', 'custo', 'uso'].concat(novo ? [] : ['hist']).indexOf(aba) < 0) aba = 'dados';
   var c = custoDraftProd();
   var h = ph(novo ? 'Novo ' + (d.tipo === 'SA' ? 'semi-acabado' : 'produto') : esc(d.cod) + ' — ' + esc(d.desc), [d.tipo === 'SA' ? 'Semi-acabado' : 'Produto acabado', d.grupo ? esc(nomeGrupo(d.grupo)) : '', d.molde ? 'molde ' + esc(d.molde) : ''].filter(Boolean).join(' · '), botoesEdicao('prod'), 'Cadastros › Produtos e fórmulas');
-  h += '<div class="resumo" id="prevResumo">' + htmlResumoProd(c, d) + '</div>';
-  h += abas('prod', [['dados', 'Dados, molde e limpeza'], ['formula', 'Fórmula (' + d.itens.length + ')'], ['custo', 'Custo detalhado'], ['uso', 'Onde é usado']], aba);
+  h += faixaEdicao() + '<div class="resumo" id="prevResumo">' + htmlResumoProd(c, d) + '</div>';
+  h += abas('prod', [['dados', 'Cadastro'], ['precos', 'Preços e impostos'], ['formula', 'Fórmula (' + d.itens.length + ')'], ['custo', 'Custo detalhado'], ['uso', 'Onde é usado']].concat(novo ? [] : [['hist', 'Histórico']]), aba, aba === 'dados' ? 'cadastro' : aba === 'precos' ? 'valores' : aba === 'hist' ? 'hist' : '');
   if (!n(d.lote) && c.temSetup) h += alerta('err', 'Peças por preparação (lote) em branco: a preparação está sendo cobrada inteira em cada peça. Informe quantas peças são feitas a cada preparação na aba Dados.');
-  if (aba === 'dados') {
+  if (aba === 'dados' || aba === 'precos') {
     var moldes = (e.moldes || []).map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; });
     h += caixa('Dados do produto', '<div class="grid g4">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
       fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' })) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
@@ -9014,6 +9135,7 @@ ACOES.fxTipo = function (el) {
 ACOES.fxModo = function (el) {
   var it = S.draft.itens[+el.dataset.i], novo = el.value, h = 0;
   try { h = M.tempoHoras(it.tempo, false); } catch (e) { h = 0; }
+  if (novo === 'sex' && h > 0 && h < 1 / 60) { toast('Tempo menor que 1 minuto', 'Em horas e minutos ele vira 0:00. Para ciclos curtos, use peças/hora.', { tipo: 'warn', tempo: 7000 }); renderPainel(); return; }
   it.tempo = { modo: novo, valor: h > 0 ? (novo === 'sex' ? M.horasParaSex(h) : novo === 'pph' ? +(1 / h).toFixed(4) : +h.toFixed(8)) : '' };
   S.sujo = true; renderPainel();
 };
@@ -9115,12 +9237,12 @@ function fichaCompleta(cod, modo) {
       (md ? '<span>Molde</span><b>' + esc(md.cod) + ' · ' + fmtQ(n(md.cavidades)) + ' cavidades</b>' : '') + '<span>Limpeza</span><b>' + txtLimpeza(p) + (p.limpeza && n(p.limpeza.pph) ? ' · ' + fmtQ(n(p.limpeza.pph)) + ' peças/h' : '') + '</b>' +
       '<span>Custo unitário</span><b>' + fmtR(c.total) + '</b>' + (m ? '<span>Preço · líquido · margem</span><b>' + fmtR(m.preco) + ' · ' + fmtR(m.liquido) + ' · ' + fmtP(m.pct, 1) + '</b>' : '') + '</div>';
     var extras = (own.MOL > 0 ? '<tr><td>' + tipoTag('MD') + '</td><td><span class="cod">' + esc(p.molde) + '</span> molde — valor ÷ (vida útil × cavidades)' + (c.molde && c.molde.fatorRefugo > 1.00001 ? ' × refugo da injeção' : '') + '</td><td></td><td class="r">1 injetada</td><td class="r">' + (c.molde ? fmtR(c.molde.porPeca) : '') + '</td><td class="r"><b>' + fmtR(own.MOL) + '</b></td></tr>' : '') +
-      (own.LIMP > 0 ? '<tr><td>' + tipoTag('LP') + '</td><td>Limpeza ' + ((p.limpeza || {}).modo === 'terceiro' ? 'no terceiro (preço da tabela)' : 'interna (hora do setor ÷ peças por hora)') + '</td><td></td><td class="r">' + ((p.limpeza || {}).modo === 'interna' && n(p.limpeza.pph) ? fmtH(1 / n(p.limpeza.pph)) + ' h' : '1 peça') + '</td><td class="r"></td><td class="r"><b>' + fmtR(own.LIMP) + '</b></td></tr>' : '');
+      (own.LIMP > 0 ? '<tr><td>' + tipoTag('LP') + '</td><td>Limpeza ' + ((p.limpeza || {}).modo === 'terceiro' ? 'no terceiro (preço da tabela)' : 'interna (hora do setor ÷ peças por hora)') + '</td><td></td><td class="r">' + ((p.limpeza || {}).modo === 'interna' && n(p.limpeza.pph) ? fmtH(1 / n(p.limpeza.pph)) : '1 peça') + '</td><td class="r"></td><td class="r"><b>' + fmtR(own.LIMP) + '</b></td></tr>' : '');
     if (f.modo === 'nivel1' || f.modo === 'explosao') {
       var rows = f.modo === 'explosao' ? M.explodir(S.ctx, p.cod) : c.linhas.map(function (L) { return { nivel: 0, L: L, fator: 1 / (c.qf || 1), qtd: L.qtd / (c.qf || 1), total: L.total / (c.qf || 1), tempo: (L.tempoH || 0) / (c.qf || 1) }; });
       h += '<div class="tbl-scroll"><table><thead><tr><th>Tipo</th><th>Item</th><th>Fase</th><th class="r">Quantidade ou tempo por ' + esc(unN) + '</th><th class="r">Valor unitário</th><th class="r">Custo por ' + esc(unN) + '</th></tr></thead><tbody>' +
         rows.map(function (r) {
-          var L = r.L, q = L.tipo === 'SP' ? fmtH(r.tempo) + ' h' + (L.setupH ? ' + preparação ' + fmtH(L.setupH) + ' ÷ ' + fmtQ(c.lote) : '') : fmtQ(r.qtd) + ' ' + esc(L.un ? unidadeExt(L.un, r.qtd) : '');
+          var L = r.L, q = L.tipo === 'SP' ? fmtH(r.tempo) + (L.setupH ? ' + preparação ' + fmtH(L.setupH) + ' ÷ ' + fmtQ(c.lote) : '') : fmtQ(r.qtd) + ' ' + esc(L.un ? unidadeExt(L.un, r.qtd) : '');
           var unit = L.tipo === 'SP' ? (L.taxas ? fmtR2(L.homens * L.taxas.mod + L.maquinas * L.taxas.maq + L.fatorGGF * L.taxas.ggf) + '/h' : '') : fmtR(L.unit);
           return '<tr class="nivel-' + Math.min(r.nivel, 4) + '"><td>' + tipoTag(L.tipo) + '</td><td>' + (r.nivel ? '<span class="muted">' + new Array(r.nivel + 1).join('↳ ') + '</span>' : '') + '<span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + '</td><td>' + esc(L.fase || '') + '</td><td class="r">' + q + '</td><td class="r">' + unit + '</td><td class="r">' + (r.nivel ? '<span class="muted">' + fmtR(r.total) + '</span>' : '<b>' + fmtR(r.total) + '</b>') + '</td></tr>';
         }).join('') + extras + '</tbody><tfoot><tr><td colspan="5">Custo de fabricação</td><td class="r">' + fmtR(c.total) + '</td></tr></tfoot></table></div>' + (f.modo === 'explosao' ? '<div class="hint">Linhas recuadas detalham o que já está somado no componente de cima; o total considera só o primeiro nível.</div>' : '');
@@ -10000,7 +10122,7 @@ TELAS['cfg-tempos'] = {
     var d = cfgRascunho(), t = d.tempos, p = d.precisao;
     var h = ph('Tempos, cálculos e precisão', 'Como os tempos entram nas fórmulas e quantas casas decimais cada valor guarda (manual PR-09).', botoesCfg(), 'Configuração');
     h += '<div class="grid g2"><div>' + caixa('Tempos nas fórmulas', '<div class="grid g2">' + fCampo('Fabricação', fSelect('tempos.fabricacao', t.fabricacao, MODOS_TEMPO)) + fCampo('Preparação (unidade das linhas novas)', fSelect('tempos.setup', t.setup === 'min' ? 'min' : 'cen', [['cen', 'Horas'], ['min', 'Minutos']]), 'A preparação é só um tempo, em horas ou minutos; cada linha da fórmula pode trocar.') + '</div><div class="radio-lista" style="margin-top:12px">' +
-      fCheck('tempos.usuarioEscolhe', t.usuarioEscolhe, 'Quem digita a fórmula pode escolher outro formato em cada item.') + fCheck('tempos.validarConversao', t.validarConversao, 'Ao converter hh:mm:ss para centesimal, arredondar para cima na 8ª casa (0:00:12 vira 0,00333334).') + '</div>') +
+      fCheck('tempos.usuarioEscolhe', t.usuarioEscolhe, 'Quem digita a fórmula pode escolher outro formato em cada item.') + fCheck('tempos.validarConversao', t.validarConversao, 'Ao converter horas e minutos para centesimal, arredondar para cima na 8ª casa (0:00:12 vira 0,00333334).') + '</div>') +
       '<div class="card">' + htmlConversor() + '</div></div><div>' +
       caixa('Precisão numérica', '<div class="grid g2">' + fCampo('Quantidades', fNum('precisao.quantidades', p.quantidades, { suf: 'casas' })) + fCampo('Valores (custos e preços)', fNum('precisao.valores', p.valores, { suf: 'casas' }), 'Produtos baratos, como anéis, pedem 4 ou mais casas.') + fCampo('Percentuais', fNum('precisao.percentuais', p.percentuais, { suf: 'casas' })) + fCampo('Horas centesimais', fNum('precisao.horas', p.horas, { suf: 'casas' })) + '</div>' +
         '<label style="margin-top:14px">Dígitos além da precisão</label><div class="radio-lista">' + radio('precisao.modo', p.modo, 'arredondar', 'Arredondar (4 para baixo, 5 para cima).') + radio('precisao.modo', p.modo, 'truncar', 'Truncar (ignorar).') + radio('precisao.modo', p.modo, 'maxima', 'Manter a precisão máxima e só exibir arredondado.') + '</div>' +
@@ -10013,7 +10135,7 @@ function htmlConversor() {
   var r = null, er = null;
   try { r = M.converterTempo({ modo: c.modo, valor: c.valor }, false); } catch (e) { er = e.message; }
   return '<div class="kpi-lbl">Conversor de tempo</div><div class="inline" style="margin-top:8px"><select class="i" style="flex:0 0 170px" data-ch="convModo" aria-label="Formato">' + MODOS_TEMPO.map(function (m) { return '<option value="' + m[0] + '"' + (m[0] === c.modo ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select><input class="i' + (c.modo === 'sex' ? ' mono' : ' num') + '" style="flex:1" data-ch="convValor" value="' + esc(c.valor) + '" aria-label="Valor"></div>' +
-    (er ? alerta('err', esc(er)) : '<div class="lista-kv" style="margin-top:12px"><span>Tempo sexagesimal</span><b>' + r.sex + '</b><span>Hora centesimal</span><b>' + fmt(r.cen, 6) + '</b><span>Produção por hora</span><b>' + fmtQ(r.pph) + '</b></div>');
+    (er ? alerta('err', esc(er)) : '<div class="lista-kv" style="margin-top:12px"><span>Horas e minutos</span><b>' + fmtH(r.horas) + '</b><span>Hora centesimal</span><b>' + fmt(r.cen, 6) + '</b><span>Produção por hora</span><b>' + fmtQ(r.pph) + '</b></div>');
 }
 ACOES.convModo = function (el) { S.proc.conv.modo = el.value; renderPainel(); };
 ACOES.convValor = function (el) { S.proc.conv.valor = el.value; renderPainel(); };
@@ -11465,6 +11587,8 @@ function secaoHistorico(tipo, ref) {
 }
 (function () {
   // tela do cadastro → [tipo do histórico, o código aberto] (null: não mostra)
+  var NOME_VALORES = { mps: 'Preço e impostos', funcionarios: 'Salário e benefícios', setores: 'Gastos e taxa hora', moldes: 'Custo e vida útil' };
+  var TIPO_PAGINA = { mps: 'mp', funcionarios: 'func', setores: 'setor', moldes: 'molde' };
   var PAGINAS = {
     mps: function () { return ['mp', S.params.id]; },
     funcionarios: function () { return ['func', S.params.id]; },
@@ -11475,9 +11599,21 @@ function secaoHistorico(tipo, ref) {
   Object.keys(PAGINAS).forEach(function (rota) {
     var t = TELAS[rota], r0 = t.render, m0 = t.montar;
     t.render = function () {
-      var h = r0.apply(this, arguments), x = PAGINAS[rota]();
-      if (x && x[1] && x[1] !== '__novo' && S.draftInfo && !S.draftInfo.novo && porCod(S.emp[R.COLECAO[x[0]]] || [], x[1], R.CHAVE[x[0]])) h += secaoHistorico(x[0], x[1]);
-      return h;
+      var h = r0.apply(this, arguments), x = PAGINAS[rota];
+      x = x ? x() : null;
+      var temHist = !!(x && x[1] && x[1] !== '__novo' && S.draftInfo && !S.draftInfo.novo && porCod(S.emp[R.COLECAO[x[0]]] || [], x[1], R.CHAVE[x[0]]));
+      // produto e setor já têm as abas deles: o Histórico entra como mais uma aba
+      if (rota === 'produtos' || rota === 'setores') {
+        if (rota === 'setores' && S.params && S.params.id && S.draftInfo && S.draftInfo.tipo === 'setor') { var j = h.indexOf('<!--/ph-->'); if (j >= 0) { j += '<!--/ph-->'.length; h = h.slice(0, j) + faixaEdicao() + h.slice(j); } }
+        if (temHist && abaAtual(rota === 'produtos' ? 'prod' : 'setor') === 'hist') h += '<div class="reg-hist">' + secaoHistorico(x[0], x[1]) + '</div>';
+        return h;
+      }
+      var aberto = S.params && S.params.id && S.draftInfo && S.draftInfo.tipo === (x ? x[0] : TIPO_PAGINA[rota]), i = h.indexOf('<!--/ph-->');
+      if (!aberto || i < 0) return h;
+      var aba = abaAtual('reg-' + rota, 'cadastro'); if (aba === 'hist' && !temHist) aba = 'cadastro';
+      var lista = [['cadastro', 'Cadastro'], ['valores', NOME_VALORES[rota]]].concat(temHist ? [['hist', 'Histórico']] : []);
+      i += '<!--/ph-->'.length;
+      return h.slice(0, i) + faixaEdicao() + abas('reg-' + rota, lista, aba, aba) + h.slice(i) + (aba === 'hist' ? '<div class="reg-hist">' + secaoHistorico(x[0], x[1]) + '</div>' : '');
     };
     t.montar = function () { if (m0) m0.apply(this, arguments); montarHist(); };
   });
@@ -13117,28 +13253,56 @@ function rascunhoTabelas() {
   return S.draft;
 }
 TELAS['tabelas-preco'] = {
+  // a tela em três partes: as tabelas (cartões), a busca e a grade (peça × tabela, cabeçalho e peça sempre à vista)
   render: function () {
-    var d = rascunhoTabelas(), ctx = S.ctx, hoje = hojeRef(), passado = podeDataPassada();
-    var acoes = btn('Gravar', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + btn('Adicionar tabela', 'tabAdd', '', 'btn-ghost', 'plus') + (TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '');
-    var h = ph('Tabelas de preço', 'Cada tabela tem um estado de destino (o ICMS dele) e um preço por peça. O lucro da produção usa o <b>preço médio das tabelas</b>: a média simples das tabelas ativas em que a peça tem preço. A tabela geral é o preço do cadastro da peça.', acoes, 'Cadastros');
-    h += '<div class="grid g3" id="tabData">' + fCampo('Vale a partir de', '<input class="i" type="date" id="b-desde" data-b="desde" value="' + esc(d.desde) + '"' + (passado ? '' : ' min="' + esc(hoje) + '"') + '>', passado ? 'Pode ser uma data passada: os dias já lançados são refeitos com os preços novos.' : 'A partir de hoje (data passada só para administrador e gestor).') + '</div>';
-    var cols = d.tabelas;
-    h += '<div class="tbl-box"><div class="tbl-scroll"><table class="tbl-grade" id="tabGrade"><thead><tr><th>Peça</th>' +
-      cols.map(function (t, j) {
-        var p = 'tabelas.' + j + '.';
-        return '<th class="tg-tab' + (t.ativa === false ? ' muted' : '') + '"><div class="tg-cab">' + fTexto(p + 'nome', t.nome, { id: 'tg-n-' + j, ph: 'Nome da tabela' }) + '<div class="inline">' + fSelect(p + 'uf', t.uf, M.UFS, { id: 'tg-u-' + j }) + fCheck(p + 'ativa', t.ativa !== false, 'ativa', { id: 'tg-a-' + j, rr: true }) + '</div><small>' + (t.id === 'T1' ? 'preço do cadastro da peça' : t.id) + '</small></div></th>';
-      }).join('') + '<th class="r">Preço médio das tabelas</th><th class="r">Margem média</th><th>Pior margem</th></tr></thead><tbody>' +
-      (d.pecas.length ? d.pecas.map(function (x, i) {
-        var v = ctx ? M.vendaPeca(ctx, x.cod) : null, m = v && v.media, pior = v && v.pior ? v.tabelas.filter(function (t) { return t.id === v.pior; })[0] : null;
-        return '<tr data-prod="' + esc(x.cod) + '"><td><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub">' + esc(nomeProd(x.cod)) + '</div></td>' +
-          cols.map(function (t) {
-            var vt = v ? v.tabelas.filter(function (y) { return y.id === t.id; })[0] : null;
-            return '<td class="tg-cel' + (t.ativa === false ? ' muted' : '') + '">' + fNum('pecas.' + i + '.' + t.id, x[t.id], { suf: 'R$', ph: '—', id: 'tg-' + i + '-' + t.id }) + (vt && vt.temPreco ? '<small class="' + (vt.sobra < 0 ? 'neg' : '') + '">' + fmtP(vt.margem, 1) + ' de margem</small>' : '') + '</td>';
-          }).join('') +
+    var d = rascunhoTabelas(), ctx = S.ctx, hoje = hojeRef(), passado = podeDataPassada(), f = S.filtros, cols = d.tabelas;
+    var COR_TAB = ['var(--acc)', '#0891b2', '#f59e0b', '#16a34a', '#8b5cf6', '#0d9488', '#d55181', '#2563eb'];
+    var corTab = function (j) { return COR_TAB[j % COR_TAB.length]; };
+    var acoes = btn('Gravar preços', 'tabGravar', '', 'btn-accent', 'save') + btn('Descartar', 'tabCancelar', '', 'btn-ghost', 'x') + (TELAS.importar && podeRota('importar') ? btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-ghost', 'file') : '');
+    var h = ph('Tabelas de preço', 'Cada tabela tem um estado de destino (o ICMS dele) e um preço por peça. O lucro da produção usa o <b>preço médio das tabelas</b>: a média simples das tabelas ativas em que a peça tem preço. A tabela geral é o preço do cadastro da peça. Preço em branco = a peça não está na tabela; tabela desativada não entra no preço médio (o histórico continua).', acoes, 'Cadastros');
+    // faixa: em vigor x registrando preços novos, com a data em que os novos valem
+    h += '<div class="vig' + (S.sujo ? ' vig-on' : '') + '" id="vigEd" role="status">' +
+      '<span class="vig-ic vig-a">' + ic('check') + '</span><span class="vig-ic vig-b">' + ic('edit') + '</span>' +
+      '<div class="vig-t"><b class="vig-a">Preços em vigor</b><span class="vig-a">o que você mudar aqui vira preço novo a partir da data ao lado</span>' +
+      '<b class="vig-b">Registrando preços novos</b><span class="vig-b">valem a partir da data ao lado · os de antes ficam no histórico</span></div>' +
+      '<div class="vig-data"><label for="b-desde">Vale a partir de</label><input class="i" type="date" id="b-desde" data-b="desde" value="' + esc(d.desde) + '"' + (passado ? '' : ' min="' + esc(hoje) + '"') + '></div></div>';
+    // as vendas gravadas de cada peça (margens por tabela, preço médio)
+    var V = {};
+    d.pecas.forEach(function (x) { V[x.cod] = ctx ? M.vendaPeca(ctx, x.cod) : null; });
+    var margemDe = function (x, t) { var v = V[x.cod], vt = v ? v.tabelas.filter(function (y) { return y.id === t.id; })[0] : null; return vt && vt.temPreco ? vt : null; };
+    // 1) as tabelas
+    h += '<div class="tg-tabelas">' + cols.map(function (t, j) {
+      var p = 'tabelas.' + j + '.', com = d.pecas.filter(function (x) { return !vazio(x[t.id]); }).length;
+      var ms = d.pecas.map(function (x) { return margemDe(x, t); }).filter(Boolean), mm = ms.length ? ms.reduce(function (a, y) { return a + y.margem; }, 0) / ms.length : null;
+      return '<div class="tg-card' + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '">' +
+        '<div class="tg-card-top"><span class="tg-dot"></span>' + fTexto(p + 'nome', t.nome, { id: 'tg-n-' + j, ph: 'Nome da tabela', rr: true }) + '</div>' +
+        '<div class="tg-card-row">' + fCampo('Estado', fSelect(p + 'uf', t.uf, M.UFS, { id: 'tg-u-' + j, rr: true })) + fCheck(p + 'ativa', t.ativa !== false, 'Ativa', { id: 'tg-a-' + j, rr: true }) + '</div>' +
+        '<div class="tg-card-pe"><span><b>' + com + '</b> de ' + d.pecas.length + ' peças com preço</span>' + (mm !== null ? '<span>margem média <b class="' + (mm < 0 ? 'neg' : '') + '">' + fmtP(mm, 1) + '</b></span>' : '') +
+        (t.id === 'T1' ? '<span class="tg-geral">preço do cadastro da peça</span>' : '') + '</div></div>';
+    }).join('') + '<button class="tg-card tg-nova" data-a="tabAdd">' + ic('plus') + '<span>Adicionar tabela</span></button></div>';
+    // 2) busca e filtros
+    var baixa = function (x) { var v = V[x.cod]; return v && v.tabelas.some(function (y) { return y.temPreco && y.margem < 10; }); };
+    var semPreco = function (x) { return cols.some(function (t) { return t.ativa !== false && vazio(x[t.id]); }); };
+    var l = d.pecas.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) {
+      return bate(o.x.cod + ' ' + nomeProd(o.x.cod), f.tgBusca) && (!f.tgSem || semPreco(o.x)) && (!f.tgBaixa || baixa(o.x));
+    });
+    var nSem = d.pecas.filter(semPreco).length, nBaixa = d.pecas.filter(baixa).length;
+    var chk = function (k, rot, nn) { return '<label class="chk tg-filtro"><input type="checkbox" data-f="' + k + '"' + (f[k] ? ' checked' : '') + '><span>' + rot + ' <b>' + nn + '</b></span></label>'; };
+    h += '<div class="tbl-tools tg-tools">' + filtroTexto('tgBusca', 'Código ou nome da peça') + chk('tgSem', 'Sem preço em alguma tabela', nSem) + chk('tgBaixa', 'Margem abaixo de 10%', nBaixa) +
+      '<span class="tg-cont">' + l.length + ' de ' + d.pecas.length + ' peças</span></div>';
+    // 3) a grade
+    var tag = function (vt) { return vt ? '<span class="tg-m ' + (vt.sobra < 0 ? 'neg' : vt.margem < 10 ? 'baixa' : 'ok') + '" title="Margem nesta tabela (gravada)">' + fmtP(vt.margem, 1) + '</span>' : ''; };
+    h += '<div class="tbl-box tg-box"><div class="tbl-scroll tg-scroll"><table class="tbl-grade tg-grade" id="tabGrade"><thead><tr><th class="tg-peca">Peça</th>' +
+      cols.map(function (t, j) { return '<th class="tg-th' + (t.ativa === false ? ' off' : '') + '" style="--tc:' + corTab(j) + '"><span class="tg-dot"></span>' + esc(t.nome || 'Sem nome') + '<span class="tg-uf">' + esc(t.uf || '') + '</span>' + (t.ativa === false ? '<span class="tg-uf">desativada</span>' : '') + '</th>'; }).join('') +
+      '<th class="r">Preço médio</th><th class="r">Margem média</th><th>Pior margem</th></tr></thead><tbody>' +
+      (l.length ? l.map(function (o) {
+        var x = o.x, i = o.i, v = V[x.cod], m = v && v.media, pior = v && v.pior ? v.tabelas.filter(function (t) { return t.id === v.pior; })[0] : null;
+        return '<tr data-prod="' + esc(x.cod) + '"><td class="tg-peca"><span class="cod">' + esc(x.cod) + '</span><div class="muted td-sub" title="' + esc(nomeProd(x.cod)) + '">' + esc(nomeProd(x.cod)) + '</div></td>' +
+          cols.map(function (t) { return '<td class="tg-cel' + (t.ativa === false ? ' off' : '') + '"><div class="tg-cel-in">' + fNum('pecas.' + i + '.' + t.id, x[t.id], { suf: 'R$', ph: '—', id: 'tg-' + i + '-' + t.id }) + tag(margemDe(x, t)) + '</div></td>'; }).join('') +
           '<td class="r">' + (m ? orig(fmtR(m.preco), od('preco', x.cod, hoje, 'preco')) + '<div class="td-sub muted">' + m.n + (m.n === 1 ? ' tabela' : ' tabelas') + '</div>' : '<span class="muted">sem preço</span>') + '</td>' +
           '<td class="r">' + (m ? '<b class="' + (m.sobra < 0 ? 'neg' : '') + '">' + fmtP(m.margem, 1) + '</b>' : '—') + '</td><td>' + (pior && m.n > 1 ? esc(pior.nome) + ' (' + fmtP(pior.margem, 1) + ')' : '<span class="muted">—</span>') + '</td></tr>';
-      }).join('') : '<tr><td colspan="' + (cols.length + 4) + '" class="vazio">Nenhuma peça à venda ainda. Cadastre os produtos acabados em Produtos e fórmulas.</td></tr>') + '</tbody></table></div></div>';
-    h += '<div class="hint">Preço em branco = a peça não está na tabela. Tabela desativada não entra no preço médio (o histórico continua). As margens embaixo de cada preço e a média são as gravadas hoje; grave para ver as novas. A margem de cada peça em cada tabela, com a conta dos impostos, fica na página da peça.</div>';
+      }).join('') : '<tr><td colspan="' + (cols.length + 4) + '" class="vazio">' + (d.pecas.length ? 'Nenhuma peça com esse filtro.' : 'Nenhuma peça à venda ainda. Cadastre os produtos acabados em Produtos e fórmulas.') + '</td></tr>') + '</tbody></table></div></div>';
+    h += '<div class="hint">As margens ao lado de cada preço e a média são as gravadas hoje; grave para ver as novas. Verde: 10% ou mais; amarelo: abaixo de 10%; vermelho: prejuízo. A conta dos impostos de cada tabela fica na página da peça.</div>';
     return h;
   }
 };
