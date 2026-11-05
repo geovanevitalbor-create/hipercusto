@@ -1123,6 +1123,38 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 .fbox .fn-modo label.fn-op .fn-op-t{font-size:13.5px;font-weight:600;color:var(--text)}
 .fbox .fn-modo label.fn-op .fn-op-d{font-size:12px;font-weight:400;color:var(--text2)}
 
+/* Manual (menu › Manual) e explicações das tabelas */
+.manual.doc{max-width:none}
+.man-busca{display:flex;align-items:flex-end;gap:12px;margin:0 0 16px;max-width:620px}
+.man-busca .campo{flex:1;margin:0}
+.man-n{font-size:12px;color:var(--text3);padding-bottom:10px;white-space:nowrap}
+.man-grade{display:grid;grid-template-columns:240px minmax(0,1fr);gap:22px;align-items:start}
+.man-ind{position:sticky;top:84px;max-height:calc(100vh - 110px);overflow:auto;padding:10px 8px;border:1px solid var(--line);border-radius:14px;background:rgba(var(--vidro-rgb,255,255,255),.04)}
+.man-ind-g+.man-ind-g{margin-top:6px}
+.man-ind-t{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:8px 8px 4px}
+.man-ind-i{display:block;width:100%;text-align:left;background:none;border:0;padding:6px 8px;border-radius:8px;color:var(--text2);font:inherit;font-size:13px;line-height:1.3;cursor:pointer}
+.man-ind-i:hover{background:rgba(var(--acc-rgb),.08);color:var(--text)}
+.man-ind-i.on{background:rgba(var(--acc-rgb),.15);color:var(--text);font-weight:600}
+.man-ind-i.fora{opacity:.35;cursor:default}
+.man-cap{padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:rgba(var(--vidro-rgb,255,255,255),.03);margin:0 0 16px;scroll-margin-top:88px}
+.man-cap-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.man-grupo{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--acc-t)}
+.manual .man-cap h2{margin:2px 0 10px}
+.manual .man-oque{color:var(--text);font-size:14px}
+.manual .man-antes{font-size:13px}
+.man-sub{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin:18px 0 8px}
+.man-passos{margin:0;padding-left:20px}.man-passos li{margin:5px 0}
+.man-extra p{margin:10px 0 0}
+.man-campos{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr);gap:9px 18px;margin:0 0 6px}
+.man-campos dt{font-weight:600;color:var(--text);font-size:13px;line-height:1.5}
+.man-campos dd{margin:0;color:var(--text2);font-size:13px;line-height:1.55}
+.man-atencao{margin-top:16px;padding:12px 14px;border-radius:10px;border-left:3px solid var(--warn,#c98500);background:rgba(201,133,0,.08)}
+.man-atencao>b{display:flex;align-items:center;gap:6px;color:var(--text)}.man-atencao svg{width:15px;height:15px}
+.man-atencao ul{margin:6px 0 0;padding-left:18px}
+.manual a[data-man]{color:var(--acc-t);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.aj-colunas ul,.aj-bloco ul{margin:6px 0 0;padding-left:18px}.aj-colunas li{margin:3px 0}
+@media (max-width:900px){.man-grade{grid-template-columns:minmax(0,1fr)}.man-ind{position:static;max-height:230px}.man-campos{grid-template-columns:minmax(0,1fr);gap:2px}.man-campos dd{margin-bottom:10px}.man-cap{padding:16px}}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -7310,7 +7342,7 @@ ACOES.ajuda = function (el) {
 (function () {
   var raiz = document.getElementById('app');
   if (!raiz || !window.MutationObserver) return;
-  new MutationObserver(function () { ajMontar(raiz); if (typeof edAplicar === 'function') edAplicar(raiz); }).observe(raiz, { childList: true, subtree: true });
+  new MutationObserver(function () { if (typeof ajBlocos === 'function') ajBlocos(raiz); ajMontar(raiz); if (typeof edAplicar === 'function') edAplicar(raiz); }).observe(raiz, { childList: true, subtree: true });
   ajMontar(raiz);
 })();
 function btn(rotulo, acao, attrs, cls, icone) {
@@ -7416,6 +7448,7 @@ var MENU = [
     ['+', 'Preços'], ['tabelas-preco', 'Tabelas de preço'], ['cfg-impostos', 'Impostos sobre a venda'], ['cfg-icms', 'ICMS por estado'], ['ncm', 'NCM'],
     ['+', 'Fábrica'], ['setores', 'Setores e máquinas'], ['cfg-equip', 'Gastos dos equipamentos'], ['funcionarios', 'Funcionários'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-taxas', 'Taxas hora']] },
   { grupo: 'Ajustes', icone: 'cog', fim: true, itens: [['cfg-tempos', 'Tempos e precisão'], ['cfg-geral', 'Geral e dados'], ['auditoria', 'Auditoria'], ['usuarios', 'Usuários e acessos']] },
+  { ajuda: ['manual', 'Manual'], icone: 'livro' },
   { ajuda: ['motor', 'Como calculamos'], icone: 'help' }
 ];
 // todas as entradas do menu, em ordem: [rota, rótulo, grupo ou null]
@@ -7448,7 +7481,7 @@ function htmlNav() {
     '<div id="navPer" class="per-glob"></div><span class="nav-sep"></span>' +
     '<span id="navPend"></span>' +
     (dataFixada() ? '<span class="nav-data" title="Data de hoje fixada em Configuração › Geral e dados">' + ic('cal') + 'Hoje: ' + fmtData(hojeRef()) + '</span>' : '') +
-    '<span id="navSino"></span>' + htmlBotaoTrilho() + htmlBotaoTema() +
+    '<span id="navSino"></span>' + htmlBotaoTrilho() + (typeof htmlBotaoManual === 'function' ? htmlBotaoManual() : '') + htmlBotaoTema() +
     htmlUsuarioBotao() + '</nav>';
 }
 /* ---------------- barra lateral: esconder e mostrar (botão no topo e tecla "["), guardado neste navegador ---------------- */
@@ -8240,7 +8273,7 @@ function pode(mod, op, emp) {
   if (mod === 'importar') return pode('produtos', 'incluir', emp);   // importar planilha: quem inclui cadastros (administrador e gestor)
   if (mod === 'boas-vindas') return true;
   if (Object.prototype.hasOwnProperty.call(ROTA_MODULO, mod)) mod = ROTA_MODULO[mod];
-  if (mod === 'motor') return true;
+  if (mod === 'motor' || mod === 'manual') return true;
   if (S.usuario.admin) return true;
   if (mod === 'usuarios') return false;
   var d = direitosEm(emp), m = d && d[mod];
@@ -14225,7 +14258,7 @@ TELAS['boas-vindas'] = {
     h += '<div class="grid g2 nv-boas" id="nvBoas"><div>' + caixa('Cadastrar na tela', '<p class="desc">Inclua um cadastro de cada vez, direto nas telas de Cadastros. Siga esta ordem, porque cada passo usa o anterior:</p>' +
       '<ol class="nv-passos">' + passos + '</ol>' +
       '<p class="hint">Impostos, taxas e encargos começam com valores padrão. Confira em Ajustes quando quiser.</p>' +
-      '<div class="inline">' + btn('Cadastrar na tela', 'ir', 'data-rota="mps"', 'btn-accent', 'plus') + '</div>') + '</div><div>' +
+      '<div class="inline">' + btn('Cadastrar na tela', 'ir', 'data-rota="mps"', 'btn-accent', 'plus') + btn('Ver o passo a passo', 'ir', 'data-rota="manual" data-id="comecar"', 'btn-ghost', 'livro') + '</div>') + '</div><div>' +
       caixa('Importar planilha', '<ol class="nv-passos">' +
         '<li><b>Baixe o modelo</b>: uma aba para matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, preços do terceiro e configuração.</li>' +
         '<li><b>Preencha</b> com os cadastros de hoje (números no padrão brasileiro: 1.500,25).</li>' +
@@ -14981,6 +15014,486 @@ ACOES.subNav = function (el) {
 };
 // Resumo › Alertas: a tela de alertas é um item próprio no menu
 delete ROTA_ACESA.alertas;
+
+/* =====================================================================
+   MANUAL E AJUDA DOS CAMPOS — o texto
+   Uma fonte só: o "?" de cada campo e o Manual (menu › Manual) leem daqui.
+   campo: [caminho na tela (data-b; # = número da linha; * = qualquer nome), rótulo, explicação, '+' = vem antes da explicação que a tela já tem]
+   colunas: [título da coluna (começo), explicação]   blocos: { caixa: título da caixa | sel: seletor, txt }
+   ===================================================================== */
+var MANUAL = [
+  /* ------------------------------------------------------------ começar */
+  { id: 'comecar', grupo: 'Começar', nome: 'Começando do zero',
+    oque: 'A Central de Custos responde quanto custa fazer cada peça e quanto a empresa ganha com a produção. Para isso ela precisa saber o que entra em cada peça (material, tempo de máquina e de gente, molde, limpeza) e quanto custa cada uma dessas coisas. Os cadastros são feitos uma vez; depois você só atualiza o que muda (um preço novo, um salário novo) e lança a produção do dia.',
+    passos: [
+      '<b>Confira os ajustes que já vêm preenchidos</b> (15 minutos com o contador): <a data-man="cfg-impostos">Impostos sobre a venda</a>, <a data-man="cfg-encargos">Encargos e provisões</a>, <a data-man="cfg-taxas">Taxas hora</a> e <a data-man="cfg-equip">Gastos dos equipamentos</a>. Eles começam com valores padrão.',
+      '<b>Cadastre os setores e as máquinas</b> em <a data-man="setores">Setores e máquinas</a>: cada lugar da fábrica onde a peça passa (mistura, injeção, rebarbação…), com as máquinas de cada um.',
+      '<b>Cadastre quem trabalha nos setores</b> em <a data-man="funcionarios">Funcionários</a>: uma pessoa por vez, ou uma função com várias pessoas (ex.: 4 operadores de injetora). Diga em qual setor cada um trabalha. Com isso cada setor ganha o seu custo por hora.',
+      '<b>Cadastre as matérias-primas</b> em <a data-man="mps">Matérias-primas</a>: preço de compra e impostos da nota.',
+      '<b>Cadastre os moldes</b> em <a data-man="moldes">Moldes</a>: valor, cavidades e vida útil.',
+      '<b>Cadastre as peças e as fórmulas</b> em <a data-man="produtos">Produtos e fórmulas</a>. Comece pelos semi-acabados (ex.: o composto de borracha) e depois as peças que usam eles.',
+      '<b>Coloque os preços de venda</b>: a <a data-man="ncm">NCM</a> de cada peça e as <a data-man="tabelas-preco">Tabelas de preço</a>.',
+      '<b>Diga como as peças são limpas</b> em <a data-man="limpeza">Limpeza de peças</a>: o setor da limpeza interna e os preços do terceiro.',
+      '<b>Lance a produção todo dia</b> em <a data-man="producao-dia">Produção do dia</a>.',
+      '<b>Acompanhe</b> em <a data-man="resumo">Resumo</a>, <a data-man="pecas">Peças</a>, <a data-man="lucro-periodo">Lucro</a> e <a data-man="alertas">Alertas</a>.'
+    ],
+    extra: '<p><b>Por que nessa ordem?</b> Cada passo usa o anterior: a fórmula da peça precisa das matérias-primas, dos setores e dos moldes; o custo por hora do setor precisa dos funcionários; o lucro precisa dos preços.</p>' +
+      '<p><b>Atalho:</b> com muitos cadastros, use <a data-man="importar">Importar planilha</a>. Você baixa um modelo do Excel, preenche e importa tudo de uma vez.</p>' +
+      '<p><b>Dica:</b> em qualquer tela, o <b>?</b> ao lado de um campo explica o que colocar nele. O <b>?</b> no alto da tela abre este manual no capítulo da tela em que você está.</p>' },
+  { id: 'editar', grupo: 'Começar', nome: 'Como editar e gravar',
+    oque: 'Um cadastro abre só para ver: os campos ficam travados para ninguém mudar nada sem querer. Para mudar, clique em <b>Editar</b>. O sistema pergunta o que você vai fazer, porque isso muda as contas do passado.',
+    passos: [
+      'Abra o cadastro (ex.: uma matéria-prima) e clique em <b>Editar</b>, no alto da tela.',
+      'Escolha <b>Registrar uma mudança</b> quando o valor mudou de verdade (reajuste, preço novo, salário novo) e diga a data em que passa a valer. Antes dessa data continua o valor antigo, e os dois ficam no histórico.',
+      'Escolha <b>Corrigir um erro</b> quando o valor que está lá está errado (digitou errado, por exemplo). A correção vale desde quando o valor passou a valer, e as contas dos dias passados são refeitas.',
+      'Mude os campos. A faixa colorida no alto mostra se você está corrigindo ou registrando uma mudança.',
+      'Clique em <b>Confirmar</b>. Uma janela mostra o resumo do que muda; confira e confirme. Para desistir, clique em <b>Cancelar</b>.'
+    ],
+    extra: '<p><b>Cadastro novo:</b> nas listas, use o botão <b>Incluir</b>. O cadastro novo começa a valer hoje.</p>' +
+      '<p><b>Errou ao gravar?</b> Em <a data-man="historico">Histórico</a> você abre a mudança e pode desfazê-la.</p>' +
+      '<p><b>Quem pode:</b> administrador e gestor mudam cadastros. Só eles mudam datas passadas. Quem é “consulta” só vê; o “operador” só lança a produção.</p>' },
+
+  /* ------------------------------------------------------------ resumo e acompanhamento */
+  { id: 'resumo', rota: 'resumo', grupo: 'Resumo', nome: 'Visão geral',
+    oque: 'A primeira tela: como está a empresa hoje. Mostra o lucro da produção lançada, os principais números do período e o que precisa de atenção. Clique nos números e nos gráficos para ver de onde eles vêm.',
+    passos: ['Olhe a frase do alto: ela resume o período.', 'Veja os alertas críticos na faixa vermelha do topo, se houver.', 'Clique em uma peça para abrir a conta dela.'],
+    atencao: ['Sem produção lançada, o lucro não aparece. Lance a produção em Produção do dia.'] },
+  { id: 'alertas', rota: 'alertas', grupo: 'Resumo', nome: 'Alertas',
+    oque: 'A lista do que precisa de atenção: peça vendida abaixo do custo, fórmula com erro, funcionário sem setor, preço de matéria-prima sem atualização, molde no fim da vida útil… Cada alerta leva para a tela onde se resolve.',
+    passos: ['Comece pelos <b>críticos</b> (vermelho): eles deixam o custo ou o lucro errados.', 'Depois os <b>avisos</b> (amarelo) e as <b>informações</b>.', 'Clique no alerta para abrir o cadastro e corrigir.'] },
+  { id: 'pecas', rota: 'pecas', grupo: 'Peças', nome: 'Peças (custo e preço)',
+    oque: 'Todas as peças com o custo de fazer, o preço médio de venda, a sobra e a margem. Clique em uma peça para ver a conta completa: cada matéria-prima, cada etapa, o molde, a limpeza e o refugo.',
+    passos: ['Use a busca e os filtros para achar a peça.', 'Clique na peça para abrir a conta.', 'Na conta, clique em qualquer valor para ver de onde ele vem.'],
+    atencao: ['Peça sem preço nas tabelas aparece sem margem.', 'Peça com fórmula incompleta aparece com custo baixo demais: confira os alertas.'] },
+  { id: 'lucro-periodo', rota: 'lucro-periodo', grupo: 'Lucro', nome: 'Lucro',
+    oque: 'O lucro bruto da produção num período: peças boas × preço sem impostos, menos o custo de fazer. A mão de obra e as máquinas entram por dia útil, mesmo sem produção. O sistema não sabe o que foi vendido: usa o que foi produzido.',
+    passos: ['Escolha o período no alto.', 'Veja a frase e os números do período.', 'Abra as peças ou os dias para ver o detalhe.'],
+    atencao: ['Dia útil sem produção lançada conta só o custo fixo: lance todos os dias.'] },
+  { id: 'historico', rota: 'historico', rotas: ['hist-molde', 'hist-mp', 'hist-prod', 'hist-limpeza', 'hist-func', 'hist-setor', 'hist-cfg', 'mudanca', 'mudancas'], grupo: 'Histórico', nome: 'Histórico',
+    oque: 'Toda mudança gravada fica aqui, com a data em que passa a valer, quem gravou e o efeito nas peças. Em <b>Por cadastro</b> você vê só os moldes, só as matérias-primas, e assim por diante.',
+    passos: ['Escolha Todas as mudanças ou um tipo de cadastro no menu.', 'Clique em uma mudança para ver o antes e o depois e o efeito em cada peça.', 'Dali dá para <b>desfazer</b> a mudança ou <b>mudar o valor</b> com outra data.'] },
+  { id: 'comparar', rota: 'comparar', grupo: 'Histórico', nome: 'Comparar',
+    oque: 'Põe vários itens no mesmo gráfico ao longo do tempo: matérias-primas, peças, funcionários, setores, moldes e impostos. Mostra o valor, um índice (todos começam em 100) ou a variação em %, no período escolhido.',
+    passos: ['À esquerda, escolha o tipo e clique nos itens (até 12).', 'No alto, escolha o que mostrar (valor, índice ou variação) e o período.', 'Passe o mouse no gráfico para ver cada valor e as mudanças.'] },
+
+  /* ------------------------------------------------------------ produção */
+  { id: 'producao-dia', rota: 'producao-dia', grupo: 'Produção', nome: 'Produção do dia',
+    oque: 'Onde se lança, todo dia, quantas peças foram feitas. É o que transforma o custo das peças em lucro do dia.',
+    antes: 'Peças cadastradas, com fórmula e preço.',
+    passos: ['Escolha o dia (as setas mudam de dia; <b>Hoje</b> volta para hoje).', 'Em cada peça produzida, digite as peças boas e o refugo. Se a peça é limpa, digite as limpas na empresa e as que voltaram do terceiro.', 'Clique em <b>Gravar o dia</b>. <b>Copiar do dia anterior</b> ajuda quando a produção se repete.'],
+    colunas: [
+      ['Peças boas', 'Quantas peças boas foram feitas no dia (as que vão ser vendidas).'],
+      ['Refugo', 'Quantas peças foram perdidas no dia. Elas gastam material e não viram venda.'],
+      ['Peças limpas na empresa', 'Quantas peças a equipe da empresa limpou (rebarbou) no dia.'],
+      ['Peças retornadas do terceiro', 'Quantas peças voltaram limpas do prestador no dia. Cada uma paga o preço do terceiro vigente nessa data.'],
+      ['Receita líquida', 'Calculado: peças boas × preço médio sem impostos.'],
+      ['Contribuição', 'Calculado: receita líquida menos o custo variável da peça (material, molde, terceiro).']],
+    atencao: ['Fim de semana não tem custo fixo; dia útil sem lançamento fica só com o custo fixo.', 'Mais peças limpas do que boas gera aviso: pode ser peça de outro dia.'] },
+  { id: 'limpeza', rota: 'limpeza', grupo: 'Produção', nome: 'Limpeza de peças',
+    oque: 'Como as peças são limpas (rebarbadas): pela equipe da empresa (limpeza interna) ou por um prestador que cobra por peça (terceiro). Aqui ficam o setor da limpeza interna, a tabela de preços do terceiro e os reajustes dele.',
+    antes: 'Para a limpeza interna, um setor cadastrado com as pessoas da limpeza.',
+    passos: ['Na aba <b>Como é custeada</b>, escolha o setor da limpeza interna e grave.', 'Na aba <b>Preços do terceiro</b>, veja o preço de cada peça e, quando o terceiro reajustar, use <b>Novo reajuste</b>: marque as peças, a data e o percentual (ou o preço novo).', 'Em cada peça (Produtos e fórmulas), diga como ela é limpa.'],
+    abas: [['Como é custeada', [['setor', 'Setor da limpeza interna', 'O setor onde trabalha a equipe que limpa as peças. A hora desse setor ÷ peças limpas por hora = o custo da limpeza de cada peça.']]],
+      ['Preços do terceiro', [
+        ['data', 'Vale a partir de', 'A data em que o preço novo do terceiro começa a valer. Antes dela continua o preço antigo.'],
+        ['modo', 'Como reajustar', 'Mesmo percentual para todas as peças marcadas, ou um preço novo para cada uma.'],
+        ['pct', 'Percentual', 'Quanto o preço sobe, em %. Ex.: 5 = 5% mais caro. Use negativo para baixar.', '='],
+        ['obs', 'Observação', 'Opcional: o motivo do reajuste, ex.: dissídio do terceiro.'],
+        ['nome', 'Nome', 'O nome do prestador que limpa as peças.'],
+        ['obsT', 'Observações', 'Opcional: contato, prazo, condições.']]]],
+    blocos: [{ sel: '.rj-pecas', txt: 'Marque as peças que vão ter o preço reajustado. Com “Preço novo de cada peça”, aparece um campo para digitar o preço de cada uma.' }],
+    atencao: ['Peça com limpeza no terceiro e sem preço na tabela fica com o custo da limpeza de fora.'] },
+
+  /* ------------------------------------------------------------ cadastros › peças */
+  { id: 'produtos', rota: 'produtos', grupo: 'Cadastros › Peças', nome: 'Produtos e fórmulas',
+    oque: 'Cada peça que a empresa faz e a fórmula dela (a ficha técnica): quais matérias-primas leva, em quais setores passa e por quanto tempo. É da fórmula que sai o custo de fazer. Também ficam aqui o molde, a limpeza e os preços de venda da peça.',
+    antes: 'Matérias-primas, setores (com funcionários) e moldes cadastrados.',
+    passos: ['Clique em <b>Incluir</b> e preencha a aba <b>Cadastro</b>: código, descrição, tipo, unidade, molde e limpeza.', 'Na aba <b>Fórmula</b>, adicione os itens na ordem da produção: primeiro os materiais, depois as etapas (mistura, injeção, rebarbação…).', 'Em cada etapa, informe o tempo no setor, as pessoas, as máquinas, o refugo e a preparação da máquina.', 'Na aba <b>Preços e impostos</b>, escolha a NCM e coloque o preço em cada tabela.', 'Grave e confira o custo por peça.'],
+    abas: [['Cadastro', [
+        ['cod', 'Código', 'O código da peça, o mesmo do seu sistema de vendas. Ex.: VB-OR-2112. Não muda depois de gravado.'],
+        ['desc', 'Descrição', 'O nome da peça como aparece para o cliente. Ex.: Anel O-ring NBR 70.'],
+        ['tipo', 'Tipo', '<b>Produto acabado</b>: a peça que você vende. <b>Semi-acabado</b>: algo que você fabrica e usa dentro de outras peças, como o composto de borracha.'],
+        ['grupo', 'Grupo', 'Opcional: para organizar e filtrar. Ex.: Anéis, Retentores, Compostos.'],
+        ['un', 'Unidade', 'Como a peça é contada: un (peça), kg, mil… O custo é por essa unidade.'],
+        ['situacao', 'Situação', '<b>Ativo</b>: em produção. <b>Inativo</b>: saiu de linha; continua no histórico e sai da produção do dia e dos alertas.'],
+        ['lote', 'Peças por preparação (lote)', 'Quantas peças você faz cada vez que prepara a máquina para esta peça. O tempo da preparação é dividido por elas.'],
+        ['qf', 'Quantidade de formulação', 'Para quantas unidades você escreveu a fórmula. Se as quantidades e os tempos são para 1.000 peças, coloque 1000; se são para 1 peça, deixe 1. O custo é dividido por esse número.', '+'],
+        ['descComp', 'Descrição complementar', 'Opcional: medidas, material, aplicação.'],
+        ['obs', 'Observações', 'Opcional: qualquer anotação sobre a peça.'],
+        ['molde', 'Molde', 'O molde que faz esta peça. O custo dele entra em cada peça.', '+'],
+        ['limpeza.modo', 'Limpeza', '<b>Nenhuma</b>: a peça não é limpa. <b>Interna</b>: a equipe da empresa limpa (rebarba). <b>Terceiro</b>: um prestador limpa e cobra por peça.'],
+        ['limpeza.pph', 'Peças limpas por hora', 'Quantas peças uma pessoa da limpeza limpa em uma hora.', '+']]],
+      ['Fórmula', [
+        ['itens.#.fase', 'Fase', 'Opcional: o nome da etapa, ex.: Mistura, Injeção, Rebarbação. Só organiza a fórmula.'],
+        ['itens.#.reapMp', 'Reaproveitamento', 'Se parte do material volta para o estoque (ex.: sobra que é reaproveitada), escolha em qual matéria-prima ele vira. O valor dela sai do custo. Em branco: nada volta.'],
+        ['itens.#.reapQtd', 'Qtd reaproveitada', 'Quanto desse material volta, para a mesma quantidade de formulação.'],
+        ['fxQtdV', 'Qtd reaproveitada', 'Quanto desse material volta, para a mesma quantidade de formulação.'],
+        ['fxSetupV', 'Preparação da máquina', 'Quanto tempo leva para preparar a máquina para esta peça (trocar molde, aquecer, ajustar).', '+'],
+        ['itens.#.homens', 'Homens', 'Quantas pessoas trabalham ao mesmo tempo nesta etapa. Um operador cuidando de 2 máquinas = 0,5.'],
+        ['itens.#.maquinas', 'Máquinas', 'Quantas máquinas ficam ocupadas nesta etapa. Normalmente 1.'],
+        ['itens.#.refugo', 'Refugo', 'Quanto se perde nesta etapa, em %. Ex.: 3 = de cada 100 peças, 3 vão para o lixo. A perda encarece tudo o que veio antes dela na fórmula.']]],
+      ['Preços e impostos', [['ncm', 'NCM', 'A classificação fiscal da peça (8 dígitos), a mesma da nota fiscal.', '+']]]],
+    blocos: [{ sel: '.fx-lista', txt: 'Cada linha é um item da ficha técnica, na ordem da produção. Na linha: 1) o <b>tipo</b> (matéria-prima, semi-acabado, produto acabado ou etapa de produção); 2) o <b>item</b>; 3) a <b>quantidade</b> (material e componentes) ou o <b>tempo no setor</b> (etapa de produção: em horas e minutos, horas centesimais ou peças por hora), sempre para a quantidade de formulação. À direita, quanto a linha custa por peça. As setas mudam a ordem: ela importa, porque o refugo de uma etapa encarece o que veio antes.' }],
+    colunas: [['Tabela', 'O nome da tabela de preço (criada em Tabelas de preço).'], ['Estado', 'O estado de destino da tabela; define o ICMS da venda.'], ['Preço por', 'O preço de venda da peça nesta tabela, com impostos. Em branco: a peça não está nesta tabela.'], ['Impostos', 'Calculado: quanto do preço vai para impostos nesta tabela.'], ['Margem', 'Calculado: quanto sobra do preço sem impostos depois do custo de fazer, em %.']],
+    atencao: ['Quantidade de formulação diferente da usada na fórmula multiplica ou divide o custo por mil. Se o custo parece absurdo, confira esse campo.', 'Peça com preparação e sem “peças por preparação” paga a preparação inteira em cada peça.', 'Etapa num setor sem funcionários fica sem mão de obra.'] },
+  { id: 'moldes', rota: 'moldes', grupo: 'Cadastros › Peças', nome: 'Moldes',
+    oque: 'Os moldes de injeção e de prensa. O custo do molde é dividido por todas as peças que ele faz na vida útil e entra em cada peça.',
+    antes: 'O setor onde o molde trabalha (injeção ou prensa).',
+    passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, setor e situação.', 'Aba Custo e vida útil: valor, cavidades e vida útil (em injetadas).', 'Grave e ligue o molde às peças (Produtos e fórmulas › Molde).'],
+    abas: [['Cadastro', [
+        ['cod', 'Código', 'O código do molde, ex.: MD-V01. Não muda depois de gravado.'],
+        ['desc', 'Descrição', 'O que o molde faz, ex.: Molde O-ring 2-112, 64 cavidades.'],
+        ['setor', 'Setor (injeção ou prensa)', 'Onde o molde trabalha.', '+'],
+        ['situacao', 'Situação', '<b>Ativo</b>: em uso. <b>Inativo</b>: aposentado; sai dos avisos de vida útil. Se alguma peça ainda usa este molde, o custo dele continua entrando nela: troque o molde da peça.'],
+        ['compra', 'Data de compra', 'Opcional: quando o molde foi comprado.']]],
+      ['Custo e vida útil', [
+        ['valor', 'Valor do molde', 'Quanto o molde custou (ou a reforma). Ex.: R$ 38.000.'],
+        ['cavidades', 'Cavidades', 'Quantas peças saem em cada injetada (batida) do molde.', '='],
+        ['vida', 'Vida útil', 'Quantas injetadas o molde aguenta até reformar ou trocar. Ex.: 600.000. Custo por peça = valor ÷ (vida útil × cavidades).', '='],
+        ['ciclosIniciais', 'Injetadas antes do sistema', 'Se o molde já trabalhava antes de usar o sistema, quantas injetadas ele já tinha. Serve para o aviso de fim da vida útil.', '='],
+        ['obs', 'Observações', 'Opcional: reformas, fornecedor, cuidados.']]]],
+    atencao: ['Molde sem vida útil ou sem cavidades não dá custo por peça: a peça que usa ele aparece com erro.'] },
+  { id: 'mps', rota: 'mps', grupo: 'Cadastros › Peças', nome: 'Matérias-primas',
+    oque: 'Tudo o que você compra e usa nas peças: borrachas, cargas, aceleradores, insertos metálicos, embalagens. O sistema tira do preço de compra os impostos que a empresa recupera (créditos) e soma frete e outros gastos. O resultado é o custo líquido, usado nas fórmulas.',
+    passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, unidade (kg, g, L, un…).', 'Aba Preço e impostos: o preço da nota, os impostos da nota e se cada um gera crédito, e o frete.', 'Grave e confira o custo líquido no cartão ao lado.'],
+    abas: [['Cadastro', [
+        ['cod', 'Código', 'O código da matéria-prima, ex.: MP-001. Não muda depois de gravado.'],
+        ['desc', 'Descrição', 'O nome do material, ex.: Borracha NBR 33% ACN.'],
+        ['grupo', 'Grupo', 'Opcional: para organizar, ex.: Polímeros, Cargas, Aceleradores.'],
+        ['un', 'Unidade', 'Em que unidade você compra e usa na fórmula: kg, g, L, un… O preço de compra é por essa unidade.'],
+        ['situacao', 'Situação', '<b>Ativo</b>: em uso. <b>Inativo</b>: não é mais comprado; deixa de aparecer para escolher nas fórmulas e continua no histórico.'],
+        ['fornecedor', 'Fornecedor principal', 'Opcional: de quem você compra.'],
+        ['obs', 'Observações', 'Opcional: qualquer anotação.']]],
+      ['Preço e impostos', [
+        ['vc', 'Preço de compra', 'Quanto custa cada unidade na nota do fornecedor.', '+'],
+        ['freteP', 'Frete (% do preço)', 'Se o frete é cobrado em % do preço, coloque aqui. Ex.: 3. Se é em reais, use o campo ao lado.'],
+        ['v1', 'Frete e seguro (R$ por unidade)', 'Frete e seguro em reais por unidade (por kg, por exemplo). Use este ou o %, não os dois para o mesmo frete.'],
+        ['freteCred', 'Créditos sobre o frete', 'Quanto do frete a empresa recupera em impostos, em %.', '+'],
+        ['v2', 'Outros valores (R$ por unidade)', 'Outros gastos para trazer o material, em reais por unidade.', '+'],
+        ['v2Cred', 'Créditos sobre outros valores', 'Quanto desses outros valores a empresa recupera em impostos, em %.'],
+        ['ajuste', 'Outros acréscimos ou créditos', 'Veio da versão anterior. Quando os impostos estiverem nos campos certos, zere.'],
+        ['liquidoManual', 'Custo líquido digitado (opcional)', 'Deixe em branco para o sistema calcular. Se preencher, o sistema usa este valor e ignora a conta.', '+']]]],
+    colunas: [['Imposto', 'ICMS, IPI, PIS e COFINS da nota de compra.'], ['% da nota', 'A alíquota que está na nota fiscal do fornecedor. Ex.: ICMS 12.'], ['Gera crédito', '<b>Sim</b>: a empresa recupera esse imposto e ele sai do custo. <b>Não</b>: ele fica no custo. Em branco: o padrão do regime (pergunte ao contador).']],
+    atencao: ['Preço sem atualização há muito tempo gera aviso em Alertas (o prazo fica em Ajustes › Geral e dados).', 'Unidade errada (kg no cadastro e gramas na fórmula) erra o custo: a fórmula usa a unidade daqui.'] },
+
+  /* ------------------------------------------------------------ cadastros › preços */
+  { id: 'tabelas-preco', rota: 'tabelas-preco', grupo: 'Cadastros › Preços', nome: 'Tabelas de preço',
+    oque: 'Os preços de venda. Cada tabela tem um estado de destino (que define o ICMS) e um preço por peça. O lucro usa o preço médio das tabelas ativas em que a peça tem preço. A tabela geral é o preço do cadastro da peça.',
+    antes: 'Impostos sobre a venda e ICMS por estado conferidos.',
+    passos: ['Clique em <b>Nova tabela</b> (ou escolha uma nas abas do alto).', 'Dê um nome, escolha o estado de destino e deixe marcada como ativa.', 'Digite o preço de cada peça na coluna “Preço nesta tabela”. Ao lado aparecem os impostos, o preço sem impostos e a margem.', 'Grave.'],
+    abas: [['Tabela', [['tabelas.#.uf', 'Estado de destino', 'O estado para onde você vende com esta tabela. Define o ICMS da venda (Ajustes › ICMS por estado).']]]],
+    blocos: [{ sel: '.tg-det-top', txt: 'No alto da tabela: o <b>nome</b> (ex.: Distribuidores SP), o <b>estado de destino</b> e se está <b>ativa</b>. Só as ativas entram no preço médio usado no lucro.' }],
+    colunas: [['Peça', 'A peça (código e descrição).'], ['Custo de fazer', 'Calculado: quanto custa fazer uma peça.'], ['Preço nesta tabela', 'O preço de venda com impostos, nesta tabela. Em branco: a peça não está na tabela.'], ['Impostos', 'Calculado: os impostos da venda para o estado da tabela.'], ['Preço sem impostos', 'Calculado: o que fica para a empresa depois dos impostos.'], ['Sobra por peça', 'Calculado: preço sem impostos menos o custo de fazer.'], ['Margem', 'Calculado: a sobra em % do preço sem impostos.']],
+    atencao: ['Margem negativa = a peça é vendida abaixo do custo nessa tabela; aparece como alerta crítico.'] },
+  { id: 'cfg-impostos', rota: 'cfg-impostos', grupo: 'Cadastros › Preços', nome: 'Impostos sobre a venda',
+    oque: 'O regime tributário da empresa e os impostos que saem do preço de venda. Com isso o sistema calcula o preço sem impostos de cada peça. Confira tudo com o contador.',
+    passos: ['Escolha o regime (Lucro Presumido ou Lucro Real) e o estado da empresa.', 'Clique em <b>Usar as alíquotas usuais do regime</b> para preencher os números comuns.', 'Ajuste o que o contador disser e grave.'],
+    abas: [['Alíquotas', [
+        ['fiscal.uf', 'Estado da empresa (UF)', 'O estado de onde a empresa vende. A tabela de preço deste estado usa o ICMS interno.'],
+        ['fiscal.irpjPres', 'IRPJ: presunção', 'No Lucro Presumido, o IRPJ é calculado sobre uma parte do faturamento. Para indústria, normalmente 8%.'],
+        ['fiscal.irpjAliq', 'IRPJ: alíquota', 'A alíquota do IRPJ sobre essa parte. Normalmente 15%.'],
+        ['fiscal.csllPres', 'CSLL: presunção', 'A parte do faturamento usada para a CSLL. Para indústria, normalmente 12%.'],
+        ['fiscal.csllAliq', 'CSLL: alíquota', 'A alíquota da CSLL sobre essa parte. Normalmente 9%.'],
+        ['fiscal.irpjReal', 'IRPJ estimado', 'No Lucro Real o IRPJ depende do lucro. Coloque uma estimativa em % do faturamento.'],
+        ['fiscal.csllReal', 'CSLL estimada', 'No Lucro Real a CSLL depende do lucro. Coloque uma estimativa em % do faturamento.'],
+        ['fiscal.pis', 'PIS', 'O PIS sobre a venda, em %.', '+'],
+        ['fiscal.cofins', 'COFINS', 'A COFINS sobre a venda, em %.', '+'],
+        ['fiscal.cbs', 'CBS', 'Imposto novo da reforma tributária (federal).', '+'],
+        ['fiscal.ibs', 'IBS', 'Imposto novo da reforma tributária (estados e municípios).', '+'],
+        ['impostosVendaPct', 'Outros impostos sobre a venda', 'Outros impostos que saem do preço e não estão acima, em %.', '+']]]],
+    blocos: [{ caixa: 'Regime tributário', txt: 'O regime da empresa (pergunte ao contador). Ele muda como IRPJ e CSLL são calculados e quais impostos da compra a empresa recupera.' }],
+    atencao: ['O ICMS não fica aqui: ele depende do estado de destino (ICMS por estado). O IPI vem da NCM da peça.'] },
+  { id: 'cfg-icms', rota: 'cfg-icms', grupo: 'Cadastros › Preços', nome: 'ICMS por estado',
+    oque: 'O ICMS da venda para cada estado de destino. Cada tabela de preço usa o ICMS do estado dela.',
+    passos: ['Confira a alíquota de cada estado para onde você vende (pergunte ao contador).', 'Grave.'],
+    colunas: [['Estado', 'O estado de destino da venda.'], ['ICMS da venda', 'A alíquota de ICMS para vender para esse estado. Dentro do próprio estado vale a alíquota interna; para outros, normalmente 7% ou 12%.'], ['Tabelas de preço', 'As tabelas que vendem para esse estado.']] },
+  { id: 'ncm', rota: 'ncm', grupo: 'Cadastros › Preços', nome: 'NCM',
+    oque: 'As classificações fiscais (NCM) das peças. A NCM dá o IPI da peça e, às vezes, ICMS, PIS ou COFINS diferentes dos gerais.',
+    passos: ['Clique em <b>Adicionar NCM</b>.', 'Digite o código (8 dígitos), a descrição e o IPI.', 'Só preencha as exceções se o contador disser que essa NCM tem alíquota diferente.', 'Grave e escolha a NCM no cadastro de cada peça.'],
+    colunas: [['NCM', 'O código de 8 dígitos. Ex.: 40169300.'], ['Descrição', 'O que é essa NCM, ex.: Juntas de borracha.'], ['IPI', 'A alíquota de IPI. O IPI é “por fora”: soma na nota, não é receita nem custo.'], ['ICMS', 'Só se essa NCM tem ICMS diferente. Em branco: vale o do estado.'], ['PIS', 'Só se essa NCM tem PIS diferente. Em branco: vale o geral.'], ['COFINS', 'Só se essa NCM tem COFINS diferente. Em branco: vale o geral.'], ['Peças', 'As peças que usam esta NCM.']] },
+
+  /* ------------------------------------------------------------ cadastros › fábrica */
+  { id: 'setores', rota: 'setores', grupo: 'Cadastros › Fábrica', nome: 'Setores e máquinas',
+    oque: 'Cada lugar da fábrica por onde a peça passa: mistura, injeção, rebarbação, embalagem… Cada setor tem um custo por hora: o de quem trabalha nele (mão de obra) e o das máquinas dele (depreciação, energia, manutenção). A peça paga esse custo pelo tempo que passa no setor.',
+    passos: ['Clique em <b>Incluir</b>.', 'Aba Dados e taxas: código, descrição e horas de operação por mês.', 'Aba Máquinas e equipamentos: adicione cada máquina com o valor, a vida útil, as horas por mês e os gastos mensais.', 'Grave. Depois cadastre os funcionários e coloque cada um no setor (Funcionários › Alocação nos setores).', 'Volte ao setor e confira a hora de mão de obra e de máquina no cartão ao lado.'],
+    abas: [['Dados e taxas', [
+        ['cod', 'Código', 'Um código curto para o setor, ex.: S03. Não muda depois de gravado.'],
+        ['desc', 'Descrição', 'O nome do setor, ex.: Injeção de borracha.'],
+        ['horasOperacao', 'Horas de operação por mês', 'Quantas horas o setor trabalha no mês: turnos × horas por turno × dias. Os gastos gerais do setor são divididos por essas horas.', '+'],
+        ['manual.mod', 'Mão de obra (taxa digitada)', 'Deixe em branco: o sistema calcula pelo custo das pessoas do setor. Preencha só para forçar um valor por hora (ex.: setor novo, ainda sem pessoas cadastradas).'],
+        ['manual.maq', 'Máquinas (taxa digitada)', 'Deixe em branco: o sistema calcula pelas máquinas do setor. Preencha só para forçar um valor por hora.']]],
+      ['Máquinas e equipamentos', [
+        ['equipamentos.#.residual', 'Valor residual', 'Quanto a máquina ainda vale no fim da vida útil, em % do valor de compra. Ex.: 10.'],
+        ['equipamentos.#.vidaAnos', 'Vida útil', 'Quantos anos a máquina trabalha até precisar trocar. Depreciação por mês = (valor − residual) ÷ (anos × 12). Ex.: R$ 420.000, 10% de residual e 12 anos = R$ 2.625 por mês.'],
+        ['equipamentos.#.horasMes', 'Horas por mês (cada)', 'Quantas horas cada máquina produz no mês. O custo da máquina por hora = (depreciação + gastos) ÷ horas.'],
+        ['equipamentos.#.desp.*', 'Gastos por mês', 'Quanto essa despesa custa por mês para cada máquina (ex.: energia elétrica). As despesas pedidas são escolhidas em Gastos dos equipamentos.'],
+        ['despTotal.*', 'Gastos do setor', 'Quanto essa despesa custa por mês somando todas as máquinas do setor.', '+']]]],
+    blocos: [{ sel: '.fx-lista', txt: 'Cada cartão é um tipo de máquina. Na linha de cima: a <b>descrição</b> (ex.: Injetora 300 t), a <b>quantidade</b> de máquinas iguais e o <b>valor de compra</b> de cada uma. Embaixo: residual, vida útil, horas por mês e os gastos mensais de cada máquina. À direita, quanto o cartão custa por mês e por hora.' }],
+    atencao: ['Setor sem pessoas alocadas fica com mão de obra zero: as peças que passam nele ficam mais baratas do que são.', 'Máquina sem horas por mês não dá custo por hora.', 'Os moldes não entram aqui: têm cadastro próprio.'] },
+  { id: 'cfg-equip', rota: 'cfg-equip', grupo: 'Cadastros › Fábrica', nome: 'Gastos dos equipamentos',
+    oque: 'Quais despesas mensais são pedidas no cadastro de cada máquina (energia elétrica, manutenção, lubrificação…) e se elas são lançadas por máquina ou pelo total do setor.',
+    passos: ['Escolha o modo: por equipamento (mais detalhe) ou total do setor (mais rápido).', 'Confira a lista de despesas: renomeie, adicione ou tire.', 'Grave. Os campos aparecem no cadastro das máquinas (Setores e máquinas).'],
+    blocos: [{ caixa: 'Despesas pedidas', txt: 'Cada linha é uma despesa mensal que vira um campo no cadastro das máquinas. À esquerda, o nome (ex.: Energia elétrica); à direita, uma explicação para quem vai preencher (ex.: conta de luz ÷ número de máquinas).' }, { caixa: 'Modo de lançamento', txt: '<b>Por equipamento</b>: você informa os gastos de cada máquina e vê o custo de cada uma. <b>Total do setor</b>: você informa só a soma do setor. A hora do setor fica igual nos dois.' }] },
+  { id: 'funcionarios', rota: 'funcionarios', grupo: 'Cadastros › Fábrica', nome: 'Funcionários',
+    oque: 'Quem trabalha nos setores produtivos. O custo de cada pessoa (salário + encargos + provisões + benefícios) vai para o setor em que ela trabalha e vira a hora de mão de obra do setor. Você pode cadastrar <b>uma pessoa</b> (com matrícula e nome) ou <b>uma função</b> com várias pessoas iguais (ex.: 4 operadores de injetora), sem nome de operador.',
+    antes: 'Setores cadastrados. Encargos e Taxas hora conferidos.',
+    passos: ['Clique em <b>Incluir funcionário</b>.', 'Escolha <b>Uma pessoa</b> ou <b>Uma função</b>.', 'Preencha a identificação e, na função, quantas pessoas fazem essa função.', 'Em Alocação nos setores, escolha o setor e o % do tempo (100% se trabalha só nele).', 'Aba Salário e benefícios: salário, horas, eficiência, horas extras e benefícios.', 'Grave e confira o custo mensal no cartão ao lado.'],
+    abas: [['Cadastro', [
+        ['mat', 'Matrícula', 'O número de registro da pessoa (o mesmo da folha), ex.: VB-001. Na função, o código é criado sozinho.'],
+        ['nome', 'Nome', 'O nome da pessoa. Na função, o nome da função, ex.: Operador de injetora.'],
+        ['cargo', 'Cargo', 'Opcional: o cargo da pessoa, ex.: Operador de injetora.'],
+        ['admissao', 'Admissão', 'Opcional: a data de admissão. É só informação.'],
+        ['qtd', 'Pessoas nessa função', 'Quantas pessoas fazem essa função.', '+']]],
+      ['Salário e benefícios', [
+        ['sb', 'Salário base', 'O salário de registro (carteira) por mês, sem horas extras. Na função, o salário de cada pessoa.'],
+        ['horasTrab', 'Horas trabalhadas no mês', 'Horas que a pessoa realmente trabalha no mês.'],
+        ['horasBase', 'Horas base do mês', 'Só para achar o valor da hora extra. Padrão CLT: 220.'],
+        ['efic', 'Eficiência (%)', 'Quanto das horas trabalhadas vira produção de verdade.'],
+        ['he.*', 'Horas extras por mês', 'A média de horas extras por mês com esse acréscimo. Entram no custo do mês e nas horas da pessoa. Em branco: nenhuma.'],
+        ['vb.*', 'Valores deste funcionário', 'O valor desta pessoa para este item dos encargos (ex.: insalubridade só para quem recebe). Em branco: vale o padrão da empresa.']]]],
+    blocos: [{ caixa: 'Alocação nos setores', txt: 'Em cada linha: o <b>setor</b> e o <b>% do tempo</b> que a pessoa (ou a função) trabalha nele. Ex.: 70% na injeção e 30% na rebarbação. O total deve dar 100%; o que faltar fica fora do custo das peças.' }],
+    colunas: [['Benefício', 'Os benefícios da empresa (cadastrados em Encargos e provisões).'], ['Valor por mês', 'Quanto a empresa paga por mês a esta pessoa. Em branco: o padrão da empresa.'], ['Desconto do funcionário', 'Quanto é descontado do salário da pessoa por esse benefício. Sai do custo. Em branco: o padrão.'], ['Não recebe', 'Marque se esta pessoa não recebe esse benefício.']],
+    atencao: ['Pessoa sem setor não entra no custo de nenhuma peça (aparece em Alertas).', 'Na função, todas as pessoas têm o mesmo salário. Se os salários são bem diferentes, use a média ou separe em duas funções.'] },
+  { id: 'cfg-encargos', rota: 'cfg-encargos', grupo: 'Cadastros › Fábrica', nome: 'Encargos e provisões',
+    oque: 'A tabela que transforma o salário no custo mensal de cada funcionário: INSS, FGTS, férias, 13º, aviso prévio… Ela já vem preenchida com o padrão. Aqui também ficam os benefícios padrão (vale-alimentação, vale-transporte).',
+    passos: ['Confira os benefícios padrão: valor por mês e desconto do funcionário.', 'Confira a tabela com o contador: a alíquota (Valor) de cada item.', 'Mexa nas fórmulas só se souber o que está fazendo. <b>Restaurar fórmulas padrão</b> volta ao começo.', 'Grave.'],
+    colunas: [['Ref', 'O código do item (V01 a V50). Outras fórmulas podem usar o valor dele por esse código.'], ['Descrição', 'O nome do item, ex.: INSS patronal, FGTS, Férias + 1/3.'], ['Tipo', '% (percentual) ou $ (valor em reais): diz como ler o Valor. <b>Inativo</b> tira a linha da conta.'], ['Varia por funcionário', 'Marcado: cada pessoa pode ter um valor próprio, na aba Salário e benefícios dela (ex.: insalubridade).'], ['Integra o salário', 'Marcado: o item soma ao salário antes dos outros encargos (ex.: adicional de insalubridade, que também paga INSS e férias).'], ['Valor', 'O número que a fórmula usa como VB: um percentual (ex.: 8 para o FGTS) ou um valor em reais.'], ['Fórmula', 'A conta do item. Ex.: ST * VB / 100 = salário total × Valor ÷ 100. ST = salário total; SB = salário base; V01… = outros itens.'], ['Vai para', 'Em qual grupo o valor aparece: Encargos, Provisões ou Outros. Não muda o total.'], ['Benefício', 'O nome do benefício.'], ['Valor por mês (padrão)', 'Quanto a empresa paga por mês a cada funcionário.'], ['Desconto do funcionário', 'Quanto é descontado do salário de cada um. Sai do custo.'], ['Entra no custo', 'Calculado: valor − desconto.'], ['Ativo', 'Desmarcado: o benefício não entra para ninguém.']],
+    atencao: ['Benefício que também está na tabela de encargos conta duas vezes: o sistema avisa.'] },
+  { id: 'cfg-taxas', rota: 'cfg-taxas', grupo: 'Cadastros › Fábrica', nome: 'Taxas hora',
+    oque: 'As regras do custo das pessoas: os valores que já vêm preenchidos no funcionário novo, os números usados pelos encargos e de onde vêm as horas e a eficiência.',
+    passos: ['Confira os padrões para novos funcionários.', 'Confira os parâmetros dos encargos (pergunte ao RH).', 'Escolha como calcular os encargos e as regras das horas.', 'Grave.'],
+    abas: [['Taxas hora', [
+        ['taxas.salarioPadrao', 'Salário padrão', 'O salário que já vem preenchido quando você cadastra um funcionário novo. Também é usado no exemplo desta tela.'],
+        ['taxas.padraoHorasTrab', 'Horas trabalhadas no mês', 'O padrão para funcionários novos.'],
+        ['taxas.padraoHorasBase', 'Horas base do mês', 'O padrão para funcionários novos.'],
+        ['taxas.padraoEfic', 'Eficiência (%)', 'O padrão para funcionários novos.'],
+        ['taxas.rotatividade', 'Permanência média (rotatividade)', 'Quanto tempo, em média, uma pessoa fica na empresa, em meses. Usado na provisão do aviso prévio: quanto menos tempo, maior a provisão por mês.', '+'],
+        ['taxas.diasUteis', 'Dias úteis no mês', 'Dias de trabalho no mês, ex.: 22. Usado nos encargos que dependem dos dias.', '+'],
+        ['taxas.uniformesMeses', 'Troca de uniformes a cada', 'De quantos em quantos meses o uniforme é trocado. O custo dele é dividido por esses meses.', '+'],
+        ['taxas.examesMeses', 'Exames periódicos a cada', 'De quantos em quantos meses a pessoa faz exame. O custo dele é dividido por esses meses.', '+'],
+        ['mesReferencia', 'Mês de referência', 'O mês que serve de base para as contas que dependem do calendário. Use o mês atual.', '+'],
+        ['taxas.pctEncargos', 'Encargos (%)', 'Só no modo de percentuais fixos: o % de encargos sobre o salário.'],
+        ['taxas.pctProvisoes', 'Provisões (%)', 'Só no modo de percentuais fixos: o % de provisões (férias, 13º) sobre o salário.'],
+        ['taxas.pctOutros', 'Outros (%)', 'Só no modo de percentuais fixos: outros custos em % do salário.']]]],
+    blocos: [{ caixa: 'Como calcular os encargos', txt: '<b>Pelas fórmulas</b>: usa a tabela de Encargos e provisões, item por item (mais exato). <b>Por percentuais fixos</b>: um % de encargos, um de provisões e um de outros sobre o salário (mais simples). Embaixo: se os valores dos encargos podem variar por pessoa e se as horas e a eficiência vêm de cada funcionário ou de um padrão para todos.' },
+      { caixa: 'Horas extras e validações', txt: 'Os <b>percentuais de hora extra</b> da empresa (ex.: 50 e 100): cada um vira um campo no funcionário. 0 = não usar. As duas caixas impedem erros comuns: mais de 240 horas no mês e alocação acima de 100%.' }] },
+
+  /* ------------------------------------------------------------ ajustes */
+  { id: 'cfg-tempos', rota: 'cfg-tempos', grupo: 'Ajustes', nome: 'Tempos e precisão',
+    oque: 'Como os tempos são digitados nas fórmulas e quantas casas depois da vírgula cada valor guarda. Normalmente não precisa mexer.',
+    abas: [['Tempos e precisão', [
+        ['tempos.fabricacao', 'Fabricação', 'Como você costuma informar o tempo das etapas: peças por hora (ex.: 600), horas e minutos (ex.: 1:30) ou hora centesimal (ex.: 1,5). É o formato das linhas novas da fórmula.'],
+        ['tempos.setup', 'Preparação', 'Se o tempo de preparação das linhas novas é digitado em horas ou em minutos.', '+'],
+        ['precisao.quantidades', 'Quantidades', 'Quantas casas depois da vírgula as quantidades guardam. Ex.: 4 casas = 0,0025 kg.'],
+        ['precisao.valores', 'Valores (custos e preços)', 'Quantas casas depois da vírgula os custos e preços guardam.', '+'],
+        ['precisao.percentuais', 'Percentuais', 'Quantas casas depois da vírgula os percentuais guardam.'],
+        ['precisao.horas', 'Horas centesimais', 'Quantas casas depois da vírgula as horas centesimais guardam.']]]],
+    blocos: [{ caixa: 'Tempos nas fórmulas', txt: 'A primeira caixa deixa quem digita a fórmula escolher outro formato de tempo em cada linha. A segunda arredonda para cima a conversão de horas e minutos para centesimal (evita custo um pouco menor por arredondamento).' }] },
+  { id: 'cfg-geral', rota: 'cfg-geral', grupo: 'Ajustes', nome: 'Geral e dados',
+    oque: 'A data de hoje do sistema, como os custos são recalculados e quando avisar sobre preços velhos.',
+    abas: [['Geral', [
+        ['dataReferencia', 'Hoje é', 'Deixe em branco no dia a dia: vale a data do computador. Fixe uma data só para ver as contas como estavam naquele dia.', '+'],
+        ['diasAlertaPreco', 'Avisar preço de matéria-prima sem atualização há', 'Depois de quantos dias sem atualizar o preço de uma matéria-prima o sistema avisa em Alertas. Ex.: 90.']]]],
+    blocos: [{ caixa: 'Recálculo dos custos', txt: '<b>Automático</b> (recomendado): cada gravação já recalcula tudo. <b>Manual</b>: útil para mudar vários cadastros e só depois ver o efeito.' }] },
+  { id: 'auditoria', rota: 'auditoria', grupo: 'Ajustes', nome: 'Auditoria',
+    oque: 'O registro de quem gravou o quê e quando nesta empresa, inclusive a produção. A data e o nome vêm do servidor: ninguém consegue mudar.',
+    passos: ['Use os filtros para achar uma gravação.', 'Clique para ver o detalhe.'] },
+  { id: 'usuarios', rota: 'usuarios', grupo: 'Ajustes', nome: 'Usuários e acessos',
+    oque: 'Quem entra no sistema e o que pode fazer em cada empresa. Só o administrador vê esta tela.',
+    passos: ['Preencha o e-mail, o nome e o papel da pessoa.', 'Pessoa nova: coloque também uma senha provisória. O sistema cria o login e já dá o acesso.', 'Clique em <b>Dar acesso</b> e passe a senha para a pessoa. Ela troca em “Alterar minha senha”.', 'Para mudar o papel, use a lista; para tirar, <b>Tirar acesso</b>.'],
+    abas: [['Dar acesso', [
+        ['email', 'E-mail', 'O e-mail que a pessoa vai usar para entrar.'],
+        ['nome', 'Nome', 'Como o nome aparece no histórico e na auditoria. Ex.: João Alício — Produção.'],
+        ['papel', 'Papel', '<b>Administrador</b>: tudo, inclusive acessos. <b>Gestor</b>: tudo, menos acessos. <b>Operador</b>: só lança a produção. <b>Consulta</b>: só vê.', '+'],
+        ['senha', 'Senha provisória', 'Mínimo 6 caracteres. Passe para a pessoa; ela troca no primeiro acesso.', '+']]]],
+    atencao: ['Gestor e consulta veem custos, e com eles os salários. Para quem só lança produção, use operador.'] },
+  { id: 'importar', rota: 'importar', grupo: 'Ajustes', nome: 'Importar planilha',
+    oque: 'Cadastra ou atualiza muitos itens de uma vez com uma planilha do Excel: matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas.',
+    passos: ['Clique em <b>Baixar o modelo</b>. Cada aba do Excel é um tipo de cadastro, e as colunas têm explicação.', 'Preencha. Números no padrão brasileiro (1.500,25). Apague as linhas de exemplo.', 'Escolha o arquivo e a data em que os valores passam a valer.', 'O sistema confere linha por linha e mostra os erros. Corrija e importe.'],
+    atencao: ['Importar de novo a mesma planilha não muda nada: só o que mudou vira mudança.'] },
+  { id: 'motor', rota: 'motor', grupo: 'Ajustes', nome: 'Como calculamos',
+    oque: 'A explicação técnica de cada conta do sistema: de onde vem cada número e em que manual ele se baseia. Útil para conferir com o contador ou com quem conhece o Hipercusto.' },
+  { id: 'notificacoes', rota: 'notificacoes', grupo: 'Ajustes', nome: 'Notificações',
+    oque: 'Avisos no computador e no celular (o sino no alto da tela): peça abaixo do custo, produção do dia não lançada, molde no fim da vida útil. Cada pessoa escolhe o que quer receber e a que horas.' },
+
+  /* ------------------------------------------------------------ glossário */
+  { id: 'glossario', grupo: 'Glossário', nome: 'Palavras do sistema',
+    termos: [
+      ['Custo de fazer', 'Quanto custa produzir uma peça: material + mão de obra + máquina + gastos gerais + molde + limpeza + preparação + perdas.'],
+      ['Matéria-prima', 'O que é comprado e entra na peça: borracha, carga, inserto, embalagem.'],
+      ['Semi-acabado', 'Algo que a empresa fabrica e usa dentro de outras peças. Ex.: o composto de borracha misturado.'],
+      ['Produto acabado', 'A peça que é vendida.'],
+      ['Fórmula (ficha técnica)', 'A lista do que entra na peça e por onde ela passa, na ordem da produção.'],
+      ['Quantidade de formulação', 'Para quantas unidades a fórmula foi escrita. O custo é dividido por ela.'],
+      ['Etapa de produção', 'Uma passagem da peça por um setor, com o tempo que ela fica lá.'],
+      ['Hora do setor', 'Quanto custa uma hora de trabalho no setor: mão de obra + máquinas + gastos gerais.'],
+      ['Mão de obra', 'O custo das pessoas do setor (salário, encargos, provisões, benefícios) ÷ as horas produtivas delas.'],
+      ['Horas produtivas', 'Horas trabalhadas × eficiência: as horas que viram produção.'],
+      ['Eficiência', 'O % das horas trabalhadas que vira produção. O resto é parada, troca, reunião.'],
+      ['Encargos', 'O que a empresa paga além do salário: INSS, FGTS, RAT…'],
+      ['Provisões', 'O que a empresa guarda todo mês para pagar depois: férias, 13º, aviso prévio.'],
+      ['Depreciação', 'A perda de valor da máquina com o tempo, dividida pelos meses da vida útil.'],
+      ['Preparação (setup)', 'O tempo para deixar a máquina pronta para uma peça: trocar molde, aquecer, ajustar.'],
+      ['Peças por preparação (lote)', 'Quantas peças são feitas a cada preparação. A preparação é dividida por elas.'],
+      ['Refugo', 'O que se perde na produção. Encarece as peças boas.'],
+      ['Cavidades e injetadas', 'Cavidades: quantas peças saem de cada batida do molde. Injetadas: quantas batidas.'],
+      ['Crédito de imposto', 'Imposto pago na compra que a empresa recupera. Sai do custo da matéria-prima.'],
+      ['Imposto por dentro e por fora', 'Por dentro: já está no preço (ICMS, PIS, COFINS). Por fora: soma em cima do preço (IPI).'],
+      ['Preço sem impostos', 'O que fica para a empresa depois de tirar os impostos da venda.'],
+      ['Sobra por peça e margem', 'Sobra: preço sem impostos − custo de fazer. Margem: a sobra em %.'],
+      ['Preço médio das tabelas', 'A média dos preços da peça nas tabelas ativas. É o preço usado no lucro.'],
+      ['Custo variável', 'O que aumenta com cada peça feita: material, molde, terceiros.'],
+      ['Custo fixo', 'O que se paga no mês mesmo sem produzir: pessoas e máquinas. Entra por dia útil.'],
+      ['Lucro bruto', 'Receita sem impostos − custo variável − custo fixo dos dias.'],
+      ['Vale a partir de', 'A data em que um valor novo começa a valer. Antes dela vale o valor antigo.'],
+      ['Corrigir × registrar mudança', 'Corrigir: o valor estava errado desde o começo. Registrar mudança: o valor mudou a partir de uma data.']] }
+];
+
+/* =====================================================================
+   MANUAL E AJUDA DOS CAMPOS — o funcionamento
+   - todo campo com explicação no MANUAL ganha o "?" (fCampo)
+   - tabelas de preencher e blocos sem rótulo ganham a explicação na caixa (ajBlocos)
+   - tela Manual (menu › Manual; o "?" do topo abre no capítulo da tela aberta)
+   ===================================================================== */
+IC.livro = '<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 7h7M9 11h5"/>';
+var AJ_IDX = {}, AJ_CAP = {}, AJ_CAP_ROTA = {};
+MANUAL.forEach(function (c) {
+  AJ_CAP[c.id] = c;
+  [c.rota].concat(c.rotas || []).forEach(function (r) {
+    if (!r) return;
+    AJ_CAP_ROTA[r] = c;
+    var ix = AJ_IDX[r] = AJ_IDX[r] || {};
+    (c.abas || []).forEach(function (a) { a[1].forEach(function (x) { if (!ix[x[0]]) ix[x[0]] = { rot: x[1], txt: x[2], modo: x[3] || '' }; }); });
+  });
+});
+function ajNorm(p) { return String(p || '').split('.').map(function (x) { return /^\d+$/.test(x) ? '#' : x; }).join('.'); }
+// a explicação de um campo: o caminho exato, depois com * no último nome (desp.g1 → desp.*), depois no penúltimo
+function ajudaDoCampo(rota, path) {
+  var ix = AJ_IDX[rota]; if (!ix || !path) return null;
+  var k = ajNorm(path), ps = k.split('.'), c = [k], q;
+  if (ps.length > 1) c.push(ps.slice(0, -1).concat('*').join('.'));
+  if (ps.length > 2) { q = ps.slice(); q[q.length - 2] = '*'; c.push(q.join('.')); }
+  for (var i = 0; i < c.length; i++) if (ix[c[i]]) return ix[c[i]];
+  return null;
+}
+// todo campo da tela: sem explicação, ganha a do manual; com explicação, a do manual vem antes (+) ou no lugar (=)
+var fCampoSemAjuda = fCampo;
+fCampo = function (rotulo, html, hint, cls) {
+  var m = /data-(?:b|ch)="([^"]+)"/.exec(html || ''), a = m && S && S.rota ? ajudaDoCampo(S.rota, m[1]) : null;
+  if (a) hint = !hint || a.modo === '=' ? a.txt : a.modo === '+' ? a.txt + ' ' + hint : hint;
+  return fCampoSemAjuda(rotulo, html, hint, cls);
+};
+// tabelas de preencher e blocos sem rótulo: a explicação entra na caixa (o "?" fica no título dela)
+function ajColunaTxt(cap, th) {
+  var t = String(th || '').replace(/\s*\?$/, '').trim().toLowerCase(), l = cap.colunas || [];
+  for (var i = 0; i < l.length; i++) if (t && t.indexOf(l[i][0].toLowerCase()) === 0) return l[i][1];
+  return null;
+}
+function ajTituloCaixa(el) { var h = el.querySelector(':scope > h2, :scope > h3'); return h ? ajTexto(h).replace(/\s*\?$/, '').trim() : ''; }
+function ajBlocos(raiz) {
+  var cap = S && AJ_CAP_ROTA[S.rota]; if (!cap) return;
+  if (cap.colunas) Array.prototype.forEach.call(raiz.querySelectorAll('table'), function (t) {
+    if (t.hasAttribute('data-ajc') || t.closest('.modal-fundo, .manual') || !t.querySelector('tbody input, tbody select')) return;
+    t.setAttribute('data-ajc', '1');
+    var li = [];
+    Array.prototype.forEach.call(t.querySelectorAll('thead th'), function (th) {
+      var nome = ajTexto(th).replace(/\s*\?$/, ''), x = nome ? ajColunaTxt(cap, nome) : null;
+      if (x) li.push('<li><b>' + esc(nome) + '</b>: ' + x + '</li>');
+    });
+    if (!li.length) return;
+    var d = document.createElement('div'); d.className = 'desc aj-colunas'; d.innerHTML = '<b>Como preencher cada coluna</b><ul>' + li.join('') + '</ul>';
+    var alvo = t.closest('.tbl-scroll') || t; alvo.parentNode.insertBefore(d, alvo);
+  });
+  (cap.blocos || []).forEach(function (b) {
+    var els = b.caixa ? Array.prototype.filter.call(raiz.querySelectorAll('.fbox, .tbl-box'), function (x) { return ajTituloCaixa(x).indexOf(b.caixa) === 0; }) : Array.prototype.slice.call(raiz.querySelectorAll(b.sel));
+    els.forEach(function (el) {
+      if (el.hasAttribute('data-ajb') || el.closest('.modal-fundo, .manual')) return;
+      el.setAttribute('data-ajb', '1');
+      var d = document.createElement('div'); d.className = 'desc aj-bloco'; d.innerHTML = b.txt;
+      if (b.caixa) { var h = el.querySelector(':scope > h2, :scope > h3'); h.parentNode.insertBefore(d, h.nextSibling); }
+      else el.parentNode.insertBefore(d, el);
+    });
+  });
+}
+
+/* ---------------- a tela Manual ---------------- */
+function capVisivel(c) { return !c.rota || podeRota(c.rota); }
+function capDaRota(r) { var c = AJ_CAP_ROTA[r]; return c ? c.id : (r === 'boas-vindas' ? 'comecar' : ''); }
+function manTexto(c) {
+  var t = [c.nome, c.grupo, c.oque, c.antes, c.extra].concat(c.passos || [], c.atencao || []);
+  (c.abas || []).forEach(function (a) { a[1].forEach(function (x) { t.push(x[1], x[2]); }); });
+  (c.colunas || []).forEach(function (x) { t.push(x[0], x[1]); });
+  (c.blocos || []).forEach(function (x) { t.push(x.txt); });
+  (c.termos || []).forEach(function (x) { t.push(x[0], x[1]); });
+  return t.join(' ').replace(/<[^>]*>/g, ' ').toLowerCase();
+}
+function manCampos(c, busca) {
+  var h = '', bate = function (x) { return !busca || (x.join(' ').replace(/<[^>]*>/g, ' ').toLowerCase().indexOf(busca) >= 0); };
+  (c.abas || []).forEach(function (a) {
+    var vistos = {}, l = a[1].filter(function (x) { if (vistos[x[1]] || !bate(x)) return false; vistos[x[1]] = 1; return true; });
+    if (!l.length) return;
+    h += ((c.abas.length > 1) ? '<h4 class="man-sub">' + esc(a[0]) + '</h4>' : '') + '<dl class="man-campos">' + l.map(function (x) { return '<dt>' + esc(x[1]) + '</dt><dd>' + x[2] + '</dd>'; }).join('') + '</dl>';
+  });
+  var bl = (c.blocos || []).filter(function (x) { return bate([x.txt]); });
+  if (bl.length) h += '<dl class="man-campos">' + bl.map(function (x) { return '<dt>' + esc(x.caixa || 'Linhas da lista') + '</dt><dd>' + x.txt + '</dd>'; }).join('') + '</dl>';
+  var co = (c.colunas || []).filter(bate);
+  if (co.length) h += '<h4 class="man-sub">Colunas das tabelas</h4><dl class="man-campos">' + co.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + x[1] + '</dd>'; }).join('') + '</dl>';
+  return h;
+}
+function manCapitulo(c, busca) {
+  var abrir = c.rota && TELAS[c.rota] && podeRota(c.rota) ? btn('Abrir esta tela', 'ir', 'data-rota="' + c.rota + '"', 'btn-ghost btn-sm', 'arrow') : '';
+  var h = '<section class="man-cap" id="man-' + c.id + '" data-cap="' + c.id + '"><div class="man-cap-top"><div><div class="man-grupo">' + esc(c.grupo) + '</div><h2>' + esc(c.nome) + '</h2></div>' + abrir + '</div>';
+  if (c.oque) h += '<p class="man-oque">' + c.oque + '</p>';
+  if (c.antes) h += '<p class="man-antes"><b>Antes, tenha:</b> ' + c.antes + '</p>';
+  if (c.passos && c.passos.length) h += '<h4 class="man-sub">Passo a passo</h4><ol class="man-passos">' + c.passos.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ol>';
+  if (c.extra) h += '<div class="man-extra">' + c.extra + '</div>';
+  var cps = manCampos(c, busca);
+  if (cps) h += ((c.abas && c.abas.length === 1) || !c.abas ? '<h4 class="man-sub">O que cada campo quer dizer</h4>' : '<h4 class="man-sub man-sub-tit">O que cada campo quer dizer</h4>') + cps;
+  if (c.termos) h += '<dl class="man-campos man-termos">' + c.termos.filter(function (x) { return !busca || (x[0] + ' ' + x[1]).toLowerCase().indexOf(busca) >= 0; }).map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + x[1] + '</dd>'; }).join('') + '</dl>';
+  if (c.atencao && c.atencao.length) h += '<div class="man-atencao"><b>' + ic('alert') + 'Atenção</b><ul>' + c.atencao.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul></div>';
+  return h + '</section>';
+}
+TELAS.manual = {
+  render: function () {
+    var busca = String(S.filtros.manBusca || '').trim().toLowerCase();
+    var caps = MANUAL.filter(capVisivel), achados = busca ? caps.filter(function (c) { return manTexto(c).indexOf(busca) >= 0; }) : caps;
+    var h = ph('Manual', 'O passo a passo para começar e o que cada campo de cada tela quer dizer. Dica: o ? ao lado de qualquer campo explica ele ali mesmo; o ? no alto da tela abre este manual no capítulo da tela em que você está.', '', 'Ajuda', true);
+    var grupos = [], porGrupo = {};
+    caps.forEach(function (c) { if (!porGrupo[c.grupo]) { porGrupo[c.grupo] = []; grupos.push(c.grupo); } porGrupo[c.grupo].push(c); });
+    var ind = '<nav class="man-ind" aria-label="Capítulos do manual">' + grupos.map(function (g) {
+      return '<div class="man-ind-g"><div class="man-ind-t">' + esc(g) + '</div>' + porGrupo[g].map(function (c) {
+        var on = achados.indexOf(c) >= 0;
+        return '<button class="man-ind-i' + (on ? '' : ' fora') + (S.params.id === c.id ? ' on' : '') + '" data-a="manIr" data-id="' + c.id + '"' + (on ? '' : ' disabled') + '>' + esc(c.nome) + '</button>';
+      }).join('') + '</div>';
+    }).join('') + '</nav>';
+    var corpo = achados.length ? achados.map(function (c) { return manCapitulo(c, busca && manTexto({ nome: c.nome, grupo: c.grupo }).indexOf(busca) < 0 ? busca : ''); }).join('') : '<div class="vazio">Nada no manual com “' + esc(S.filtros.manBusca) + '”. Tente outra palavra.</div>';
+    h += '<div class="manual doc"><div class="man-busca">' + filtroTexto('manBusca', 'Procurar no manual: ex.: refugo, salário, molde') + (busca ? '<span class="man-n">' + achados.length + (achados.length === 1 ? ' capítulo' : ' capítulos') + '</span>' : '') + '</div>' +
+      '<div class="man-grade">' + ind + '<div class="man-corpo">' + corpo + '</div></div></div>';
+    return h;
+  },
+  montar: function () {
+    var id = S.params.id, el = id && document.getElementById('man-' + id);
+    if (el && S._manRolou !== id) { S._manRolou = id; setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 30); }
+  }
+};
+ACOES.manIr = function (el) {
+  var id = el.dataset.id || el.dataset.man, x = document.getElementById('man-' + id);
+  if (!x) { S.filtros.manBusca = ''; S._manRolou = null; ir('manual', { id: id }); return; }
+  S.params.id = id;
+  Array.prototype.forEach.call(document.querySelectorAll('.man-ind-i'), function (b) { b.classList.toggle('on', b.dataset.id === id); });
+  x.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+// links dentro do texto do manual: <a data-man="mps">
+document.addEventListener('click', function (ev) {
+  var a = ev.target.closest && ev.target.closest('.manual a[data-man]'); if (!a) return;
+  ev.preventDefault(); ACOES.manIr(a);
+});
+// o "?" do topo: o manual no capítulo da tela aberta
+ACOES.manualTela = function () { var id = capDaRota(S.rota === 'manual' ? '' : S.rota); S._manRolou = null; ir('manual', id ? { id: id } : {}); };
+function htmlBotaoManual() {
+  return '<button class="ico-btn nav-tema nav-ajuda" id="navAjuda" data-a="manualTela" aria-label="Ajuda: manual desta tela" title="Ajuda: manual desta tela">' + ic('help') + '</button>';
+}
+if (typeof ROTAS_VAZIA !== 'undefined') ROTAS_VAZIA.manual = 1;
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
