@@ -1105,6 +1105,24 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 .fx-item:has(>.eq-head) .fx-body .sufixo,.fx-item:has(>.eq-head) .fx-body .i{width:100%}
 @media (max-width:760px){.fx-item:has(>.eq-head) .fx-body{margin-left:0;grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+/* Funcionários: uma pessoa ou uma função */
+.fn-modo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.fn-op{position:relative;display:flex;flex-direction:column;gap:3px;padding:11px 14px 11px 40px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:rgba(var(--vidro-rgb,255,255,255),.03);transition:border-color .15s,background .15s}
+.fn-op input{position:absolute;left:14px;top:13px;margin:0;accent-color:var(--acc)}
+.fn-op-t{font-weight:600;font-size:13.5px;color:var(--text)}
+.fn-op-d{font-size:12px;color:var(--text2);line-height:1.35}
+.fn-op.on{border-color:var(--acc);background:rgba(var(--acc-rgb),.08)}
+.fn-op:hover{border-color:rgba(var(--acc-rgb),.6)}
+.fn-op:focus-within{outline:2px solid rgba(var(--acc-rgb),.5);outline-offset:2px}
+.ver-so .fn-op{cursor:default}.ver-so .fn-op:not(.on){opacity:.6}
+.fc-grupo{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:12.5px;color:var(--text2)}
+.fc-um{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.big.fc-um-v{font-size:20px}
+@media (max-width:560px){.fn-modo{grid-template-columns:minmax(0,1fr)}}
+.fbox .fn-modo label.fn-op,.fbox .fn-modo label.fn-op span{text-transform:none;letter-spacing:normal;margin:0}
+.fbox .fn-modo label.fn-op .fn-op-t{font-size:13.5px;font-weight:600;color:var(--text)}
+.fbox .fn-modo label.fn-op .fn-op-d{font-size:12px;font-weight:400;color:var(--text2)}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -2103,6 +2121,19 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     });
     return { itens: itens, total: total };
   }
+  // cadastro por função: quantas pessoas ele representa (uma pessoa = 1)
+  function pessoasFunc(f) { return f && f.modo === 'funcao' && num(f.qtd) > 0 ? num(f.qtd) : 1; }
+  // o custo de 1 pessoa vezes as pessoas da função; c.um guarda o de 1 pessoa (custo por hora não muda)
+  function custoDoGrupo(c, f) {
+    var q = pessoasFunc(f), g;
+    c.qtd = q; c.funcao = !!(f && f.modo === 'funcao');
+    if (q === 1) return c;
+    g = Object.assign({}, c); g.um = c;
+    ['SB', 'VH', 'VA', 'ST', 'salario', 'encargos', 'provisoes', 'outros', 'beneficios', 'total', 'horas', 'horasProdutivas'].forEach(function (k) { g[k] = num(c[k]) * q; });
+    g.linhas = (c.linhas || []).map(function (l) { return Object.assign({}, l, { valor: num(l.valor) * q }); });
+    g.benefItens = (c.benefItens || []).map(function (b) { return Object.assign({}, b, { valor: num(b.valor) * q, desconto: num(b.desconto) * q, liquido: num(b.liquido) * q }); });
+    return g;
+  }
   function custoFuncionario(f, emp) {
     var cfg = emp.config, tx = cfg.taxas;
     var SB = num(f.sb);
@@ -2269,7 +2300,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         var S = out[a.setor]; if (!S) return;
         var p = num(a.pct) / 100;
         S.mod.custo += c.total * p; S.mod.horas += c.horasProdutivas * p; S.mod.beneficios += (c.beneficios || 0) * p;
-        S.mod.itens.push({ rotulo: f.nome, ref: f.mat, valor: c.total * p, horas: c.horasProdutivas * p, pct: num(a.pct), beneficios: (c.beneficios || 0) * p });
+        S.mod.itens.push({ rotulo: f.nome + (c.funcao ? ' · ' + String(c.qtd).replace('.', ',') + (c.qtd === 1 ? ' pessoa' : ' pessoas') : ''), ref: f.mat, qtd: c.qtd || 1, funcao: !!c.funcao, valor: c.total * p, horas: c.horasProdutivas * p, pct: num(a.pct), beneficios: (c.beneficios || 0) * p });
       });
     });
     // MAQ: depreciação + gastos mensais dos equipamentos (PR-07)
@@ -2363,7 +2394,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       r.valor = precisao(emp, 'valores', r.valor);
       ctx.psVal[p.cod] = r;
     });
-    emp.funcionarios.forEach(function (f) { ctx.funcs[f.mat] = custoFuncionario(f, emp); });
+    emp.funcionarios.forEach(function (f) { ctx.funcs[f.mat] = custoDoGrupo(custoFuncionario(f, emp), f); });
     ctx.mesesBase = mesesAnteriores(cfg.mesReferencia, Math.max(1, num(cfg.ggfBaseMeses) || 3));
     ctx.mesesComDados = mesesComDados(emp, ctx.mesesBase);
     ctx.contas = valoresContas(emp, ctx.funcs, ctx.mesesBase);
@@ -3171,7 +3202,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     mesesAnteriores: mesesAnteriores, diasDaSemana: diasDaSemana,
     valorLiquidoCompra: valorLiquidoCompra, compraMP: compraMP, mpLegado: mpLegado, credPadrao: credPadrao, IMP_COMPRA: IMP_COMPRA, NOME_IMP: NOME_IMP,
     UFS: UFS, REGIMES: REGIMES, fiscalDe: fiscalDe, impostosVenda: impostosVenda, tabelasDe: tabelasDe, campoPreco: campoPreco, precoNaTabela: precoNaTabela, vendaPeca: vendaPeca, pctBR: pctBR,
-    precoTerceiroEm: precoTerceiroEm, custoFuncionario: custoFuncionario, valoresContas: valoresContas, mesesComDados: mesesComDados,
+    precoTerceiroEm: precoTerceiroEm, custoFuncionario: custoFuncionario, pessoasFunc: pessoasFunc, custoDoGrupo: custoDoGrupo, valoresContas: valoresContas, mesesComDados: mesesComDados,
     lancamentosSalarios: lancamentosSalarios, garantirSalarios: garantirSalarios,
     calcularTaxas: calcularTaxas, contexto: contexto, custoProduto: custoProduto, custosTodos: custosTodos, porHora: porHora,
     BENEF_PADRAO: BENEF_PADRAO, idsBeneficios: idsBeneficios, nomeBeneficio: nomeBeneficio, beneficiosFunc: beneficiosFunc,
@@ -5668,6 +5699,18 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
           return ok({ acesso: acessoDeLinha(Array.isArray(r.data) ? r.data[0] : r.data) });
         }, function (e) { return nao(mensagem(e)); });
       },
+      // pessoa nova: o administrador cria o login (e-mail + senha provisória) e já dá o acesso (SQL 0007_criar_login)
+      criarLogin: function (empresa, a) {
+        a = a || {};
+        if (PAPEIS.indexOf(a.papel) < 0) return promessa(nao('Papel inválido: ' + txt(a.papel) + '.'));
+        if (vazio(txt(a.email).trim())) return promessa(nao('Informe o e-mail da pessoa.'));
+        if (txt(a.senha).length < 6) return promessa(nao('A senha provisória precisa ter pelo menos 6 caracteres.'));
+        return cli.rpc('criar_login', { p_email: txt(a.email).trim(), p_senha: txt(a.senha), p_empresa: empresa, p_papel: a.papel, p_nome: txt(a.nome).trim() }).then(function (r) {
+          if (r.error) return nao(r.error.code === 'PGRST202' || /Could not find the function|function public\.criar_login/i.test(txt(r.error.message)) ? 'Falta um passo no Supabase: rodar uma vez o SQL 0007_criar_login.sql (SQL Editor → New query → colar → Run). Depois tente de novo.' : mensagem(r.error));
+          papeis = null;
+          return ok({ acesso: acessoDeLinha(Array.isArray(r.data) ? r.data[0] : r.data) });
+        }, function (e) { return nao(mensagem(e)); });
+      },
       alterarAcesso: function (empresa, userId, mud) {
         var m = {};
         mud = mud || {};
@@ -5910,6 +5953,22 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (!vazio(a.nome)) u.nome = txt(a.nome).trim();
         return gravarOuFalhar(db, { acesso: { userId: u.id, empresa: empresa, papel: a.papel, nome: txt(u.nome), email: txt(u.login), criadoEm: '' } });
       }),
+      criarLogin: soAdmin(function (db, empresa, a) {
+        a = a || {};
+        if (PAPEIS.indexOf(a.papel) < 0) return nao('Papel inválido: ' + txt(a.papel) + '.');
+        var l = txt(a.email).trim().toLowerCase(), u = (db.usuarios || []).filter(function (x) { return txt(x.login).toLowerCase() === l; })[0];
+        if (!l) return nao('Informe o e-mail da pessoa.');
+        if (!u) {
+          if (txt(a.senha).length < 6) return nao('A senha provisória precisa ter pelo menos 6 caracteres.');
+          var salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
+          db.usuarios = db.usuarios || [];
+          u = { id: db.usuarios.reduce(function (m, x) { return Math.max(m, +x.id || 0); }, 0) + 1, login: l, nome: txt(a.nome).trim() || l, admin: false, ativo: true, empresas: {}, salt: salt, hash: PF.hashSenha(salt, txt(a.senha)), chave: salt + salt };
+          db.usuarios.push(u);
+        }
+        darPapel(u, empresa, a.papel);
+        if (!vazio(a.nome)) u.nome = txt(a.nome).trim();
+        return gravarOuFalhar(db, { acesso: { userId: u.id, empresa: empresa, papel: a.papel, nome: txt(u.nome), email: txt(u.login), criadoEm: '' } });
+      }),
       alterarAcesso: soAdmin(function (db, empresa, userId, mud) {
         var u = usuarioPorId(db, userId);
         mud = mud || {};
@@ -6008,7 +6067,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   var ITEM_CRIAR = { mp: 'a matéria-prima', func: 'o funcionário', setor: 'o setor', molde: 'o molde', prod: 'a peça', terceiro: 'o preço do terceiro para a peça', cfg: 'a configuração' };
   var CAMPOS = {
     mp: { vc: 'o preço de compra', v1: 'o frete e seguro', v2: 'outros valores', liquidoManual: 'o custo líquido digitado', situacao: 'a situação', p: 'o imposto de entrada', imp: 'os impostos da compra', cred: 'os créditos da compra', freteP: 'o frete', freteCred: 'os créditos do frete', desc: 'a descrição', un: 'a unidade' },
-    func: { sb: 'o salário', horasTrab: 'as horas trabalhadas', horasBase: 'as horas base', efic: 'a eficiência', situacao: 'a situação', he: 'as horas extras', vb: 'os valores', aloc: 'os setores', nome: 'o nome' },
+    func: { sb: 'o salário', horasTrab: 'as horas trabalhadas', horasBase: 'as horas base', efic: 'a eficiência', situacao: 'a situação', he: 'as horas extras', vb: 'os valores', aloc: 'os setores', nome: 'o nome', qtd: 'o número de pessoas', modo: 'o tipo de cadastro (pessoa ou função)' },
     setor: { horasOperacao: 'as horas de operação', manual: 'a taxa digitada', equipamentos: 'as máquinas', despTotal: 'os gastos das máquinas', desc: 'o nome' },
     molde: { valor: 'o valor', vida: 'a vida útil', cavidades: 'as cavidades', setor: 'o setor', situacao: 'a situação', ciclosIniciais: 'as injetadas iniciais', desc: 'a descrição' },
     prod: { preco: 'o preço na tabela geral', precos: 'os preços das tabelas', ncm: 'a NCM', itens: 'a fórmula', molde: 'o molde', limpeza: 'a limpeza', lote: 'o lote', qf: 'a quantidade de formulação', situacao: 'a situação', desc: 'a descrição' },
@@ -6303,8 +6362,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Horas extras 50% por mês', 'he0', 'numero'], ['Horas extras 100% por mês', 'he1', 'numero'],
       ['Setores (código e %)', 'aloc', 'alocacao', true, 'Ex.: S03 70; S04 30. Só o código = 100%'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
       ['Vale alimentação (R$ por mês)', 'bVa', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale alimentação (R$ por mês)', 'bVaD', 'numero'],
-      ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês)', 'bVtD', 'numero']],
-      exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', '', '', '', '240,00', '144,00'] },
+      ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês)', 'bVtD', 'numero'],
+      ['Pessoas nessa função', 'qtd', 'inteiro', false, 'Em branco = uma pessoa (matrícula e nome). Preencha (ex.: 4) quando a linha for uma função, sem nome de operador: o custo no setor fica pessoas × custo de 1']],
+      exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', '', '', '', '240,00', '144,00', ''] },
     { id: 'setor', nome: 'Setores e máquinas', chave: 'cod', agrupada: true, colunas: [
       ['Código do setor', 'cod', 'texto', true], ['Descrição do setor', 'desc', 'texto', true], ['Horas de operação por mês', 'horasOperacao', 'numero', true], ['Postos de trabalho', 'postos', 'numero'],
       ['Máquina', 'eqDesc', 'texto', false, 'Uma linha por máquina; repita o código do setor. Setor sem máquina: deixe em branco'], ['Quantidade de máquinas', 'eqQtd', 'numero'], ['Valor de cada máquina (R$)', 'eqValor', 'numero'],
@@ -6734,6 +6794,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (vazio(l.mat) || vazio(l.nome) || l.sb === null || !l.aloc) return;
       if (!(l.sb > 0)) { erro(erros, 'func', l._linha, 'O salário precisa ser maior que zero.'); return; }
       if ([l.bVa, l.bVaD, l.bVt, l.bVtD].some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos.'); return; }
+      if (typeof l.qtd === 'number' && !(l.qtd >= 1)) { erro(erros, 'func', l._linha, 'Pessoas nessa função: informe 1 ou mais (ou deixe em branco para uma pessoa).'); return; }
       var ruim = l.aloc.filter(function (a) { return !existe('setor', a.setor); });
       if (ruim.length) { erro(erros, 'func', l._linha, 'Setor ' + ruim.map(function (a) { return a.setor; }).join(', ') + ' não existe (cadastre na aba Setores e máquinas).'); return; }
       var soma = l.aloc.reduce(function (t, a) { return t + a.pct; }, 0);
@@ -6743,6 +6804,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedido('func', 'func', l.mat, l._linha, function (it) {
         it = it || { mat: l.mat, cargo: '', tipo: 'MOD', horasTrab: tx.padraoHorasTrab || 188, horasBase: tx.padraoHorasBase || 220, efic: tx.padraoEfic || 85, he: [0, 0, 0, 0, 0], vb: {}, aloc: [], admissao: '' };
         it.nome = l.nome; it.sb = l.sb; setTxt(it, 'cargo', l.cargo);
+        if (typeof l.qtd === 'number' && l.qtd >= 1) { it.modo = 'funcao'; it.qtd = l.qtd; }
         setNum(it, 'horasTrab', l.horasTrab); setNum(it, 'horasBase', l.horasBase); setNum(it, 'efic', l.efic);
         if (l.he0 !== null || l.he1 !== null) { it.he = (it.he || [0, 0, 0, 0, 0]).slice(); if (l.he0 !== null) it.he[0] = l.he0; if (l.he1 !== null) it.he[1] = l.he1; }
         var aloc = l.aloc.map(function (a) { return { setor: a.setor, pct: a.pct }; });
@@ -8799,13 +8861,14 @@ function telaSetorLista() {
   h += vista === 'mod' ? MOD_SETOR.render() : TAXAS_SETORES.render();
   return h;
 }
+function pessoasMod(T) { return T.mod.itens.reduce(function (t, x) { return t + (x.qtd || 1); }, 0); }
 // a taxa hora do setor como uma conta: quem trabalha nele, quanto custa, as horas e as máquinas
 function htmlContaTaxa(T) {
   if (!T) return '';
   var pessoas = T.mod.itens.map(function (x) { return esc(x.rotulo) + ' (' + fmtP(x.pct, 0) + ', ' + fmtR2(x.valor) + ')'; });
   var maqs = T.maq.itens.map(function (x) { var g = (x.detalhe || []).reduce(function (t, d) { return t + d.valor; }, 0); return esc(x.rotulo) + ' (depreciação ' + fmtR2(x.depr) + (g ? ' + gastos ' + fmtR2(g) : '') + ')'; });
   return '<ol class="conta-taxa" id="setConta">' +
-    '<li><b>Mão de obra:</b> ' + fmtR2(T.mod.custo) + ' por mês de ' + T.mod.itens.length + (T.mod.itens.length === 1 ? ' pessoa' : ' pessoas') + ' ÷ ' + fmt(T.mod.horas, 1) + ' horas produtivas = <b>' + fmtR2(T.mod.taxa) + ' por hora</b>' + (T.mod.manual ? ' (taxa digitada)' : '') +
+    '<li><b>Mão de obra:</b> ' + fmtR2(T.mod.custo) + ' por mês de ' + pessoasMod(T) + (pessoasMod(T) === 1 ? ' pessoa' : ' pessoas') + ' ÷ ' + fmt(T.mod.horas, 1) + ' horas produtivas = <b>' + fmtR2(T.mod.taxa) + ' por hora</b>' + (T.mod.manual ? ' (taxa digitada)' : '') +
       (pessoas.length ? '<div class="ct-pessoas">' + pessoas.join('; ') + '</div>' : '<div class="ct-pessoas">Ninguém alocado neste setor.</div>') + (T.mod.beneficios ? '<div class="ct-pessoas">Benefícios: ' + fmtR2(T.mod.beneficios) + ' por mês dentro da mão de obra.</div>' : '') + '</li>' +
     '<li><b>Máquinas:</b> ' + fmtR2(T.maq.custo) + ' por mês ÷ ' + fmt(T.maq.horas, 1) + ' horas de máquina = <b>' + fmtR2(T.maq.taxa) + ' por hora</b>' + (T.maq.manual ? ' (taxa digitada)' : '') +
       (maqs.length ? '<div class="ct-pessoas">' + maqs.join('; ') + '</div>' : '<div class="ct-pessoas">Sem máquinas cadastradas.</div>') + '</li>' +
@@ -8910,7 +8973,8 @@ cadastroAcoes({
   novoCodigo: function () { return proximoCodigo(S.emp.funcionarios, 'mat', S.emp.id === 'juntas' ? 'UJ-' : 'VB-', 3); },
   validar: function (d) {
     var tx = S.emp.config.taxas;
-    if (!String(d.nome || '').trim()) return 'Informe o nome ou a função.';
+    if (!String(d.nome || '').trim()) return d.modo === 'funcao' ? 'Informe a função (ex.: Operador de injetora).' : 'Informe o nome da pessoa.';
+    if (d.modo === 'funcao' && !(n(d.qtd) >= 1 && Math.round(n(d.qtd)) === n(d.qtd))) return 'Informe quantas pessoas fazem essa função (número inteiro, 1 ou mais).';
     if (n(d.sb) <= 0) return 'Informe o salário.';
     var qe = (d.he || []).reduce(function (t, h) { return t + n(h); }, 0);
     if (tx.limite240 && n(d.horasTrab) + qe > 240) return 'Horas trabalhadas + horas extras passam de 240 h/mês. Ajuste ou desligue essa validação em Configuração › Taxas hora.';
@@ -8919,7 +8983,10 @@ cadastroAcoes({
     if (tx.alocacao100 && t > 100.0001) return 'A alocação nos setores soma ' + fmt(t, 0) + '%. O máximo é 100%.';
     if ((d.aloc || []).some(function (a) { return !a.setor; })) return 'Escolha o setor em todas as linhas de alocação.';
   },
-  antesGravar: function (d) { d.tipo = 'MOD'; delete d.conta; },
+  antesGravar: function (d) {
+    d.tipo = 'MOD'; delete d.conta;
+    if (d.modo === 'funcao') d.qtd = n(d.qtd); else { delete d.modo; delete d.qtd; }
+  },
   aposDuplicar: function (d) { d.nome = d.nome + ' (cópia)'; }
 });
 TELAS.funcionarios = {
@@ -8932,13 +8999,13 @@ function telaFuncLista() {
   var tot = { st: 0, total: 0, ben: 0 };
   var h = ph('Funcionários', 'Custo mensal de cada pessoa (salário, encargos, provisões e benefícios) e em quais setores ele entra. É a base da taxa de mão de obra.', btn('Incluir funcionário', 'ir', 'data-rota="funcionarios" data-id="__novo"', 'btn-accent', 'plus'));
   h += '<div class="tbl-tools">' + filtroTexto('fBusca', 'Matrícula, nome ou cargo') + filtroSelect('fSetor', 'Setor', e.setores.map(function (s) { return [s.cod, s.cod + ' — ' + s.desc]; })) + '</div>';
-  h += tabelaBox('', '<table><thead><tr><th>Matrícula</th><th>Nome / função</th><th class="r">Salário base</th><th class="r">Salário total</th><th class="r">Benefícios</th><th class="r">Custo mensal</th><th class="r">Horas produtivas</th><th class="r">Custo por hora</th><th>Setores</th></tr></thead><tbody>' +
+  h += tabelaBox('', '<table><thead><tr><th>Matrícula ou código</th><th>Nome ou função</th><th class="r">Salário base</th><th class="r">Salário total</th><th class="r">Benefícios</th><th class="r">Custo mensal</th><th class="r">Horas produtivas</th><th class="r">Custo por hora</th><th>Setores</th></tr></thead><tbody>' +
     lista.map(function (f) {
-      var c = S.ctx.funcs[f.mat]; tot.st += c.ST; tot.total += c.total; tot.ben += c.beneficios || 0;
+      var c = S.ctx.funcs[f.mat]; tot.p = (tot.p || 0) + (c.qtd || 1); tot.st += c.ST; tot.total += c.total; tot.ben += c.beneficios || 0;
       var alocTot = (f.aloc || []).reduce(function (s, a) { return s + n(a.pct); }, 0);
       var dest = (f.aloc || []).map(function (a) { return '<span class="chip">' + esc(a.setor) + ' ' + fmt(n(a.pct), 0) + '%</span>'; }).join('') + (Math.abs(alocTot - 100) > 0.001 ? ' ' + badge(fmt(alocTot, 0) + '%', alocTot > 100 ? 'b-crit' : 'b-warn') : '');
-      return '<tr class="click" data-a="ir" data-rota="funcionarios" data-id="' + esc(f.mat) + '" tabindex="0"><td class="cod">' + esc(f.mat) + '</td><td class="pri">' + esc(f.nome) + (f.situacao === 'inativo' ? ' ' + badge('desligado', 'b-mute') : '') + '<div class="muted" style="font-weight:400;font-size:11px">' + esc(f.cargo || '') + '</div></td><td class="r">' + fmtR2(n(f.sb)) + '</td><td class="r">' + fmtR2(c.ST) + '</td><td class="r">' + (c.beneficios ? fmtR2(c.beneficios) : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR2(c.total), od('func', f.mat, hojeRef())) + '</b></td><td class="r">' + fmt(c.horasProdutivas, 1) + '</td><td class="r">' + orig(fmtR2(c.custoHora), od('func', f.mat, hojeRef())) + '</td><td>' + dest + (c.erros.length ? ' ' + badge('erro no cálculo', 'b-crit') : '') + '</td></tr>';
-    }).join('') + (lista.length ? '' : linhaVazia(e.funcionarios.length, 9, 'Nenhum funcionário ainda. Clique em Incluir funcionário.', 'Nenhum funcionário encontrado.')) + '</tbody><tfoot><tr><td colspan="3">' + lista.length + ' funcionários</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.ben) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
+      return '<tr class="click" data-a="ir" data-rota="funcionarios" data-id="' + esc(f.mat) + '" tabindex="0"><td class="cod">' + esc(f.mat) + '</td><td class="pri">' + esc(f.nome) + (c.funcao ? ' ' + badge('função · ' + fmt(c.qtd, 0) + (c.qtd === 1 ? ' pessoa' : ' pessoas'), 'b-info') : '') + (f.situacao === 'inativo' ? ' ' + badge('desligado', 'b-mute') : '') + '<div class="muted" style="font-weight:400;font-size:11px">' + esc(f.cargo || '') + '</div></td><td class="r">' + (c.funcao && c.qtd !== 1 ? '<span class="muted">' + fmt(c.qtd, 0) + ' × </span>' : '') + fmtR2(n(f.sb)) + '</td><td class="r">' + fmtR2(c.ST) + '</td><td class="r">' + (c.beneficios ? fmtR2(c.beneficios) : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR2(c.total), od('func', f.mat, hojeRef())) + '</b></td><td class="r">' + fmt(c.horasProdutivas, 1) + '</td><td class="r">' + orig(fmtR2(c.custoHora), od('func', f.mat, hojeRef())) + '</td><td>' + dest + (c.erros.length ? ' ' + badge('erro no cálculo', 'b-crit') : '') + '</td></tr>';
+    }).join('') + (lista.length ? '' : linhaVazia(e.funcionarios.length, 9, 'Nenhum funcionário ainda. Clique em Incluir funcionário.', 'Nenhum funcionário encontrado.')) + '</tbody><tfoot><tr><td colspan="3">' + lista.length + (lista.length === 1 ? ' cadastro · ' : ' cadastros · ') + fmt(tot.p || 0, 0) + ((tot.p || 0) === 1 ? ' pessoa' : ' pessoas') + '</td><td class="r">' + fmtR2(tot.st) + '</td><td class="r">' + fmtR2(tot.ben) + '</td><td class="r">' + fmtR2(tot.total) + '</td><td colspan="3" class="muted">Cada R$ 1 de salário custa ' + (tot.st ? fmtR2(tot.total / tot.st) : '—') + '</td></tr></tfoot></table>');
   return h;
 }
 function htmlAlocTot(d) {
@@ -8946,8 +9013,10 @@ function htmlAlocTot(d) {
   return 'Total alocado: <b>' + fmt(t, 1) + '%</b> ' + (Math.abs(t - 100) < 0.001 ? badge('ok', 'b-ok') : badge(t > 100 ? 'acima de 100%' : 'abaixo de 100%', t > 100 ? 'b-crit' : 'b-warn'));
 }
 function htmlCustoFunc(d) {
-  var c = M.custoFuncionario(d, S.emp);
-  var h = '<div class="kpi-lbl">Custo mensal</div><div class="big">' + fmtR2(c.total) + '</div>' +
+  var c = M.custoFuncionario(d, S.emp), q = M.pessoasFunc(d), fn = d.modo === 'funcao', pes = fmt(q, 0) + (q === 1 ? ' pessoa' : ' pessoas');
+  var h = (fn ? '<div class="kpi-lbl">Custo mensal da função</div><div class="big" id="fcGrupo">' + fmtR2(c.total * q) + '</div>' +
+      '<div class="fc-grupo"><span>' + pes + ' × ' + fmtR2(c.total) + ' (custo de 1 pessoa)</span><span>' + fmt(c.horasProdutivas * q, 1) + ' h produtivas no mês · ' + fmtR2(c.custoHora) + ' por hora</span></div>' +
+      '<div class="kpi-lbl fc-um">Custo de 1 pessoa</div><div class="big fc-um-v">' : '<div class="kpi-lbl">Custo mensal</div><div class="big">') + fmtR2(c.total) + '</div>' +
     '<div class="lista-kv" style="margin-top:12px"><span>Salário base</span><b>' + fmtR2(c.SB) + '</b>' + (c.VH ? '<span>Horas extras (' + fmt(c.QE, 1) + ' h)</span><b>' + fmtR2(c.VH) + '</b>' : '') + (c.VA ? '<span>Adicionais que integram o salário</span><b>' + fmtR2(c.VA) + '</b>' : '') +
     '<span>Salário total</span><b>' + fmtR2(c.ST) + '</b><span>Encargos</span><b>' + fmtR2(c.encargos) + '</b><span>Provisões</span><b>' + fmtR2(c.provisoes) + '</b>' + (Math.abs(c.outros) > 1e-9 ? '<span>Outros da tabela de encargos</span><b>' + fmtR2(c.outros) + '</b>' : '') +
     '<span>Benefícios</span><b id="fcBenef">' + fmtR2(c.beneficios || 0) + '</b>' + (c.benefItens || []).map(function (b) { return '<span class="kv-sub">' + esc(b.nome) + (b.nao ? ' · não recebe' : (b.desconto ? ' (' + fmtR2(b.valor) + ' − ' + fmtR2(b.desconto) + ' de desconto)' : '') + (b.proprio ? '' : ' · padrão')) + '</span><b class="kv-sub">' + fmtR2(b.liquido) + '</b>'; }).join('') + '<div class="sep"></div>' +
@@ -8986,14 +9055,13 @@ function telaFuncEditor(id) {
   if (!d) return naoEncontrado('Funcionário', 'funcionarios');
   d.he = d.he || [0, 0, 0, 0, 0]; d.vb = d.vb || {}; d.aloc = d.aloc || [];
   var novo = S.draftInfo.novo;
-  var h = ph(novo ? 'Novo funcionário' : esc(d.mat) + ' — ' + esc(d.nome), esc(d.cargo || '') + (d.situacao === 'inativo' ? ' · desligado: não entra mais no custo' : ''), botoesEdicao('func'), 'Cadastros › Funcionários');
+  var h = ph(novo ? (d.modo === 'funcao' ? 'Nova função' : 'Novo funcionário') : esc(d.mat) + ' — ' + esc(d.nome), (d.modo === 'funcao' ? 'Função · ' + fmt(M.pessoasFunc(d), 0) + (M.pessoasFunc(d) === 1 ? ' pessoa' : ' pessoas') : esc(d.cargo || '')) + (d.situacao === 'inativo' ? ' · desligado: não entra mais no custo' : ''), botoesEdicao('func'), 'Cadastros › Funcionários');
   var he = tx.heExtras.map(function (p, i) { return n(p) ? fCampo('Horas extras a ' + fmt(n(p), 0) + '% por mês', fNum('he.' + i, d.he[i], { suf: 'h', ph: '0' })) : ''; }).join('');
   var varia = cfg.encargos.filter(function (x) { return x.variaFunc && x.tipo !== '#'; });
   var ch = contasHorasFunc(M.custoFuncionario(d, e));
   h += '<div class="grid g-side"><div>' +
-    caixa('Identificação', '<div class="grid g3">' + fCampo('Matrícula', fTexto('mat', d.mat, { ro: !novo })) + fCampo('Nome ou função', fTexto('nome', d.nome), '', 'span2') + fCampo('Cargo', fTexto('cargo', d.cargo || '')) +
-      fCampo('Admissão', '<input class="i" type="date" id="b-admissao" data-b="admissao" value="' + esc(d.admissao || '') + '">') + '</div>') +
-    caixa('Salário e horas', '<div class="grid g3">' + fCampo('Salário base', fNum('sb', d.sb, { suf: 'R$' })) +
+    caixa('Identificação', htmlIdentFunc(d, novo)) +
+    caixa('Salário e horas', '<div class="grid g3">' + fCampo(d.modo === 'funcao' ? 'Salário base de cada pessoa' : 'Salário base', fNum('sb', d.sb, { suf: 'R$' })) +
       fCampo('Horas trabalhadas no mês', fNum('horasTrab', d.horasTrab, { suf: 'h', ro: tx.origemHoras === 'padrao' }), 'Horas que a pessoa realmente fica na fábrica no mês (sem férias e faltas).' + (tx.origemHoras === 'padrao' ? ' Configurado para usar o padrão do sistema (' + fmt(tx.padraoHorasTrab, 0) + ' h).' : '')) +
       fCampo('Horas base do mês (para achar o salário-hora)', fNum('horasBase', d.horasBase, { suf: 'h' }), 'Só serve para calcular o valor da hora extra: salário ÷ horas base. Padrão CLT: 220.<div class="conta-viva" id="fhBase">' + ch.base + '</div>') +
       fCampo('Eficiência (%)', fNum('efic', d.efic, { suf: '%', ro: tx.origemEfic === 'padrao' }), 'Quanto dessas horas vira produção. O resto é parada, troca, reunião, banheiro. O custo da hora produtiva = custo do mês ÷ (horas trabalhadas × eficiência).<div class="conta-viva" id="fhEfic">' + ch.efic + '</div>', 'span2') + he + '</div>') +
@@ -9004,6 +9072,23 @@ function telaFuncEditor(id) {
       '<div class="inline" style="justify-content:space-between;margin-top:6px">' + btn('Adicionar setor', 'alocAdd', '', 'btn-ghost btn-sm', 'plus') + '<span id="alocTot" style="font-size:12px;color:var(--text2)">' + htmlAlocTot(d) + '</span></div>') +
     '</div><div class="card" id="prevFunc">' + htmlCustoFunc(d) + '</div></div>';
   return h;
+}
+// uma pessoa (matrícula e nome) ou uma função (sem nome de operador: pessoas × custo de 1)
+function htmlIdentFunc(d, novo) {
+  var modo = d.modo === 'funcao' ? 'funcao' : 'pessoa';
+  var op = function (v, tit, txt) {
+    var on = modo === v;
+    return '<label class="fn-op' + (on ? ' on' : '') + '"><input type="radio" name="r-modo" id="fn-modo-' + v + '" data-b="modo" data-rr value="' + v + '"' + (on ? ' checked' : '') + '><span class="fn-op-t">' + tit + '</span><span class="fn-op-d">' + txt + '</span></label>';
+  };
+  var h = '<div class="fn-modo" role="radiogroup" aria-label="O que é este cadastro">' +
+    op('pessoa', 'Uma pessoa', 'Com matrícula e nome. O custo é o dela.') +
+    op('funcao', 'Uma função', 'Sem matrícula e sem nome de operador. Custo = pessoas × custo de 1 pessoa.') + '</div>';
+  if (modo === 'funcao') return h + '<div class="grid g3">' +
+    fCampo('Código', fTexto('mat', d.mat, { ro: true })) +
+    fCampo('Função', fTexto('nome', d.nome, { ph: 'Ex.: Operador de injetora' }), '', 'span2') +
+    fCampo('Pessoas nessa função', fNum('qtd', d.qtd, { suf: 'pessoas', ph: '1' }), 'Salário, horas, encargos e benefícios abaixo são de cada pessoa. No setor entra: pessoas × custo de 1 pessoa.') + '</div>';
+  return h + '<div class="grid g3">' + fCampo('Matrícula', fTexto('mat', d.mat, { ro: !novo })) + fCampo('Nome', fTexto('nome', d.nome), '', 'span2') + fCampo('Cargo', fTexto('cargo', d.cargo || '')) +
+    fCampo('Admissão', '<input class="i" type="date" id="b-admissao" data-b="admissao" value="' + esc(d.admissao || '') + '">') + '</div>';
 }
 ACOES.alocAdd = function () { S.draft.aloc.push({ setor: '', pct: Math.max(0, 100 - S.draft.aloc.reduce(function (t, a) { return t + n(a.pct); }, 0)) }); S.sujo = true; renderPainel(); };
 ACOES.alocDel = function (el) { S.draft.aloc.splice(+el.dataset.i, 1); S.sujo = true; renderPainel(); };
@@ -10687,7 +10772,7 @@ function montarResumoMes() {
 /* ---------------- uma mudança em português ---------------- */
 var CAMPOS_TXT = {
   mp: { vc: 'preço de compra', v1: 'frete e seguro', v2: 'outros valores', liquidoManual: 'custo líquido digitado', situacao: 'situação', p: 'imposto de entrada', a: 'imposto do frete', b: 'imposto de outros valores', imp: 'impostos da compra', cred: 'crédito na compra', freteP: 'frete (% do preço)', freteCred: 'créditos sobre o frete', v2Cred: 'créditos sobre outros valores', ajuste: 'outros acréscimos sobre o preço', desc: 'descrição', fornecedor: 'fornecedor', un: 'unidade' },
-  func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo', benef: 'benefícios desta pessoa' },
+  func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo', benef: 'benefícios desta pessoa', qtd: 'pessoas nessa função', modo: 'tipo de cadastro' },
   setor: { horasOperacao: 'horas de operação no mês', manual: 'taxa digitada', equipamentos: 'máquinas', despTotal: 'gastos das máquinas', desc: 'nome' },
   molde: { valor: 'valor do molde', vida: 'vida útil', cavidades: 'cavidades', setor: 'setor', situacao: 'situação', desc: 'descrição' },
   prod: { preco: 'preço na tabela geral', precos: 'preço nas tabelas', ncm: 'NCM', itens: 'fórmula', molde: 'molde', limpeza: 'limpeza', lote: 'peças por preparação (lote)', qf: 'quantidade de formulação', situacao: 'situação', desc: 'descrição' },
@@ -10726,6 +10811,8 @@ function valorCampo(tipo, campo, v) {
   if (typeof v === 'boolean') return v ? 'sim' : 'não';
   if (CAMPOS_PCT[tipo + ':' + campo]) return typeof v === 'string' && !/^-?[\d.,]+$/.test(v) ? (M.REGIMES[v] || v) : fmtP(n(v), 2);
   if (campo === 'situacao') return v === 'inativo' ? 'desligado' : v === 'ativo' ? 'ativo' : String(v);
+  if (tipo === 'func' && campo === 'modo') return v === 'funcao' ? 'uma função' : 'uma pessoa';
+  if (tipo === 'func' && campo === 'qtd') return fmt(n(v), 0) + (n(v) === 1 ? ' pessoa' : ' pessoas');
   if (typeof v === 'number') return fmtQ(v);
   if (typeof v === 'object') return 'alterado';
   return String(v);
@@ -12312,7 +12399,8 @@ function linhasFunc(tr, ref) {
   var ctx = tr && tr.ctx, c = ctx && ctx.funcs[ref], f = ctx && ctx.func[ref], l;
   if (!c || !f) return null;
   if (f.situacao === 'inativo') return [{ k: 'sit', rot: 'Desligado: não custa nada', v: 0, tot: true }];
-  l = [{ k: 'sal', rot: 'Salário', v: c.salario }, { k: 'enc', rot: 'mais encargos', v: c.encargos, menor: true }, { k: 'prov', rot: 'mais provisões (férias, 13º…)', v: c.provisoes, menor: true }];
+  l = (c.funcao ? [{ k: 'qtd', rot: 'Pessoas nessa função (os valores abaixo somam todas; custo de 1 pessoa: ' + fmtR2(c.um ? c.um.total : c.total) + ')', v: c.qtd, f: function (x) { return fmt(x, 0) + (x === 1 ? ' pessoa' : ' pessoas'); } }] : []).concat([{ k: 'sal', rot: 'Salário', v: c.salario }]);
+  l = l.concat([ { k: 'enc', rot: 'mais encargos', v: c.encargos, menor: true }, { k: 'prov', rot: 'mais provisões (férias, 13º…)', v: c.provisoes, menor: true }]);
   if (Math.abs(c.outros || 0) > 1e-9) l.push({ k: 'out', rot: 'mais outros valores', v: c.outros, menor: true });
   l.push({ k: 'tot', rot: '= Custo por mês', v: c.total, tot: true });
   l.push({ k: 'hp', rot: 'Horas produtivas no mês', v: c.horasProdutivas, f: function (x) { return fmtQ(x) + ' horas'; } });
@@ -13280,6 +13368,7 @@ function exFunc(mat, D) {
     ls.push({ op: '+', rot: txt, v: b.liquido, soma: true, m: m });
   });
   var s = ls.reduce(function (t, l) { return t + l.v; }, 0);
+  if (c.funcao) ls.unshift({ op: '', rot: 'Função com ' + fmt(c.qtd, 0) + (c.qtd === 1 ? ' pessoa' : ' pessoas') + ': cada valor abaixo soma todas (custo de 1 pessoa: ' + fmtR2(c.um ? c.um.total : c.total) + ')', txt: '', info: true, m: mudDoCampo('func', mat, 'qtd', D) });
   if (Math.abs(s - c.total) > 1e-9) ls.push({ op: '+', rot: 'Arredondamento', v: c.total - s, soma: true });
   ls.push({ op: '=', rot: 'Custo por mês', v: c.total, tot: true });
   ls.push({ op: '÷', rot: 'Horas produtivas no mês', txt: fmtQ(c.horasProdutivas) + ' horas', info: true });
@@ -14223,11 +14312,12 @@ TELAS.usuarios = {
   render: function () {
     var k = S.db.ativa, L = NV.acessos[k], d = formProc('acesso', function () { return { email: '', nome: '', papel: 'operador' }; });
     var h = ph('Usuários e acessos', 'Quem entra na ' + esc(S.emp.nome) + ' e com qual papel. Cada empresa tem os seus acessos.', '', 'Configuração');
-    h += alerta('info', '<b>Pessoa nova:</b> 1) crie o usuário no Supabase em <b>Authentication → Users → Add user → Create new user</b>, com o e-mail e uma senha provisória, marcando <b>Auto Confirm User</b>; 2) aqui embaixo, informe o e-mail e o papel e clique em <b>Dar acesso</b>. Depois a pessoa troca a senha em "Alterar minha senha" ou pelo "Esqueci a senha".');
-    h += '<div class="fbox"><h2>Dar acesso</h2><div class="grid g3">' +
+    h += alerta('info', '<b>Pessoa nova:</b> informe o e-mail, o nome, o papel e uma <b>senha provisória</b> e clique em <b>Dar acesso</b>: o sistema cria o login e já dá o acesso. Passe a senha para a pessoa; ela troca em "Alterar minha senha". <b>Quem já tem login</b> (por exemplo, já entra na outra empresa): deixe a senha em branco.');
+    h += '<div class="fbox"><h2>Dar acesso</h2><div class="grid g4">' +
       fCampo('E-mail', fTexto('email', d.email, { ph: 'nome@empresa.com.br', id: 'ac-email' })) +
       fCampo('Nome (aparece nos registros)', fTexto('nome', d.nome, { ph: 'Nome e função', id: 'ac-nome' })) +
-      fCampo('Papel', fSelect('papel', d.papel, Nuvem.PAPEIS.map(function (p) { return [p, PF.NOME_PAPEL[p]]; }), { id: 'ac-papel', rr: true }), esc(DESC_PAPEL[d.papel] || '')) + '</div>' +
+      fCampo('Papel', fSelect('papel', d.papel, Nuvem.PAPEIS.map(function (p) { return [p, PF.NOME_PAPEL[p]]; }), { id: 'ac-papel', rr: true }), esc(DESC_PAPEL[d.papel] || '')) +
+      fCampo('Senha provisória (pessoa nova)', fTexto('senha', d.senha || '', { ph: 'mínimo 6 caracteres', id: 'ac-senha' }), 'Só para quem ainda não tem login. Em branco: dá acesso a quem já tem login.') + '</div>' +
       '<p class="nv-aviso-papel" id="acAvisoPapel">Consulta e gestor veem custos, e com eles os salários. Para quem só lança produção, use operador.</p>' +
       '<div id="acProcura" class="hint">' + (NV.procura ? esc(NV.procura) : '') + '</div>' +
       '<div class="inline">' + btn('Dar acesso', 'acConceder', '', 'btn-accent', 'plus') + btn('Procurar o e-mail', 'acProcurar', '', 'btn-ghost', 'search') + '</div></div>';
@@ -14250,18 +14340,41 @@ function nvDepoisDeAcesso(r, okTitulo, okTexto) {
   delete NV.acessos[k]; NV.procura = '';
   toast(okTitulo, okTexto); renderPainel();
 }
-ACOES.acConceder = function () {
-  var d = S.proc.acesso || {}, k = S.db.ativa;
-  if (!String(d.email || '').trim()) { toast('Falta o e-mail', 'Informe o e-mail da pessoa.', { tipo: 'err' }); return; }
-  NV.api.concederAcesso(k, { email: d.email, nome: d.nome, papel: d.papel }).then(function (r) {
-    if (r.ok) S.proc.acesso = { email: '', nome: '', papel: d.papel };
-    nvDepoisDeAcesso(r, 'Acesso dado', String(d.email).trim() + ' entra na ' + S.emp.nome + ' como ' + PF.NOME_PAPEL[d.papel].toLowerCase() + '.');
+ACOES.acConceder = function (el) {
+  var d = S.proc.acesso || {}, k = S.db.ativa, email = String(d.email || '').trim(), senha = String(d.senha || '');
+  var papel = PF.NOME_PAPEL[d.papel] ? PF.NOME_PAPEL[d.papel].toLowerCase() : d.papel;
+  var avisar = function (t) { NV.procura = t; var x = $('#acProcura'); if (x) x.textContent = t; };
+  if (!email) { toast('Falta o e-mail', 'Informe o e-mail da pessoa.', { tipo: 'err' }); return; }
+  if (el) el.disabled = true;
+  var fim = function () { if (el) el.disabled = false; };
+  var dar = function () {
+    NV.api.concederAcesso(k, { email: email, nome: d.nome, papel: d.papel }).then(function (r) {
+      fim(); if (r.ok) S.proc.acesso = { email: '', nome: '', papel: d.papel, senha: '' };
+      nvDepoisDeAcesso(r, 'Acesso dado', email + ' entra na ' + S.emp.nome + ' como ' + papel + '.');
+    });
+  };
+  var criar = function () {
+    NV.api.criarLogin(k, { email: email, nome: d.nome, papel: d.papel, senha: senha }).then(function (r) {
+      fim(); if (r.ok) S.proc.acesso = { email: '', nome: '', papel: d.papel, senha: '' };
+      nvDepoisDeAcesso(r, 'Login criado e acesso dado', email + ' já pode entrar na ' + S.emp.nome + ' como ' + papel + ', com a senha provisória. Peça para trocar no primeiro acesso.');
+    });
+  };
+  if (!NV.api.criarLogin) { dar(); return; }
+  NV.api.procurarUsuario(k, email).then(function (p) {
+    if (!p.ok) { if (senha) criar(); else dar(); return; }   // sem a busca: quem tem senha cria, quem não tem só recebe acesso
+    if (p.existe) { dar(); return; }
+    if (senha.length < 6) {
+      fim(); avisar('Pessoa nova: ' + email + ' ainda não tem login. Preencha a senha provisória (mínimo 6 caracteres) e clique em Dar acesso de novo: o sistema cria o login.');
+      var s = $('#ac-senha'); if (s) s.focus();
+      return;
+    }
+    criar();
   });
 };
 ACOES.acProcurar = function () {
   var d = S.proc.acesso || {};
   NV.api.procurarUsuario(S.db.ativa, d.email).then(function (r) {
-    NV.procura = !r.ok ? r.motivo : !r.existe ? 'Não há usuário com esse e-mail no Supabase. Crie primeiro em Authentication → Users → Add user.' : r.papel ? 'Já tem acesso a esta empresa como ' + PF.NOME_PAPEL[r.papel].toLowerCase() + '. Dar acesso troca o papel.' : 'Encontrado no Supabase, ainda sem acesso a esta empresa.';
+    NV.procura = !r.ok ? r.motivo : !r.existe ? 'Pessoa nova: ainda não tem login. Preencha a senha provisória e clique em Dar acesso: o sistema cria o login.' : r.papel ? 'Já tem acesso a esta empresa como ' + PF.NOME_PAPEL[r.papel].toLowerCase() + '. Dar acesso troca o papel.' : 'Encontrado no Supabase, ainda sem acesso a esta empresa.';
     var el = $('#acProcura'); if (el) el.textContent = NV.procura;
   });
 };
