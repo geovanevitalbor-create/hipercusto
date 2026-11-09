@@ -4685,6 +4685,15 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   }
 
   // algum evento, de qualquer data e mesmo cancelado, cita o item? (matéria-prima, peça, setor ou molde)
+  // quem cita cada cadastro em alguma data: {'mp|MP-1': {'prod|P1': true}} (eventos de criar/alterar, mesmo cancelados)
+  function citadoresTodos(emp) {
+    var log = emp && Array.isArray(emp.mudancas) ? emp.mudancas : [], tiposDe = tiposDasLinhas(log), res = {};
+    log.forEach(function (ev) {
+      if (!ehObjeto(ev) || (ev.acao !== 'criar' && ev.acao !== 'alterar')) return;
+      citacoesDoEvento(ev, tiposDe).forEach(function (x) { var k = x.tipo + '|' + x.cod; (res[k] = res[k] || {})[ev.tipo + '|' + ev.ref] = true; });
+    });
+    return res;
+  }
   function jaUsado(emp, tipo, ref) {
     var log = emp && Array.isArray(emp.mudancas) ? emp.mudancas : [], tiposDe;
     if (vazio(ref) || ['mp', 'prod', 'setor', 'molde'].indexOf(tipo) < 0) return false;
@@ -4765,7 +4774,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     adicionar: adicionar, cancelar: cancelar, efetivos: efetivos, itemEm: itemEm, estadoEm: estadoEm,
     materializar: materializar, migrar: migrar,
     criacao: criacao, existeEm: existeEm, statusEvento: statusEvento, historicoCampo: historicoCampo, mudancasDoItem: mudancasDoItem,
-    ultimaMudanca: ultimaMudanca, programadas: programadas, jaUsado: jaUsado, janelas: janelas, registrarProducao: registrarProducao,
+    ultimaMudanca: ultimaMudanca, programadas: programadas, jaUsado: jaUsado, citadoresTodos: citadoresTodos, referenciasDoItem: referenciasDoItem, janelas: janelas, registrarProducao: registrarProducao,
     fronteiras: fronteiras, hojeDe: hojeDe
   };
 });
@@ -9343,7 +9352,7 @@ cadastroAcoes({
   novoCodigo: function () { return S.draft.cod + '-C'; },
   validar: function (d) {
     if (!String(d.desc || '').trim()) return 'Informe a descrição.';
-    if (n(d.qf) <= 0) return 'A quantidade de formulação deve ser maior que zero.';
+    if (!(d.qf === '' || d.qf == null) && n(d.qf) <= 0) return 'A quantidade de formulação deve ser maior que zero (padrão: 1).';
     if (d.limpeza && d.limpeza.modo === 'interna' && !(n(d.limpeza.pph) > 0)) return 'Limpeza interna: informe quantas peças por hora a limpeza faz (é o que divide o custo da hora do setor).';
     var c = custoDraftProd();
     if (c.circular) return 'A fórmula ficou circular: um componente depende deste produto.';
@@ -9609,7 +9618,7 @@ function telaProdEditor(id) {
     h += caixa('Dados do produto', '<div class="grid g4">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
       fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' }) + grupoNovoBtn()) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
-      fCampo('Peças por preparação (lote)', fNum('lote', d.lote, { suf: 'peças' }), 'Quantas peças você costuma produzir cada vez que prepara a máquina. O custo da preparação é dividido por esse número: 2 h × R$ 80/h = R$ 160 ÷ 4.000 peças = R$ 0,04 por peça; com 500 peças, R$ 0,32.', 'span2') + fCampo('Quantidade de formulação', fNum('qf', d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
+      fCampo('Peças por preparação (lote)', fNum('lote', d.lote, { suf: 'peças' }), 'Quantas peças você costuma produzir cada vez que prepara a máquina. O custo da preparação é dividido por esse número: 2 h × R$ 80/h = R$ 160 ÷ 4.000 peças = R$ 0,04 por peça; com 500 peças, R$ 0,32.', 'span2') + fCampo('Quantidade de formulação', fNum('qf', d.qf === '' || d.qf == null ? 1 : d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
       fCampo('Descrição complementar', fTexto('descComp', d.descComp || ''), '', 'span2') + fCampo('Observações', fTexto('obs', d.obs || ''), '', 'span2') + '</div>');
     h += '<div class="grid g2">' + caixa('Molde e limpeza da peça', '<div class="grid g2">' +
       fCampo('Molde', fSelect('molde', d.molde || '', moldes, { vazio: 'Sem molde (kit, montagem ou corte)', rr: true }), 'Custo por peça boa = valor ÷ (vida útil × cavidades), corrigido pelo refugo da injeção.', 'span2') +
@@ -10691,6 +10700,7 @@ TELAS['cfg-geral'] = {
       caixa('Recálculo dos custos', '<div class="radio-lista">' + radio('recalculo', d.recalculo, 'auto', '<b>Automático</b> — toda gravação recalcula taxas e custos e mostra o que mudou.') + radio('recalculo', d.recalculo, 'manual', '<b>Manual</b> — os custos só mudam quando alguém manda calcular. Útil para atualizar vários cadastros antes. A pendência vale só enquanto a página está aberta: recarregar ou trocar de empresa recalcula.') + '</div>') +
       caixa('Alertas', '<div class="grid g2">' + fCampo('Avisar preço de matéria-prima sem atualização há', fNum('diasAlertaPreco', d.diasAlertaPreco, { suf: 'dias' })) + '</div><div class="hint">Setor da limpeza interna: <b>' + (ls ? esc(ls + ' — ' + nomeSetor(ls)) : 'não definido') + '</b> (muda em Limpeza de peças).</div>') + '</div><div>' + (!ehAdmin() || NUVEM ? '' :
       caixa('Dados desta versão de teste', '<p class="desc">Os dados ficam só neste navegador. Para levar a outro computador, copie o conteúdo e cole lá.</p><div class="inline">' + btn('Copiar dados (JSON)', 'dadosCopiar', '', 'btn-ghost', 'copy') + btn('Colar dados', 'dadosColar', '', 'btn-ghost', 'file') + '</div><div class="inline" style="margin-top:10px">' + btn('Restaurar só ' + S.emp.nome, 'restaurarEmpresa', '', 'btn-danger', 'refresh') + btn('Restaurar tudo (empresas e usuários)', 'restaurarTudo', '', 'btn-danger', 'refresh') + '</div><div class="hint">Copiar e colar levam também os usuários e as senhas (só o código embaralhado delas).</div>' + (S.salvoOk ? '' : alerta('warn', 'Este navegador não está deixando salvar: as alterações se perdem ao fechar a página.')))) + '</div></div>';
+    if (ehAdmin() && !S.emp.somenteProducao) h += caixa('Limpar cadastros', '<p class="desc">Apaga de vez os cadastros desligados (inativos). Antes de apagar, o sistema mostra o que cada um afeta e não deixa apagar o que ainda está em uso.</p><div class="inline">' + btn('Ver e excluir os inativos', 'ir', 'data-rota="excluir-inativos"', 'btn-ghost', 'trash') + '</div>');
     return h;
   }
 };
@@ -15541,7 +15551,13 @@ var MANUAL = [
     abas: [['Geral', [
         ['dataReferencia', 'Hoje é', 'Deixe em branco no dia a dia: vale a data do computador. Fixe uma data só para ver as contas como estavam naquele dia.', '+'],
         ['diasAlertaPreco', 'Avisar preço de matéria-prima sem atualização há', 'Depois de quantos dias sem atualizar o preço de uma matéria-prima o sistema avisa em Alertas. Ex.: 90.']]]],
-    blocos: [{ caixa: 'Recálculo dos custos', txt: '<b>Automático</b> (recomendado): cada gravação já recalcula tudo. <b>Manual</b>: útil para mudar vários cadastros e só depois ver o efeito.' }] },
+    blocos: [{ caixa: 'Recálculo dos custos', txt: '<b>Automático</b> (recomendado): cada gravação já recalcula tudo. <b>Manual</b>: útil para mudar vários cadastros e só depois ver o efeito.' },
+      { caixa: 'Limpar cadastros', txt: 'Só o administrador. Abre a lista dos cadastros inativos para apagar de vez: veja <a data-man="excluir-inativos">Excluir inativos</a>.' }] },
+  { id: 'excluir-inativos', rota: 'excluir-inativos', grupo: 'Ajustes', nome: 'Excluir inativos',
+    oque: 'Apaga de vez os cadastros desligados (situação inativo): matérias-primas, peças, moldes e funcionários. Eles somem de todas as datas, como se nunca tivessem existido; a produção lançada das peças excluídas e os preços do terceiro delas saem junto. Fica registrado no histórico e na auditoria.',
+    passos: ['Em Ajustes › Geral e dados, clique em <b>Ver e excluir os inativos</b> (só o administrador vê).', 'Clique em <b>Baixar todos os dados</b> antes: é a sua cópia de segurança.', 'Confira a coluna <b>O que acontece</b> de cada um e marque o que vai sair.', 'Clique em <b>Excluir marcados</b> e confirme.'],
+    extra: '<p><b>Não dá</b> (travado): uma peça que continua usa o item hoje. Exclua as duas juntas ou tire o item da fórmula antes.</p><p><b>Atenção</b> (vem desmarcado): uma peça que continua usou o item no passado. Dá para excluir, mas o custo dela nos dias antigos fica incompleto.</p>',
+    atencao: ['Não dá para desfazer pelo sistema. Para voltar, só importando a planilha baixada antes.', 'Para só deixar de usar algo, desligue (situação inativo): antes da data tudo continua como foi, e nada se perde.'] },
   { id: 'auditoria', rota: 'auditoria', grupo: 'Ajustes', nome: 'Auditoria',
     oque: 'O registro de quem gravou o quê e quando nesta empresa, inclusive a produção. A data e o nome vêm do servidor: ninguém consegue mudar.',
     passos: ['Use os filtros para achar uma gravação.', 'Clique para ver o detalhe.'] },
@@ -15924,6 +15940,112 @@ function ordClique(th) {
 }
 document.addEventListener('click', function (ev) { var th = ev.target.closest && ev.target.closest('th.ord-g'); if (th && !ev.target.closest('button, a, input, select')) ordClique(th); });
 document.addEventListener('keydown', function (ev) { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('th.ord-g')) { ev.preventDefault(); ordClique(ev.target); } });
+
+/* =====================================================================
+   Ajustes › Geral e dados › Excluir inativos — apaga de vez (em todas as datas) os cadastros desligados.
+   Pelo próprio registro de mudanças (fica na auditoria), nunca por SQL: assim nada fica citando o que sumiu.
+   Não dá: o que uma peça que continua usa hoje. Atenção (desmarcado): o que uma peça que continua usou no passado.
+   ===================================================================== */
+ROTA_MODULO['excluir-inativos'] = ROTA_MODULO['cfg-geral'] || 'cfg';
+var INAT_TIPOS = [['mp', 'mps', 'cod', 'Matéria-prima'], ['prod', 'produtos', 'cod', 'Peça'], ['molde', 'moldes', 'cod', 'Molde'], ['func', 'funcionarios', 'mat', 'Funcionário']];
+function inativosLista() {
+  var e = S.emp, out = [];
+  INAT_TIPOS.forEach(function (t) {
+    (e[t[1]] || []).forEach(function (x) { if (x && x.situacao === 'inativo') out.push({ tipo: t[0], ref: x[t[2]], desc: x.desc || x.nome || '', nome: t[3], k: t[0] + '|' + x[t[2]] }); });
+  });
+  return out;
+}
+function inativosAnalise(lista, marcados) {
+  var e = S.emp, sai = {}, citHoje = {}, todos = R.citadoresTodos(e), dias = {}, terc = {};
+  lista.forEach(function (x) { if (marcados[x.k]) sai[x.k] = 1; });
+  (e.produtos || []).forEach(function (p) {
+    if (sai['prod|' + p.cod]) return;
+    R.referenciasDoItem('prod', p).forEach(function (c) { var k = c.tipo + '|' + c.cod; (citHoje[k] = citHoje[k] || []).indexOf(p.cod) < 0 && citHoje[k].push(p.cod); });
+  });
+  (e.producao || []).forEach(function (l) { dias[l.prod] = (dias[l.prod] || 0) + 1; });
+  ((e.limpezaTerceiro && e.limpezaTerceiro.precos) || []).forEach(function (p) { terc[p.prod] = (terc[p.prod] || 0) + 1; });
+  return lista.map(function (x) {
+    var hoje = citHoje[x.k] || [];
+    var passado = Object.keys(todos[x.k] || {}).filter(function (c) { return c !== x.k && !sai[c]; }).map(function (c) { return c.split('|')[1]; }).filter(function (c) { return hoje.indexOf(c) < 0; });
+    return Object.assign({}, x, { hoje: hoje, passado: passado, dias: x.tipo === 'prod' ? dias[x.ref] || 0 : 0, terc: x.tipo === 'prod' ? terc[x.ref] || 0 : 0, criacao: R.criacao(e, x.tipo, x.ref) });
+  });
+}
+// a marcação inicial: tudo o que não é usado por quem fica (nem hoje nem no passado)
+function inativosPadrao(lista) {
+  var m = {}; lista.forEach(function (x) { m[x.k] = true; });
+  for (var i = 0; i < 12; i++) {
+    var mudou = false;
+    inativosAnalise(lista, m).forEach(function (a) { if (m[a.k] && (a.hoje.length || a.passado.length || !a.criacao)) { delete m[a.k]; mudou = true; } });
+    if (!mudou) break;
+  }
+  return m;
+}
+TELAS['excluir-inativos'] = {
+  render: function () {
+    var h = ph('Excluir inativos', 'Apaga de vez os cadastros desligados (situação inativo): matérias-primas, peças, moldes e funcionários.', btn('Voltar', 'ir', 'data-rota="cfg-geral"', 'btn-ghost'), 'Ajustes › Geral e dados', true);
+    if (!ehAdmin()) return h + alerta('warn', 'Só o administrador pode excluir cadastros de vez.');
+    var lista = inativosLista();
+    if (!lista.length) return h + '<div class="vazio">Nenhum cadastro inativo nesta empresa.</div>';
+    if (!S.ui.inat || S.ui.inat.emp !== S.db.ativa) S.ui.inat = { emp: S.db.ativa, marcados: inativosPadrao(lista) };
+    var m = S.ui.inat.marcados, an = inativosAnalise(lista, m);
+    var vai = an.filter(function (a) { return m[a.k] && !a.hoje.length && a.criacao; }), dias = vai.reduce(function (t, a) { return t + a.dias; }, 0);
+    h += alerta('warn', '<b>Isto apaga de vez.</b> O cadastro some de todas as datas: o custo e o lucro dos dias que já passaram são refeitos sem ele, e a produção lançada das peças excluídas sai junto. Não dá para desfazer pelo sistema. ' +
+      'Antes, baixe todos os dados como cópia de segurança. ' + btn('Baixar todos os dados', 'impExportar', '', 'btn-ghost btn-sm', 'download'));
+    var linha = function (a) {
+      var trava = !!a.hoje.length || !a.criacao, on = !trava && !!m[a.k], notas = [];
+      if (!a.criacao) notas.push(badge('não dá', 'b-mute') + ' veio de dados antigos, sem registro de criação');
+      else if (a.hoje.length) notas.push(badge('não dá', 'b-mute') + ' em uso hoje por ' + esc(a.hoje.slice(0, 4).join(', ')) + (a.hoje.length > 4 ? ' e mais ' + (a.hoje.length - 4) : '') + ': exclua junto ou tire da fórmula');
+      else {
+        if (a.passado.length) notas.push(badge('atenção', 'b-warn') + ' usado no passado por ' + esc(a.passado.slice(0, 4).join(', ')) + (a.passado.length > 4 ? ' e mais ' + (a.passado.length - 4) : '') + ', que continua: o custo dele nos dias antigos fica incompleto');
+        if (a.dias) notas.push(badge(a.dias + (a.dias === 1 ? ' lançamento' : ' lançamentos') + ' de produção', 'b-warn') + ' saem junto');
+        if (a.terc) notas.push('preços do terceiro saem junto');
+        if (!notas.length) notas.push(badge('pode excluir', 'b-ok'));
+      }
+      return '<tr><td class="c"><input type="checkbox" data-a="inatMarcar" data-k="' + esc(a.k) + '"' + (on ? ' checked' : '') + (trava ? ' disabled' : '') + ' aria-label="Excluir ' + esc(a.ref) + '"></td>' +
+        '<td>' + esc(a.nome) + '</td><td class="cod">' + esc(a.ref) + '</td><td>' + esc(a.desc) + '</td><td class="inat-nota">' + notas.join('<br>') + '</td></tr>';
+    };
+    h += tabelaBox('', '<table class="inat-tab"><thead><tr><th></th><th>Tipo</th><th>Código</th><th>Descrição</th><th>O que acontece</th></tr></thead><tbody>' + an.map(linha).join('') + '</tbody></table>');
+    h += '<div class="inline" style="margin-top:14px;flex-wrap:wrap">' +
+      btn('Excluir ' + vai.length + (vai.length === 1 ? ' marcado' : ' marcados'), 'inatExcluir', vai.length ? '' : 'disabled', 'btn-danger', 'trash') +
+      btn('Marcar todos os que dá', 'inatTodos', '', 'btn-ghost') + btn('Desmarcar todos', 'inatNenhum', '', 'btn-ghost') +
+      (dias ? '<span class="muted">' + dias + ' lançamentos de produção saem junto.</span>' : '') + '</div>';
+    return h;
+  }
+};
+ACOES.inatMarcar = function (el) { if (!S.ui.inat) return; if (el.checked) S.ui.inat.marcados[el.dataset.k] = true; else delete S.ui.inat.marcados[el.dataset.k]; renderPainel(); };
+ACOES.inatTodos = function () {
+  if (!S.ui.inat) return; var l = inativosLista(), m = {}; l.forEach(function (x) { m[x.k] = true; });
+  for (var i = 0; i < 12; i++) { var mudou = false; inativosAnalise(l, m).forEach(function (a) { if (m[a.k] && (a.hoje.length || !a.criacao)) { delete m[a.k]; mudou = true; } }); if (!mudou) break; }
+  S.ui.inat.marcados = m; renderPainel();
+};
+ACOES.inatNenhum = function () { if (S.ui.inat) S.ui.inat.marcados = {}; renderPainel(); };
+ACOES.inatExcluir = function () {
+  if (!ehAdmin() || !S.ui.inat) return;
+  var an = inativosAnalise(inativosLista(), S.ui.inat.marcados), vai = an.filter(function (a) { return S.ui.inat.marcados[a.k] && !a.hoje.length && a.criacao; });
+  if (!vai.length) return;
+  var porTipo = {}; vai.forEach(function (a) { porTipo[a.nome] = (porTipo[a.nome] || 0) + 1; });
+  var dias = vai.reduce(function (t, a) { return t + a.dias; }, 0), passado = vai.filter(function (a) { return a.passado.length; }).length;
+  confirmar({ titulo: 'Excluir ' + vai.length + ' cadastros inativos de vez?', perigo: true, ok: 'Excluir de vez',
+    html: '<ul class="ed-lista">' + Object.keys(porTipo).map(function (t) { return '<li><b>' + porTipo[t] + '</b> ' + esc(t.toLowerCase()) + (porTipo[t] === 1 ? '' : 's') + '</li>'; }).join('') +
+      (dias ? '<li><b>' + dias + '</b> lançamentos de produção dessas peças</li>' : '') + '</ul>' +
+      (passado ? '<p><b>' + passado + '</b> deles foram usados no passado por peças que continuam: o custo delas nos dias antigos fica incompleto.</p>' : '') +
+      '<p>Somem de todas as datas e não dá para desfazer pelo sistema.</p>' }, function () {
+    var reqs = vai.map(function (a) { return { cancela: a.criacao.id, obs: 'Excluído (inativo)' }; });
+    // os preços do terceiro das peças excluídas também vêm do registro: saem cancelando as mudanças deles
+    var pecasFora = {}, cancelados = {}; vai.forEach(function (a) { if (a.tipo === 'prod') pecasFora[a.ref] = true; });
+    (S.emp.mudancas || []).forEach(function (ev) { if (ev && ev.acao === 'cancelar') cancelados[ev.cancela] = true; });
+    (S.emp.mudancas || []).forEach(function (ev) { if (ev && ev.tipo === 'terceiro' && pecasFora[ev.ref] && ev.acao !== 'cancelar' && !cancelados[ev.id]) reqs.push({ cancela: ev.id, obs: 'Peça excluída (inativa)' }); });
+    gravarMudanca(reqs, function () {
+      var prods = {}; vai.forEach(function (a) { if (a.tipo === 'prod') prods[a.ref] = true; });
+      if (Object.keys(prods).length) {
+        S.emp.producao = (S.emp.producao || []).filter(function (l) { return !prods[l.prod]; });
+      }
+      S.ui.inat = null;
+      aposGravar('Inativos excluídos', vai.length + ' cadastro(s): ' + vai.map(function (a) { return a.ref; }).slice(0, 20).join(', '));
+      renderPainel(); toast('Excluídos', vai.length + ' cadastros inativos foram apagados.');
+    }, { semHoje: true });
+  });
+};
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
