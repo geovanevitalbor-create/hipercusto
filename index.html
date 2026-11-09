@@ -1155,6 +1155,21 @@ body.com-cmp .toasts{bottom:max(84px, env(safe-area-inset-bottom,0px))}
 .aj-colunas ul,.aj-bloco ul{margin:6px 0 0;padding-left:18px}.aj-colunas li{margin:3px 0}
 @media (max-width:900px){.man-grade{grid-template-columns:minmax(0,1fr)}.man-ind{position:static;max-height:230px}.man-campos{grid-template-columns:minmax(0,1fr);gap:2px}.man-campos dd{margin-bottom:10px}.man-cap{padding:16px}}
 
+/* ordenar pelo título da coluna */
+th.ord-g{cursor:pointer;user-select:none;white-space:nowrap}
+th.ord-g:hover{color:var(--text)}
+th.ord-g:focus-visible{outline:2px solid rgba(var(--acc-rgb),.55);outline-offset:-2px}
+th.ord-g::after{content:'↕';display:inline-block;margin-left:5px;font-size:10px;opacity:.3;transform:translateY(-1px)}
+th.ord-g:hover::after{opacity:.6}
+th.ord-g[aria-sort=ascending]::after{content:'↑';opacity:1;color:var(--acc-t)}
+th.ord-g[aria-sort=descending]::after{content:'↓';opacity:1;color:var(--acc-t)}
+th.ord-g[aria-sort=ascending],th.ord-g[aria-sort=descending]{color:var(--text)}
+/* grupos */
+.grp-tab input.i{min-width:0}
+.grp-novo{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:12.5px}
+.grp-novo svg{width:13px;height:13px}
+.imp-baixar{flex-wrap:wrap;gap:8px}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -6379,20 +6394,23 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   /* ---------------- as abas do modelo ---------------- */
   // coluna: [título, chave, tipo, obrigatória, ajuda]. Tipos: texto, numero, inteiro, data, lista5, horas, unidade, situacao…
   var ABAS = [
+    { id: 'grupo', nome: 'Grupos', chave: 'cod', colunas: [['Código', 'cod', 'texto', true, 'Ex.: 001'], ['Nome', 'desc', 'texto', true, 'Ex.: Elastômeros']],
+      exemplo: ['EXEMPLO-G1', 'Elastômeros (linha de exemplo: apague)'] },
     { id: 'mp', nome: 'Matérias-primas', chave: 'cod', colunas: [
       ['Código', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true, 'kg, g, L, mL, m, un (peça), mil, cx, jg'],
       ['Valor de compra (R$)', 'vc', 'numero', true, 'O preço da nota, com ICMS, PIS e COFINS e sem o IPI'],
       ['ICMS da compra (%)', 'icms', 'numero'], ['IPI da compra (%)', 'ipi', 'numero', false, 'Por fora da nota'], ['PIS da compra (%)', 'pis', 'numero'], ['COFINS da compra (%)', 'cofins', 'numero'],
       ['Gera crédito (ICMS; IPI; PIS; COFINS)', 'cred', 'creditos', false, 'sim ou não, na ordem. Em branco = o padrão do regime (Real: os quatro; Presumido: ICMS e IPI)'],
       ['Frete (% do preço)', 'freteP', 'numero'], ['Frete e outros valores (R$)', 'v1', 'numero'], ['Créditos sobre o frete (%)', 'freteCred', 'numero', false, 'Ex.: ICMS do conhecimento de frete'],
-      ['Fornecedor', 'fornecedor', 'texto'], ['Situação', 'situacao', 'situacao', false, 'ativo ou inativo (em branco = ativo)'], ['Observação', 'obs', 'texto']],
+      ['Fornecedor', 'fornecedor', 'texto'], ['Situação', 'situacao', 'situacao', false, 'ativo ou inativo (em branco = ativo)'], ['Observação', 'obs', 'texto'],
+      ['Outros valores (R$)', 'v2', 'numero', false, 'Despachante, alfândega: R$ por unidade'], ['Créditos sobre outros valores (%)', 'v2Cred', 'numero'], ['Custo líquido digitado (R$)', 'liquidoManual', 'numero', false, 'Em branco = o sistema calcula']],
       antigas: [['Impostos da compra (%)', 'A coluna "Impostos da compra (%)" é da versão antiga: os impostos da compra agora têm uma coluna cada (ICMS, IPI, PIS e COFINS da compra). Baixe o modelo novo.'], ['Impostos do frete (%)', 'A coluna "Impostos do frete (%)" é da versão antiga: use "Créditos sobre o frete (%)". Baixe o modelo novo.']],
-      exemplo: ['EXEMPLO-MP1', 'Borracha NBR 33% (linha de exemplo: apague)', '001', 'kg', '28,50', '12', '0', '1,65', '7,6', '', '', '0,60', '21,25', 'Distribuidor de elastômeros', 'ativo', ''] },
+      exemplo: ['EXEMPLO-MP1', 'Borracha NBR 33% (linha de exemplo: apague)', '001', 'kg', '28,50', '12', '0', '1,65', '7,6', '', '', '0,60', '21,25', 'Distribuidor de elastômeros', 'ativo', '', '', '', ''] },
     { id: 'func', nome: 'Funcionários', chave: 'mat', colunas: [
       ['Matrícula', 'mat', 'texto', true], ['Nome ou função', 'nome', 'texto', true], ['Cargo', 'cargo', 'texto'], ['Salário (R$)', 'sb', 'numero', true],
       ['Horas trabalhadas por mês', 'horasTrab', 'numero', false, 'Em branco = o padrão da configuração'], ['Horas base por mês', 'horasBase', 'numero'], ['Eficiência (%)', 'efic', 'numero'],
       ['Horas extras 50% por mês', 'he0', 'numero'], ['Horas extras 100% por mês', 'he1', 'numero'],
-      ['Setores (código e %)', 'aloc', 'alocacao', true, 'Ex.: S03 70; S04 30. Só o código = 100%'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
+      ['Setores (código e %)', 'aloc', 'alocacao', false, 'Ex.: S03 70; S04 30. Só o código = 100%. Obrigatório para funcionário novo'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
       ['Vale alimentação (R$ por mês)', 'bVa', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale alimentação (R$ por mês)', 'bVaD', 'numero'],
       ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês)', 'bVtD', 'numero'],
       ['Pessoas nessa função', 'qtd', 'inteiro', false, 'Em branco = uma pessoa (matrícula e nome). Preencha (ex.: 4) quando a linha for uma função, sem nome de operador: o custo no setor fica pessoas × custo de 1']],
@@ -6411,11 +6429,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, colunas: [
       ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
       ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1'], ['Peças por preparação (lote)', 'lote', 'numero', false, 'Quantas peças são feitas a cada preparação da máquina', ['Lote econômico']], ['Preço na tabela geral (R$)', 'preco', 'numero', false, 'Só produto acabado. As outras tabelas ficam na aba Tabelas de preço', ['Preço de venda (R$)']], ['NCM', 'ncm', 'ncm', false, '8 dígitos, cadastrado na aba NCM'], ['Molde', 'molde', 'texto'],
-      ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Obrigatório na limpeza interna'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
+      ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Obrigatório na limpeza interna'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'],
       ['Tipo da linha', 'lTipo', 'tipoLinha', false, 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção. Uma linha da planilha por linha da fórmula'],
       ['Item da linha (código)', 'lRef', 'texto'], ['Quantidade', 'lQtd', 'numero', false, 'Para matéria-prima e componentes, na quantidade de formulação'],
-      ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção'], ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'], ['Pessoas', 'lHomens', 'numero'], ['Máquinas', 'lMaquinas', 'numero'], ['Refugo (%)', 'lRefugo', 'numero'], ['Fase', 'lFase', 'texto']],
-      exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', '40169300', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção'] },
+      ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção. Ou use uma das colunas de tempo da etapa'], ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'], ['Pessoas', 'lHomens', 'numero'], ['Máquinas', 'lMaquinas', 'numero'], ['Refugo (%)', 'lRefugo', 'numero'], ['Fase', 'lFase', 'texto'],
+      ['Tempo da etapa (hh:mm)', 'lTempoSex', 'horas', false, 'Só etapa de produção, no lugar das peças por hora: o tempo para a quantidade de formulação, ex.: 1:30'], ['Tempo da etapa (horas centesimais)', 'lTempoCen', 'numero', false, 'Ex.: 1,5 = uma hora e meia'],
+      ['Preparação (minutos)', 'lSetupMin', 'numero'], ['Preparação (horas centesimais)', 'lSetupCen', 'numero'],
+      ['Reaproveitamento (matéria-prima)', 'lReapMp', 'texto', false, 'O código da matéria-prima que volta para o estoque'], ['Quantidade reaproveitada', 'lReapQtd', 'numero']],
+      exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', '40169300', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção', '', '', '', '', '', ''] },
     { id: 'ncm', nome: 'NCM', chave: 'cod', colunas: [
       ['Código NCM', 'cod', 'ncm', true, '8 dígitos, ex.: 4016.93.00'], ['Descrição', 'desc', 'texto'], ['IPI (%)', 'ipi', 'numero', false, 'Por fora: soma na nota, não é receita'],
       ['ICMS (%) — exceção', 'icms', 'numero', false, 'Em branco = o ICMS do estado de cada tabela'], ['PIS (%) — exceção', 'pis', 'numero', false, 'Em branco = o geral'], ['COFINS (%) — exceção', 'cofins', 'numero', false, 'Em branco = o geral']],
@@ -6427,6 +6448,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     { id: 'terceiro', nome: 'Preços do terceiro', chave: 'prod', colunas: [
       ['Peça', 'prod', 'texto', true], ['Preço por peça (R$)', 'preco', 'numero', true], ['Vale a partir de', 'desde', 'data', false, 'Em branco = a data de início da importação'], ['Observação', 'obs', 'texto']],
       exemplo: ['EXEMPLO-P1', '0,0036', '', 'Tabela inicial (linha de exemplo: apague)'] },
+    { id: 'producao', nome: 'Produção', chave: 'data', colunas: [['Data', 'data', 'data', true, 'dd/mm/aaaa'], ['Peça', 'prod', 'texto', true], ['Peças boas', 'boas', 'numero', true],
+      ['Refugo', 'refugo', 'numero', false, 'Peças perdidas no dia'], ['Limpas na empresa', 'limpInt', 'numero'], ['Retornadas do terceiro', 'limpTerc', 'numero']],
+      exemplo: ['EXEMPLO (linha de exemplo: apague)', 'EXEMPLO-P1', '20000', '400', '20000', ''] },
     { id: 'cfg', nome: 'Configuração', chave: 'item', colunas: [['Item', 'item', 'texto', true], ['Valor', 'valor', 'texto']], exemplo: null }
   ];
   var ABA = {}; ABAS.forEach(function (a) { ABA[a.id] = a; });
@@ -6491,6 +6515,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Setores e máquinas: uma linha por máquina, repetindo o código do setor.'],
       ['Impostos: o regime, as alíquotas da venda e o ICMS de cada estado ficam na aba Configuração; os da compra, em cada matéria-prima. Confira as alíquotas com o seu contador.'],
       ['NCM: uma linha por NCM, com o IPI (por fora) e as exceções. Tabelas de preço: uma linha por peça em cada tabela; o estado (UF) basta na primeira linha da tabela.'],
+      ['Grupos: código e nome. A coluna Grupo das matérias-primas e das peças aceita o código ou o nome do grupo.'],
+      ['Produção: uma linha por peça em cada dia. Importar troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.'],
+      ['Para baixar os dados que já estão na Central (para conferir ou mudar em massa), use “Baixar com todos os dados”.'],
       ['Abas que você não usar podem ficar vazias.'], [''], ['Colunas obrigatórias:']];
     ABAS.forEach(function (a) { leia.push([a.nome + ': ' + a.colunas.filter(function (c) { return c[3]; }).map(function (c) { return c[0]; }).join(', ')]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leia), 'Leia-me');
@@ -6602,6 +6629,34 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     });
     (antigas || []).forEach(function (l) { delete l._k; });
   }
+  // reaproveitamento na linha da fórmula (em branco = como estava)
+  function comReap(l, o) {
+    if (!vazio(l.lReapMp)) { o.reapMp = txt(l.lReapMp); if (l.lReapQtd !== null && l.lReapQtd !== undefined) o.reapQtd = l.lReapQtd; }
+    return o;
+  }
+  // as linhas novas que pegaram o número de uma antiga ficam com o que a planilha não traz (unidade da tela, fator, gastos…)
+  function horasDe(t) {
+    if (!t || vazio(t.valor)) return 0;
+    try { return t.modo === 'sex' ? M.sexParaHoras(t.valor) : t.modo === 'min' ? +t.valor / 60 : t.modo === 'pph' ? 1 / +t.valor : +t.valor; } catch (e) { return NaN; }
+  }
+  function mesmoTempo(velha, nova) {
+    if (tem(velha, 'fatorGGF')) nova.fatorGGF = velha.fatorGGF;   // não vem na planilha
+    ['tempo', 'setup'].forEach(function (k) {
+      if (!velha[k] || !nova[k]) return;
+      if (velha[k].modo === nova[k].modo && Math.abs(horasDe(velha[k]) - horasDe(nova[k])) < 1e-9) nova[k] = copia(velha[k]);
+      else if (k === 'setup' && vazio(nova[k].valor)) nova[k] = copia(velha[k]);
+    });
+  }
+  function juntarAntigas(antigas, novas, objetos, ajuste) {
+    var porId = {}; (antigas || []).forEach(function (a) { if (a && !vazio(a.id)) porId[a.id] = a; });
+    return novas.map(function (n) {
+      var a = !vazio(n.id) && porId[n.id]; if (!a) return n;
+      Object.keys(a).forEach(function (k) { if (!tem(n, k)) n[k] = copia(a[k]); });
+      (objetos || []).forEach(function (k) { if (a[k] && typeof a[k] === 'object') n[k] = Object.assign(copia(a[k]), n[k] || {}); });
+      if (ajuste) ajuste(a, n);
+      return n;
+    });
+  }
   // ordem das peças: componente (citado numa fórmula) antes de quem usa; ciclo → erro
   function ordemPecas(pecas, erros) {
     var porCod = {}, feito = {}, andando = {}, ordem = [];
@@ -6657,7 +6712,28 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       return grupos;
     }
     var setores = agrupar('setor', ['desc', 'horasOperacao', 'postos']);
-    var pecas = agrupar('prod', ['desc', 'tipo', 'grupo', 'un', 'qf', 'lote', 'preco', 'ncm', 'molde', 'limpezaModo', 'limpezaPph', 'situacao', 'obs']);
+    var pecas = agrupar('prod', ['desc', 'tipo', 'grupo', 'un', 'qf', 'lote', 'preco', 'ncm', 'molde', 'limpezaModo', 'limpezaPph', 'situacao', 'obs', 'descComp']);
+    /* ---- grupos: cria ou renomeia pelo código; matérias-primas e peças podem citar o código ou o nome ---- */
+    var gruposNovos = copia(emp.grupos || []), gruposAntes = JSON.stringify(gruposNovos), vistosG = {};
+    (L.grupo || []).forEach(function (l) {
+      if (vazio(l.cod) || vazio(l.desc)) return;
+      var k = semAcento(l.cod);
+      if (vistosG[k]) { erro(erros, 'grupo', l._linha, 'O código ' + l.cod + ' já apareceu na linha ' + vistosG[k] + '.'); return; }
+      vistosG[k] = l._linha;
+      var g = gruposNovos.filter(function (x) { return semAcento(x.cod) === k; })[0];
+      if (!g) { gruposNovos.push({ cod: txt(l.cod), desc: txt(l.desc) }); resumo.grupo.novos++; }
+      else if (g.desc !== txt(l.desc)) { g.desc = txt(l.desc); resumo.grupo.alterados++; }
+      else resumo.grupo.iguais++;
+    });
+    var gruposUsados = {}; (emp.mps || []).concat(emp.produtos || []).forEach(function (x) { if (!vazio(x.grupo)) gruposUsados[x.grupo] = true; });
+    function acharGrupo(v, aba, linha) {
+      if (vazio(v)) return v;
+      var k = semAcento(v), g = gruposNovos.filter(function (x) { return semAcento(x.cod) === k; })[0] || gruposNovos.filter(function (x) { return semAcento(x.desc) === k; })[0];
+      if (g) return g.cod;
+      if (gruposUsados[txt(v)]) return txt(v);
+      erro(erros, aba, linha, 'Grupo ' + txt(v) + ' não existe: cadastre na aba Grupos (código e nome).');
+      return undefined;
+    }
     setores.forEach(function (g) { naPlanilha.setor['#' + g.cod] = true; });
     (L.mp || []).forEach(function (l) { if (!vazio(l.cod)) naPlanilha.mp['#' + l.cod] = true; });
     (L.func || []).forEach(function (l) { if (!vazio(l.mat)) naPlanilha.func['#' + l.mat] = true; });
@@ -6707,7 +6783,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       else if (x[2] === 'regime' || x[2] === 'uf') {
         var y = x[2] === 'regime' ? lerRegime(v) : lerUF(v);
         if (y !== y || typeof y !== 'string') { erro(erros, 'cfg', l._linha, x[0] + ': "' + txt(v) + '" ' + DICA[x[2]] + '.'); return; }
-        setPath(cfg, x[1], y);
+        if (M.fiscalDe(cfg)[x[1].split('.').pop()] !== y) setPath(cfg, x[1], y);
       }
     });
     /* ---- NCM (na configuração): cria ou altera pelo código ---- */
@@ -6779,7 +6855,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedido('setor', 'setor', g.cod, g._linha, function (it) {
         it = it || { cod: g.cod, equipamentos: [] };
         it.desc = d.desc; it.horasOperacao = d.horasOperacao; setNum(it, 'postos', d.postos);
-        if (maquinas.length || !it.equipamentos) { reaproveitarIds(it.equipamentos, maquinas, function (m) { return semAcento(m.desc); }); it.equipamentos = maquinas; }
+        if (maquinas.length || !it.equipamentos) { reaproveitarIds(it.equipamentos, maquinas, function (m) { return semAcento(m.desc); }); it.equipamentos = juntarAntigas(it.equipamentos, maquinas, ['desp']); }
         return it;
       });
     });
@@ -6797,11 +6873,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var cols = ['icms', 'ipi', 'pis', 'cofins', 'freteP', 'freteCred'];
       if (cols.some(function (k) { return typeof l[k] === 'number' && (l[k] < 0 || l[k] > 100); })) { erro(erros, 'mp', l._linha, 'Os impostos vão de 0 a 100%.'); return; }
       var algum = cols.some(function (k) { return l[k] !== null && l[k] !== undefined; }) || !!l.cred;
+      if (typeof l.v2Cred === 'number' && (l.v2Cred < 0 || l.v2Cred > 100)) { erro(erros, 'mp', l._linha, 'Os créditos vão de 0 a 100%.'); return; }
+      if ([l.v2, l.liquidoManual].some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'mp', l._linha, 'Valores não podem ser negativos.'); return; }
+      var grupoMp = acharGrupo(l.grupo, 'mp', l._linha); if (grupoMp === undefined) return;
       pedido('mp', 'mp', l.cod, l._linha, function (it) {
         var novo = !it;
         it = it || { cod: l.cod, v1: 0, v2: 0, imp: { icms: 0, ipi: 0, pis: 0, cofins: 0 }, cred: { icms: '', ipi: '', pis: '', cofins: '' }, freteP: 0, freteCred: 0, liquidoManual: '', situacao: 'ativo', fornecedor: '', obs: '' };
         it.desc = l.desc; it.un = l.un; it.vc = l.vc;
-        setTxt(it, 'grupo', l.grupo); setNum(it, 'v1', l.v1);
+        setTxt(it, 'grupo', grupoMp); setNum(it, 'v1', l.v1); setNum(it, 'v2', l.v2); setNum(it, 'v2Cred', l.v2Cred); setNum(it, 'liquidoManual', l.liquidoManual);
         // matéria-prima no formato antigo: só passa para o novo quando a planilha traz algum imposto (com os mesmos valores derivados)
         if (!novo && M.mpLegado(it) && algum) {
           var o = M.compraMP(it, cfg);
@@ -6823,13 +6902,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
 
     /* ---- funcionários ---- */
     (L.func || []).forEach(function (l) {
-      if (vazio(l.mat) || vazio(l.nome) || l.sb === null || !l.aloc) return;
+      if (vazio(l.mat) || vazio(l.nome) || l.sb === null) return;
+      if (!l.aloc && !R.existeEm(emp, 'func', l.mat, D)) { erro(erros, 'func', l._linha, 'Falta Setores (código e %): funcionário novo precisa de pelo menos um setor.'); return; }
       if (!(l.sb > 0)) { erro(erros, 'func', l._linha, 'O salário precisa ser maior que zero.'); return; }
       if ([l.bVa, l.bVaD, l.bVt, l.bVtD].some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos.'); return; }
       if (typeof l.qtd === 'number' && !(l.qtd >= 1)) { erro(erros, 'func', l._linha, 'Pessoas nessa função: informe 1 ou mais (ou deixe em branco para uma pessoa).'); return; }
-      var ruim = l.aloc.filter(function (a) { return !existe('setor', a.setor); });
+      var ruim = (l.aloc || []).filter(function (a) { return !existe('setor', a.setor); });
       if (ruim.length) { erro(erros, 'func', l._linha, 'Setor ' + ruim.map(function (a) { return a.setor; }).join(', ') + ' não existe (cadastre na aba Setores e máquinas).'); return; }
-      var soma = l.aloc.reduce(function (t, a) { return t + a.pct; }, 0);
+      var soma = (l.aloc || []).reduce(function (t, a) { return t + a.pct; }, 0);
       if (tx.alocacao100 !== false && soma > 100.0001) { erro(erros, 'func', l._linha, 'A alocação nos setores soma ' + String(soma).replace('.', ',') + '%. O máximo é 100%.'); return; }
       var horas = l.horasTrab === null ? (tx.padraoHorasTrab || 188) : l.horasTrab, he = [l.he0 || 0, l.he1 || 0, 0, 0, 0];
       if (tx.limite240 && horas + he[0] + he[1] > 240) { erro(erros, 'func', l._linha, 'Horas trabalhadas + horas extras passam de 240 por mês.'); return; }
@@ -6839,8 +6919,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (typeof l.qtd === 'number' && l.qtd >= 1) { it.modo = 'funcao'; it.qtd = l.qtd; }
         setNum(it, 'horasTrab', l.horasTrab); setNum(it, 'horasBase', l.horasBase); setNum(it, 'efic', l.efic);
         if (l.he0 !== null || l.he1 !== null) { it.he = (it.he || [0, 0, 0, 0, 0]).slice(); if (l.he0 !== null) it.he[0] = l.he0; if (l.he1 !== null) it.he[1] = l.he1; }
-        var aloc = l.aloc.map(function (a) { return { setor: a.setor, pct: a.pct }; });
-        reaproveitarIds(it.aloc, aloc, function (a) { return a.setor; }); it.aloc = aloc;
+        if (l.aloc) { var aloc = l.aloc.map(function (a) { return { setor: a.setor, pct: a.pct }; }); reaproveitarIds(it.aloc, aloc, function (a) { return a.setor; }); it.aloc = juntarAntigas(it.aloc, aloc); }
         setTxt(it, 'admissao', l.admissao); setTxt(it, 'situacao', l.situacao); setTxt(it, 'obs', l.obs);
         // benefícios desta pessoa: em branco fica como está (o padrão); "não recebe" marca que não recebe
         [['va', l.bVa, l.bVaD], ['vt', l.bVt, l.bVtD]].forEach(function (b) {
@@ -6893,15 +6972,21 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (vazio(l.lRef)) { erro(erros, 'prod', l._linha, 'Falta o item da linha.'); ok = false; return null; }
         if (!existe(CITA[l.lTipo], l.lRef)) { erro(erros, 'prod', l._linha, (l.lTipo === 'SP' ? 'Setor ' : l.lTipo === 'MP' ? 'Matéria-prima ' : 'Peça ') + l.lRef + ' não existe.'); ok = false; return null; }
         if (l.lRef === g.cod) { erro(erros, 'prod', l._linha, 'A peça não pode estar na própria fórmula.'); ok = false; return null; }
+        if (!vazio(l.lReapMp) && !existe('mp', txt(l.lReapMp))) { erro(erros, 'prod', l._linha, 'Reaproveitamento: matéria-prima ' + txt(l.lReapMp) + ' não existe.'); ok = false; return null; }
         if (l.lTipo === 'SP') {
-          if (!(l.lPph > 0)) { erro(erros, 'prod', l._linha, 'Etapa de produção: informe as peças por hora (maior que zero).'); ok = false; return null; }
+          var tempo = l.lPph > 0 ? { modo: 'pph', valor: l.lPph } : !vazio(l.lTempoSex) && M.sexParaHoras(l.lTempoSex) > 0 ? { modo: 'sex', valor: l.lTempoSex } : l.lTempoCen > 0 ? { modo: 'cen', valor: l.lTempoCen } : null;
+          if (!tempo) { erro(erros, 'prod', l._linha, 'Etapa de produção: informe as peças por hora ou o tempo da etapa (maior que zero).'); ok = false; return null; }
+          var setup = !vazio(l.lSetup) ? { modo: 'sex', valor: l.lSetup } : l.lSetupMin !== null && l.lSetupMin !== undefined ? { modo: 'min', valor: l.lSetupMin } : l.lSetupCen !== null && l.lSetupCen !== undefined ? { modo: 'cen', valor: l.lSetupCen } : { modo: 'sex', valor: '' };
           if (l.lRefugo !== null && (l.lRefugo < 0 || l.lRefugo >= 100)) { erro(erros, 'prod', l._linha, 'O refugo vai de 0 a menos de 100%.'); ok = false; return null; }
-          return { tipo: 'SP', ref: l.lRef, tempo: { modo: 'pph', valor: l.lPph }, setup: { modo: 'sex', valor: l.lSetup || '' }, homens: l.lHomens === null ? 1 : l.lHomens, maquinas: l.lMaquinas === null ? 1 : l.lMaquinas, fatorGGF: 1, refugo: l.lRefugo || 0, fase: l.lFase || '' };
+          return comReap(l, { tipo: 'SP', ref: l.lRef, tempo: tempo, setup: setup, homens: l.lHomens === null ? 1 : l.lHomens, maquinas: l.lMaquinas === null ? 1 : l.lMaquinas, fatorGGF: 1, refugo: l.lRefugo || 0, fase: l.lFase || '' });
         }
         if (!(l.lQtd > 0)) { erro(erros, 'prod', l._linha, 'Informe a quantidade da linha (maior que zero).'); ok = false; return null; }
-        return { tipo: l.lTipo, ref: l.lRef, qtd: l.lQtd, fase: l.lFase || '' };
+        return comReap(l, { tipo: l.lTipo, ref: l.lRef, qtd: l.lQtd, fase: l.lFase || '' });
       });
       var faltam = [], jaDito = function (col) { return erros.some(function (e) { return e.aba === ABA.prod.nome && g.nums.indexOf(e.linha) >= 0 && e.msg.indexOf(col + ':') === 0; }); };
+      if (g.linhas.some(function (x) { return x === false; })) ok = false;
+      g.linhas = g.linhas.filter(function (x) { return x !== false; });
+      if (d.grupo !== undefined) { var gp = acharGrupo(d.grupo, 'prod', g._linha); if (gp === undefined) ok = false; else d.grupo = gp; }
       if (vazio(d.desc)) faltam.push('Descrição');
       if (!d.tipo && !jaDito('Tipo')) faltam.push('Tipo');
       if (!d.un && !jaDito('Unidade')) faltam.push('Unidade');
@@ -6919,7 +7004,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedido('prod', 'prod', g.cod, g._linha, function (it) {
         it = it || { cod: g.cod, grupo: '', qf: 1, lote: '', situacao: 'ativo', obs: '', itens: [] };
         it.desc = d.desc; it.tipo = d.tipo; it.un = d.un;
-        setTxt(it, 'grupo', d.grupo); setNum(it, 'qf', d.qf); setNum(it, 'lote', d.lote); setTxt(it, 'situacao', d.situacao); setTxt(it, 'obs', d.obs);
+        setTxt(it, 'grupo', d.grupo); setNum(it, 'qf', d.qf); setNum(it, 'lote', d.lote); setTxt(it, 'situacao', d.situacao); setTxt(it, 'obs', d.obs); setTxt(it, 'descComp', d.descComp);
         if (d.tipo === 'PA') setNum(it, 'preco', d.preco); else delete it.preco;
         setTxt(it, 'ncm', d.ncm);
         aplicarPrecosTab(it, d.tipo, g._linha, d.preco);
@@ -6929,7 +7014,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
           if (d.limpezaModo !== undefined) it.limpeza.modo = d.limpezaModo;
           if (d.limpezaPph !== undefined) it.limpeza.pph = d.limpezaPph;
         }
-        if (g.linhas.length || !it.itens) { reaproveitarIds(it.itens, g.linhas, function (x) { return x.tipo + '|' + x.ref; }); it.itens = g.linhas; }
+        if (g.linhas.length || !it.itens) { reaproveitarIds(it.itens, g.linhas, function (x) { return x.tipo + '|' + x.ref; }); it.itens = juntarAntigas(it.itens, g.linhas, [], mesmoTempo); }
         return it;
       });
     });
@@ -6956,17 +7041,142 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedidos.push(q); resumo.terceiro[atual ? 'alterados' : 'novos']++;
     });
 
+    /* ---- produção: uma linha por peça e dia ---- */
+    var producao = [], vistosP = {}, lancados = {};
+    (emp.producao || []).forEach(function (x) { lancados[x.data + '|' + x.prod] = x; });
+    (L.producao || []).forEach(function (l) {
+      if (!l.data || vazio(l.prod) || l.boas === null) return;
+      if (l.data > hoje) { erro(erros, 'producao', l._linha, 'A data ' + dataBR(l.data) + ' é depois de hoje.'); return; }
+      if (!existe('prod', l.prod)) { erro(erros, 'producao', l._linha, 'Peça ' + l.prod + ' não existe.'); return; }
+      var k = l.data + '|' + l.prod;
+      if (vistosP[k]) { erro(erros, 'producao', l._linha, 'A peça ' + l.prod + ' já apareceu em ' + dataBR(l.data) + ' na linha ' + vistosP[k] + '.'); return; }
+      vistosP[k] = l._linha;
+      var q = { data: l.data, prod: l.prod, boas: l.boas, refugo: l.refugo || 0, limpInt: l.limpInt || 0, limpTerc: l.limpTerc || 0 };
+      if (['boas', 'refugo', 'limpInt', 'limpTerc'].some(function (c) { return !(q[c] >= 0); })) { erro(erros, 'producao', l._linha, 'As quantidades não podem ser negativas.'); return; }
+      var a = lancados[k];
+      if (a && ['boas', 'refugo', 'limpInt', 'limpTerc'].every(function (c) { return (+a[c] || 0) === q[c]; })) { resumo.producao.iguais++; return; }
+      producao.push(q); resumo.producao[a ? 'alterados' : 'novos']++;
+    });
+
     // a ordem final: o que é citado antes (setores, configuração, matérias-primas, funcionários, moldes, peças, terceiro)
     pedidos.sort(function (a, b) { return ORDEM.indexOf(a._aba) - ORDEM.indexOf(b._aba); });
-    return { ok: !erros.length, erros: erros, pedidos: erros.length ? [] : pedidos.map(function (q) { var c = {}; Object.keys(q).forEach(function (k) { if (k !== '_aba') c[k] = q[k]; }); return c; }), resumo: resumo };
+    return { ok: !erros.length, erros: erros, pedidos: erros.length ? [] : pedidos.map(function (q) { var c = {}; Object.keys(q).forEach(function (k) { if (k !== '_aba') c[k] = q[k]; }); return c; }), resumo: resumo,
+      grupos: !erros.length && JSON.stringify(gruposNovos) !== gruposAntes ? gruposNovos : null, producao: erros.length ? [] : producao };
   }
+  /* ---------------- exportar: a planilha com todos os dados de hoje (o mesmo formato do modelo; importar de volta não muda nada) ---------------- */
+  function brNum(v) { return v === undefined || v === null || v === '' ? '' : (typeof v === 'number' ? v : (isFinite(+v) ? +v : txt(v))); }
+  function brTxtNum(v) { return String(v).replace('.', ','); }
+  function brData(d) { return d && dataValida(txt(d)) ? dataBR(txt(d)) : ''; }
+  // "0001:30:00.00" → "1:30" (ou "1:30:15" com segundos)
+  function sexTexto(v) {
+    var m = /^(\d{1,4}):(\d{1,2})(?::(\d{1,2})(?:[.:,](\d{1,2}))?)?$/.exec(txt(v).trim());
+    if (!m) return txt(v);
+    var h = +m[1], mi = m[2].padStart(2, '0'), se = m[3] ? +m[3] : 0;
+    return h + ':' + mi + (se ? ':' + String(se).padStart(2, '0') : '');
+  }
+  function simNaoTxt(b) { return b === true ? 'sim' : b === false ? 'não' : ''; }
+  var NOME_TIPO_PECA = { PA: 'Produto acabado', SA: 'Semi-acabado' };
+  var NOME_TIPO_LINHA = { MP: 'Matéria-prima', SA: 'Semi-acabado', PA: 'Produto acabado', SP: 'Etapa de produção' };
+  function linhasDaAba(a, emp, hoje) {
+    var cab = a.colunas.map(function (c) { return c[0]; }), out = [cab];
+    var idx = {}; a.colunas.forEach(function (c, i) { idx[c[1]] = i; });
+    var nova = function (o) { var l = cab.map(function () { return ''; }); Object.keys(o).forEach(function (k) { if (tem(idx, k)) l[idx[k]] = o[k] === undefined || o[k] === null ? '' : o[k]; }); out.push(l); };
+    var hojeDe = function (tipo, x, chave) { return itemDe(emp, tipo, x[chave], hoje) || x; };
+    var cfg = itemDe(emp, 'cfg', 'config', hoje) || emp.config || {};
+    if (a.id === 'mp') (emp.mps || []).forEach(function (x0) {
+      var x = hojeDe('mp', x0, 'cod'), leg = M.mpLegado(x), imp = x.imp || {}, cr = x.cred || {};
+      var cred = M.IMP_COMPRA.map(function (k) { return simNaoTxt(cr[k]); });
+      nova({ cod: x.cod, desc: x.desc, grupo: x.grupo || '', un: x.un, vc: brNum(x.vc),
+        icms: leg ? '' : brNum(imp.icms), ipi: leg ? '' : brNum(imp.ipi), pis: leg ? '' : brNum(imp.pis), cofins: leg ? '' : brNum(imp.cofins),
+        cred: leg || !cred.some(Boolean) ? '' : cred.join('; '), freteP: leg ? '' : brNum(x.freteP), v1: brNum(x.v1), freteCred: leg ? '' : brNum(x.freteCred),
+        fornecedor: x.fornecedor || '', situacao: x.situacao || '', obs: x.obs || '', v2: brNum(x.v2), v2Cred: brNum(x.v2Cred), liquidoManual: brNum(x.liquidoManual) });
+    });
+    if (a.id === 'func') (emp.funcionarios || []).forEach(function (x0) {
+      var x = hojeDe('func', x0, 'mat'), he = x.he || [], b = x.benef || {};
+      var bv = function (k, campo) { var o = b[k]; if (!o) return ''; if (o.nao) return campo === 'valor' ? 'não recebe' : ''; return brNum(o[campo]); };
+      nova({ mat: x.mat, nome: x.nome, cargo: x.cargo || '', sb: brNum(x.sb), horasTrab: brNum(x.horasTrab), horasBase: brNum(x.horasBase), efic: brNum(x.efic),
+        he0: brNum(he[0]), he1: brNum(he[1]), aloc: (x.aloc || []).filter(function (l) { return l && l.setor; }).map(function (l) { return l.setor + ' ' + brTxtNum(+l.pct || 0); }).join('; '),
+        admissao: brData(x.admissao), situacao: x.situacao || '', obs: x.obs || '',
+        bVa: bv('va', 'valor'), bVaD: bv('va', 'desconto'), bVt: bv('vt', 'valor'), bVtD: bv('vt', 'desconto'), qtd: x.modo === 'funcao' ? brNum(x.qtd) : '' });
+    });
+    if (a.id === 'setor') (emp.setores || []).forEach(function (x0) {
+      var x = hojeDe('setor', x0, 'cod'), eqs = x.equipamentos || [], base = { cod: x.cod, desc: x.desc, horasOperacao: brNum(x.horasOperacao), postos: brNum(x.postos) };
+      if (!eqs.length) { nova(base); return; }
+      eqs.forEach(function (q, i) {
+        var d = q.desp || {}, o = i ? { cod: x.cod } : Object.assign({}, base);
+        Object.assign(o, { eqDesc: q.desc || ('Máquina ' + (i + 1)), eqQtd: brNum(q.qtd), eqValor: brNum(q.valor), eqResidual: brNum(q.residual), eqVida: brNum(q.vidaAnos), eqHoras: brNum(q.horasMes),
+          g1: brNum(d.g1), g2: brNum(d.g2), g3: brNum(d.g3), g4: brNum(d.g4), g5: brNum(d.g5) });
+        nova(o);
+      });
+    });
+    if (a.id === 'molde') (emp.moldes || []).forEach(function (x0) {
+      var x = hojeDe('molde', x0, 'cod');
+      nova({ cod: x.cod, desc: x.desc, setor: x.setor || '', cavidades: brNum(x.cavidades), valor: brNum(x.valor), vida: brNum(x.vida), ciclosIniciais: brNum(x.ciclosIniciais), compra: brData(x.compra), situacao: x.situacao || '', obs: x.obs || '' });
+    });
+    if (a.id === 'prod') (emp.produtos || []).forEach(function (x0) {
+      var x = hojeDe('prod', x0, 'cod'), lim = x.limpeza || {}, itens = x.itens || [];
+      var base = { cod: x.cod, desc: x.desc, tipo: NOME_TIPO_PECA[x.tipo] || x.tipo, grupo: x.grupo || '', un: x.un, qf: brNum(x.qf), lote: brNum(x.lote), preco: x.tipo === 'PA' ? brNum(x.preco) : '',
+        ncm: x.ncm || '', molde: x.molde || '', limpezaModo: lim.modo || '', limpezaPph: brNum(lim.pph), situacao: x.situacao || '', obs: x.obs || '', descComp: x.descComp || '' };
+      if (!itens.length) { nova(base); return; }
+      itens.forEach(function (it, i) {
+        var o = i ? { cod: x.cod } : Object.assign({}, base);
+        o.lTipo = NOME_TIPO_LINHA[it.tipo] || it.tipo; o.lRef = it.ref; o.lFase = it.fase || '';
+        if (it.tipo === 'SP') {
+          var t = it.tempo || {}, s = it.setup || {};
+          if (t.modo === 'pph') o.lPph = brNum(t.valor); else if (t.modo === 'sex') o.lTempoSex = sexTexto(t.valor); else o.lTempoCen = brNum(t.valor);
+          if (!vazio(s.valor)) { if (s.modo === 'min') o.lSetupMin = brNum(s.valor); else if (s.modo === 'cen') o.lSetupCen = brNum(s.valor); else o.lSetup = sexTexto(s.valor); }
+          o.lHomens = brNum(it.homens); o.lMaquinas = brNum(it.maquinas); o.lRefugo = brNum(it.refugo);
+        } else o.lQtd = brNum(it.qtd);
+        if (!vazio(it.reapMp)) { o.lReapMp = it.reapMp; o.lReapQtd = brNum(it.reapQtd); }
+        nova(o);
+      });
+    });
+    if (a.id === 'ncm') (cfg.ncms || []).forEach(function (x) { nova({ cod: x.cod, desc: x.desc || '', ipi: brNum(x.ipi), icms: brNum(x.icms), pis: brNum(x.pis), cofins: brNum(x.cofins) }); });
+    if (a.id === 'tab') {
+      var tabs = cfg.tabelas && cfg.tabelas.length ? M.tabelasDe(cfg) : [];   // sem tabelas gravadas: só a geral (preço na aba Peças)
+      tabs.forEach(function (t, ti) {
+        var cab0 = { tabela: t.nome || t.id, uf: t.uf || '', ativa: t.ativa === false ? 'não' : 'sim' }, l = [];
+        if (ti > 0) (emp.produtos || []).forEach(function (p0) { var p = hojeDe('prod', p0, 'cod'); if (p.tipo === 'PA' && p.precos && !vazio(p.precos[t.id])) l.push({ prod: p.cod, preco: brNum(p.precos[t.id]) }); });
+        if (!l.length) { nova(cab0); return; }
+        l.forEach(function (x, i) { nova(Object.assign(i ? { tabela: cab0.tabela } : Object.assign({}, cab0), x)); });
+      });
+    }
+    if (a.id === 'terceiro') ((emp.limpezaTerceiro && emp.limpezaTerceiro.precos) || []).slice().sort(function (p, q) { return p.prod < q.prod ? -1 : p.prod > q.prod ? 1 : (p.desde < q.desde ? -1 : 1); })
+      .forEach(function (x) { nova({ prod: x.prod, preco: brNum(x.valor), desde: brData(x.desde), obs: x.obs || '' }); });
+    if (a.id === 'grupo') (emp.grupos || []).forEach(function (g) { nova({ cod: g.cod, desc: g.desc || '' }); });
+    if (a.id === 'producao') (emp.producao || []).slice().sort(function (p, q) { return p.data < q.data ? -1 : p.data > q.data ? 1 : (p.prod < q.prod ? -1 : 1); })
+      .forEach(function (x) { nova({ data: brData(x.data), prod: x.prod, boas: brNum(x.boas), refugo: brNum(x.refugo), limpInt: brNum(x.limpInt), limpTerc: brNum(x.limpTerc) }); });
+    return out;
+  }
+  function exportar(XLSX, emp, opts) {
+    opts = opts || {};
+    var hoje = opts.hoje || new Date().toISOString().slice(0, 10), wb = XLSX.utils.book_new();
+    var cfg = itemDe(emp, 'cfg', 'config', hoje) || emp.config || {};
+    var leia = [['Central de Custos — todos os dados de ' + (opts.nomeEmpresa || emp.nome || '') + ' em ' + dataBR(hoje)], [''],
+      ['Esta planilha tem os cadastros como estão hoje, no mesmo formato do modelo de importação.'],
+      ['Para mudar muitos itens de uma vez: mude aqui e importe de volta em Cadastros › Planilha. Só o que estiver diferente vira mudança; o resto fica igual.'],
+      ['Célula em branco = não muda. Números no padrão brasileiro (1.500,25). Datas: dd/mm/aaaa. Não mude os títulos da primeira linha.'],
+      ['Peças e fórmulas: uma linha por linha da fórmula, repetindo o código da peça; os dados da peça vêm na primeira.'],
+      ['Setores e máquinas: uma linha por máquina, repetindo o código do setor.'],
+      ['Produção: uma linha por peça em cada dia. Importar uma linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.'],
+      [''], ['Não vão na planilha (mude na tela): valores de encargos por funcionário, horas extras além das duas primeiras, outros benefícios por funcionário, taxas digitadas dos setores, fórmulas dos encargos e o histórico de valores antigos.']];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leia), 'Leia-me');
+    ABAS.forEach(function (a) {
+      var dados = a.id === 'cfg' ? linhasConfig(cfg) : linhasDaAba(a, emp, hoje);
+      var ws = XLSX.utils.aoa_to_sheet(dados);
+      ws['!cols'] = dados[0].map(function (h) { return { wch: Math.max(12, Math.min(40, String(h).length + 2)) }; });
+      XLSX.utils.book_append_sheet(wb, ws, a.nome);
+    });
+    return wb;
+  }
+
   function setPath(o, path, v) {
     var ks = path.split('.'), cur = o;
     for (var i = 0; i < ks.length - 1; i++) { if (cur[ks[i]] === undefined || cur[ks[i]] === null) cur[ks[i]] = {}; cur = cur[ks[i]]; }
     cur[ks[ks.length - 1]] = v;
   }
 
-  return { ABAS: ABAS, ITENS_CFG: ITENS_CFG, modelo: modelo, ler: ler, preparar: preparar, lerNumero: lerNumero, lerData: lerData, lerUnidade: lerUnidade };
+  return { ABAS: ABAS, ITENS_CFG: ITENS_CFG, modelo: modelo, exportar: exportar, ler: ler, preparar: preparar, lerNumero: lerNumero, lerData: lerData, lerUnidade: lerUnidade };
 });
 
 </script>
@@ -7342,7 +7552,7 @@ ACOES.ajuda = function (el) {
 (function () {
   var raiz = document.getElementById('app');
   if (!raiz || !window.MutationObserver) return;
-  new MutationObserver(function () { if (typeof ajBlocos === 'function') ajBlocos(raiz); ajMontar(raiz); if (typeof edAplicar === 'function') edAplicar(raiz); }).observe(raiz, { childList: true, subtree: true });
+  new MutationObserver(function () { if (typeof ajBlocos === 'function') ajBlocos(raiz); ajMontar(raiz); if (typeof ordAplicar === 'function') ordAplicar(raiz); if (typeof edAplicar === 'function') edAplicar(raiz); }).observe(raiz, { childList: true, subtree: true });
   ajMontar(raiz);
 })();
 function btn(rotulo, acao, attrs, cls, icone) {
@@ -7444,7 +7654,7 @@ var MENU = [
   { item: ['lucro-periodo', 'Lucro'], icone: 'chart' },
   { grupo: 'Histórico', icone: 'clock', itens: [['historico', 'Todas as mudanças'], ['-', 'Por cadastro'], ['hist-molde', 'Moldes'], ['hist-mp', 'Matérias-primas'], ['hist-prod', 'Peças'], ['hist-limpeza', 'Limpeza'], ['hist-func', 'Funcionários'], ['hist-setor', 'Setores'], ['hist-cfg', 'Impostos'], ['-', 'Juntos'], ['comparar', 'Comparar']] },
   { grupo: 'Produção', icone: 'fabrica', itens: [['producao-dia', 'Produção do dia'], ['limpeza', 'Limpeza de peças']] },
-  { grupo: 'Cadastros', icone: 'box', itens: [['+', 'Peças'], ['produtos', 'Produtos e fórmulas'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'],
+  { grupo: 'Cadastros', icone: 'box', itens: [['+', 'Peças'], ['produtos', 'Produtos e fórmulas'], ['moldes', 'Moldes'], ['mps', 'Matérias-primas'], ['grupos', 'Grupos'],
     ['+', 'Preços'], ['tabelas-preco', 'Tabelas de preço'], ['cfg-impostos', 'Impostos sobre a venda'], ['cfg-icms', 'ICMS por estado'], ['ncm', 'NCM'],
     ['+', 'Fábrica'], ['setores', 'Setores e máquinas'], ['cfg-equip', 'Gastos dos equipamentos'], ['funcionarios', 'Funcionários'], ['cfg-encargos', 'Encargos e provisões'], ['cfg-taxas', 'Taxas hora']] },
   { grupo: 'Ajustes', icone: 'cog', fim: true, itens: [['cfg-tempos', 'Tempos e precisão'], ['cfg-geral', 'Geral e dados'], ['auditoria', 'Auditoria'], ['usuarios', 'Usuários e acessos']] },
@@ -8835,7 +9045,7 @@ function telaMpEditor(id) {
   h += '<div class="grid g-side"><div>' +
     caixa('Identificação', '<div class="grid g3">' +
       fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
-      fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }))) +
+      fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + grupoNovoBtn()) +
       fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
       fCampo('Fornecedor principal', fTexto('fornecedor', d.fornecedor || ''), '', 'span2') + fCampo('Observações', fTexto('obs', d.obs || '')) + '</div>') +
@@ -9397,7 +9607,7 @@ function telaProdEditor(id) {
   if (aba === 'dados' || aba === 'precos') {
     var moldes = (e.moldes || []).map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; });
     h += caixa('Dados do produto', '<div class="grid g4">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
-      fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' })) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
+      fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' }) + grupoNovoBtn()) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
       fCampo('Peças por preparação (lote)', fNum('lote', d.lote, { suf: 'peças' }), 'Quantas peças você costuma produzir cada vez que prepara a máquina. O custo da preparação é dividido por esse número: 2 h × R$ 80/h = R$ 160 ÷ 4.000 peças = R$ 0,04 por peça; com 500 peças, R$ 0,32.', 'span2') + fCampo('Quantidade de formulação', fNum('qf', d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
       fCampo('Descrição complementar', fTexto('descComp', d.descComp || ''), '', 'span2') + fCampo('Observações', fTexto('obs', d.obs || ''), '', 'span2') + '</div>');
@@ -14270,16 +14480,16 @@ TELAS['boas-vindas'] = {
 
 /* ---------------- Cadastros › Importar planilha ---------------- */
 function nvImp() { if (!NV.imp || NV.imp.emp !== S.db.ativa) NV.imp = { emp: S.db.ativa, lido: null, arquivo: '', desde: hojeRef() }; return NV.imp; }
-var NOME_ABA_IMP = { mp: 'Matérias-primas', func: 'Funcionários', setor: 'Setores e máquinas', molde: 'Moldes', prod: 'Peças e fórmulas', terceiro: 'Preços do terceiro', cfg: 'Configuração' };
+var NOME_ABA_IMP = { grupo: 'Grupos', producao: 'Produção', mp: 'Matérias-primas', func: 'Funcionários', setor: 'Setores e máquinas', molde: 'Moldes', prod: 'Peças e fórmulas', terceiro: 'Preços do terceiro', cfg: 'Configuração' };
 function nvPrepararImportacao(I) {
   return window.Importar.preparar(S.emp, I.lido, { desde: I.desde, hoje: hojeRef(), configPadrao: window.CONFIG_PADRAO, nomeEmpresa: S.emp.nome });
 }
 TELAS.importar = {
   render: function () {
     var I = nvImp(), XL = window.XLSX;
-    var h = ph('Importar planilha', 'Os cadastros da ' + esc(S.emp.nome) + ' de uma vez, a partir de uma planilha do Excel. Código novo é criado; código que já existe só muda no que estiver diferente.', '', 'Cadastros');
+    var h = ph('Importar e exportar planilha', 'Todos os dados da ' + esc(S.emp.nome) + ' numa planilha do Excel: baixe com os dados de hoje, mude o que quiser e importe de volta. Código novo é criado; código que já existe só muda no que estiver diferente.', '', 'Cadastros');
     if (!XL) return h + alerta('err', 'A biblioteca de planilhas não carregou. Confira a internet e recarregue a página.');
-    h += '<div class="grid g2"><div>' + caixa('1. Baixe o modelo', '<p class="desc">Uma aba por tipo de cadastro, com os títulos em português e uma linha de exemplo (ignorada na importação). A aba Configuração já vem com os valores atuais.</p><div class="inline">' + btn('Baixar o modelo (.xlsx)', 'impModelo', '', 'btn-ghost', 'file') + '</div>') + '</div><div>' +
+    h += '<div class="grid g2"><div>' + caixa('1. Baixe a planilha', '<p class="desc">Uma aba por tipo de cadastro: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, NCM, tabelas de preço, preços do terceiro, produção e configuração. <b>Com todos os dados</b>: vem preenchida com o que está na Central hoje; mude o que quiser e importe de volta. <b>Modelo em branco</b>: só os títulos e uma linha de exemplo, para começar do zero.</p><div class="inline imp-baixar">' + btn('Baixar com todos os dados', 'impExportar', '', 'btn-accent', 'download') + btn('Baixar modelo em branco', 'impModelo', '', 'btn-ghost', 'file') + '</div>') + '</div><div>' +
       caixa('2. Envie a planilha preenchida', '<div class="campo"><label for="impArq">Arquivo .xlsx</label><input class="i" type="file" id="impArq" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>' + (I.arquivo ? '<div class="hint hint-fixo">Arquivo lido: <b>' + esc(I.arquivo) + '</b></div>' : '<div class="hint">Nada é gravado antes da conferência e da sua confirmação.</div>')) + '</div></div>';
     if (!I.lido) return h;
     var r = nvPrepararImportacao(I);
@@ -14288,7 +14498,7 @@ TELAS.importar = {
         tabelaBox('O que corrigir', '<table><thead><tr><th>Aba</th><th class="r">Linha</th><th>Problema</th></tr></thead><tbody>' + r.erros.map(function (e) { return '<tr><td class="nw">' + esc(e.aba || '—') + '</td><td class="r">' + (e.linha || '—') + '</td><td>' + esc(e.msg) + '</td></tr>'; }).join('') + '</tbody></table>') + '</div>';
       return h;
     }
-    var ab = ['setor', 'cfg', 'mp', 'func', 'molde', 'prod', 'terceiro'], tot = { novos: 0, alterados: 0 };
+    var ab = ['grupo', 'setor', 'cfg', 'mp', 'func', 'molde', 'prod', 'terceiro', 'producao'], tot = { novos: 0, alterados: 0 };
     ab.forEach(function (a) { tot.novos += r.resumo[a].novos; tot.alterados += r.resumo[a].alterados; });
     h += '<div id="impPrevia">' + tabelaBox('3. Confira o que vai entrar', '<table><thead><tr><th>Aba</th><th class="r">Novos</th><th class="r">Alterados</th><th class="r">Iguais (nada muda)</th></tr></thead><tbody>' +
       ab.map(function (a) { var x = r.resumo[a]; return '<tr><td>' + esc(NOME_ABA_IMP[a]) + '</td><td class="r">' + x.novos + '</td><td class="r">' + x.alterados + '</td><td class="r">' + x.iguais + '</td></tr>'; }).join('') + '</tbody></table>', I.lido.exemplos ? I.lido.exemplos + ' linha(s) de exemplo ignorada(s)' : '');
@@ -14316,13 +14526,50 @@ ACOES.impModelo = function () {
   var cfg = S.emp.config ? clone(S.emp.config) : clone(window.CONFIG_PADRAO || {});
   window.XLSX.writeFile(window.Importar.modelo(window.XLSX, cfg), 'central-de-custos-modelo.xlsx');
 };
+ACOES.impExportar = function () {
+  try {
+    window.XLSX.writeFile(window.Importar.exportar(window.XLSX, S.emp, { hoje: hojeRef(), nomeEmpresa: S.emp.nome }), 'central-de-custos-' + (S.emp.id || 'dados') + '-' + hojeRef() + '.xlsx');
+    toast('Planilha baixada', 'Todos os dados da ' + S.emp.nome + ' de hoje. Mude o que quiser e importe de volta aqui.');
+  } catch (e) { console.error(e); toast('Não foi possível gerar a planilha', e.message, { tipo: 'err', tempo: 8000 }); }
+};
+// grupos e produção não têm data de início: entram depois dos cadastros
+function impAplicarExtras(r) {
+  var feito = [];
+  if (r.grupos) { S.emp.grupos = r.grupos; if (S.proc) S.proc.grupos = null; feito.push('grupos'); }
+  if (r.producao && r.producao.length) {
+    var porDia = {}; r.producao.forEach(function (q) { (porDia[q.data] = porDia[q.data] || []).push(q); });
+    Object.keys(porDia).sort().forEach(function (dia) {
+      var corr = correcaoDia(dia), vem = {}; porDia[dia].forEach(function (q) { vem[q.prod] = q; });
+      S.emp.producao = (S.emp.producao || []).map(function (x) { if (x.data !== dia || !vem[x.prod]) return x; var q = vem[x.prod]; delete vem[x.prod]; return Object.assign({}, x, q); })
+        .concat(Object.keys(vem).map(function (k) { return vem[k]; }));
+      corr();
+    });
+    feito.push(r.producao.length + ' lançamento(s) de produção');
+  }
+  return feito;
+}
+function impAplicarExtrasTexto(r) {
+  var t = []; if (r.grupos) t.push('os grupos'); if (r.producao && r.producao.length) t.push(r.producao.length + ' lançamento(s) de produção');
+  return t.join(' e ');
+}
 ACOES.impData = function (el) { if (/^\d{4}-\d{2}-\d{2}$/.test(el.value)) { nvImp().desde = el.value; renderPainel(); } };
 ACOES.impGravar = function () {
   var I = nvImp(), r = nvPrepararImportacao(I);
   if (!r.ok) { renderPainel(); toast('A planilha tem problemas', 'Veja a lista e corrija antes de importar.', { tipo: 'err' }); return; }
-  if (!r.pedidos.length) { toast('Nada para importar', 'A planilha é igual ao que já está na Central.', { tipo: 'info' }); return; }
+  var temExtra = !!r.grupos || !!(r.producao && r.producao.length);
+  if (!r.pedidos.length && !temExtra) { toast('Nada para importar', 'A planilha é igual ao que já está na Central.', { tipo: 'info' }); return; }
   var novos = 0, alt = 0; Object.keys(r.resumo).forEach(function (a) { novos += r.resumo[a].novos; alt += r.resumo[a].alterados; });
+  if (!r.pedidos.length) {
+    confirmar({ titulo: 'Importar a planilha?', texto: 'Entram ' + impAplicarExtrasTexto(r) + '.', ok: 'Importar' }, function () {
+      var f = impAplicarExtras(r); NV.imp = null;
+      aposGravar('Planilha importada', f.join(' e '), { soAlertas: !r.grupos });
+      renderPainel(); toast('Planilha importada', 'Entrou: ' + f.join(' e ') + '.');
+    });
+    return;
+  }
   gravarMudanca(r.pedidos, function () {
+    var f = temExtra ? impAplicarExtras(r) : [];
+    if (f.length) aposGravar('Planilha importada (grupos e produção)', f.join(' e '), { soAlertas: true });
     NV.imp = null;
     aposGravar('Planilha importada', novos + ' cadastro(s) novo(s) e ' + alt + ' alterado(s), a partir de ' + fmtData(I.desde), { silencioso: true });
     ir(podeRota('pecas') ? 'pecas' : 'produtos', {}, true);
@@ -14485,7 +14732,7 @@ if (CFG_NUVEM) {
   var nvMaterializarOrig = materializarEmp;
   materializarEmp = function () { nvMaterializarOrig(); nvAjustarCfg(S.emp); };
   // Cadastros › Importar planilha (administrador e gestor)
-  MENU.forEach(function (g) { if (g.grupo === 'Cadastros') g.itens.push(['-', 'Planilha'], ['importar', 'Importar planilha']); });
+  MENU.forEach(function (g) { if (g.grupo === 'Cadastros') g.itens.push(['-', 'Planilha'], ['importar', 'Importar e exportar']); });
   ROTA_PAI.importar = 'Cadastros';
 }
 
@@ -15038,7 +15285,7 @@ var MANUAL = [
       '<b>Acompanhe</b> em <a data-man="resumo">Resumo</a>, <a data-man="pecas">Peças</a>, <a data-man="lucro-periodo">Lucro</a> e <a data-man="alertas">Alertas</a>.'
     ],
     extra: '<p><b>Por que nessa ordem?</b> Cada passo usa o anterior: a fórmula da peça precisa das matérias-primas, dos setores e dos moldes; o custo por hora do setor precisa dos funcionários; o lucro precisa dos preços.</p>' +
-      '<p><b>Atalho:</b> com muitos cadastros, use <a data-man="importar">Importar planilha</a>. Você baixa um modelo do Excel, preenche e importa tudo de uma vez.</p>' +
+      '<p><b>Atalho:</b> com muitos cadastros, use <a data-man="importar">Importar e exportar planilha</a>. Você baixa um modelo do Excel (ou os dados de hoje), preenche e importa tudo de uma vez.</p>' +
       '<p><b>Dica:</b> em qualquer tela, o <b>?</b> ao lado de um campo explica o que colocar nele. O <b>?</b> no alto da tela abre este manual no capítulo da tela em que você está.</p>' },
   { id: 'editar', grupo: 'Começar', nome: 'Como editar e gravar',
     oque: 'Um cadastro abre só para ver: os campos ficam travados para ninguém mudar nada sem querer. Para mudar, clique em <b>Editar</b>. O sistema pergunta o que você vai fazer, porque isso muda as contas do passado.',
@@ -15113,7 +15360,7 @@ var MANUAL = [
         ['cod', 'Código', 'O código da peça, o mesmo do seu sistema de vendas. Ex.: VB-OR-2112. Não muda depois de gravado.'],
         ['desc', 'Descrição', 'O nome da peça como aparece para o cliente. Ex.: Anel O-ring NBR 70.'],
         ['tipo', 'Tipo', '<b>Produto acabado</b>: a peça que você vende. <b>Semi-acabado</b>: algo que você fabrica e usa dentro de outras peças, como o composto de borracha.'],
-        ['grupo', 'Grupo', 'Opcional: para organizar e filtrar. Ex.: Anéis, Retentores, Compostos.'],
+        ['grupo', 'Grupo', 'Opcional: para organizar e filtrar. Ex.: Anéis, Retentores, Compostos. Para criar um grupo, use + Novo grupo ou Cadastros › Peças › Grupos.'],
         ['un', 'Unidade', 'Como a peça é contada: un (peça), kg, mil… O custo é por essa unidade.'],
         ['situacao', 'Situação', '<b>Ativo</b>: em produção. <b>Inativo</b>: saiu de linha; continua no histórico e sai da produção do dia e dos alertas.'],
         ['lote', 'Peças por preparação (lote)', 'Quantas peças você faz cada vez que prepara a máquina para esta peça. O tempo da preparação é dividido por elas.'],
@@ -15159,7 +15406,7 @@ var MANUAL = [
     abas: [['Cadastro', [
         ['cod', 'Código', 'O código da matéria-prima, ex.: MP-001. Não muda depois de gravado.'],
         ['desc', 'Descrição', 'O nome do material, ex.: Borracha NBR 33% ACN.'],
-        ['grupo', 'Grupo', 'Opcional: para organizar, ex.: Polímeros, Cargas, Aceleradores.'],
+        ['grupo', 'Grupo', 'Opcional: para organizar e filtrar, ex.: Elastômeros, Cargas. Para criar um grupo, use + Novo grupo ou Cadastros › Peças › Grupos.'],
         ['un', 'Unidade', 'Em que unidade você compra e usa na fórmula: kg, g, L, un… O preço de compra é por essa unidade.'],
         ['situacao', 'Situação', '<b>Ativo</b>: em uso. <b>Inativo</b>: não é mais comprado; deixa de aparecer para escolher nas fórmulas e continua no histórico.'],
         ['fornecedor', 'Fornecedor principal', 'Opcional: de quem você compra.'],
@@ -15307,10 +15554,16 @@ var MANUAL = [
         ['papel', 'Papel', '<b>Administrador</b>: tudo, inclusive acessos. <b>Gestor</b>: tudo, menos acessos. <b>Operador</b>: só lança a produção. <b>Consulta</b>: só vê.', '+'],
         ['senha', 'Senha provisória', 'Mínimo 6 caracteres. Passe para a pessoa; ela troca no primeiro acesso.', '+']]]],
     atencao: ['Gestor e consulta veem custos, e com eles os salários. Para quem só lança produção, use operador.'] },
-  { id: 'importar', rota: 'importar', grupo: 'Ajustes', nome: 'Importar planilha',
-    oque: 'Cadastra ou atualiza muitos itens de uma vez com uma planilha do Excel: matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas.',
-    passos: ['Clique em <b>Baixar o modelo</b>. Cada aba do Excel é um tipo de cadastro, e as colunas têm explicação.', 'Preencha. Números no padrão brasileiro (1.500,25). Apague as linhas de exemplo.', 'Escolha o arquivo e a data em que os valores passam a valer.', 'O sistema confere linha por linha e mostra os erros. Corrija e importe.'],
-    atencao: ['Importar de novo a mesma planilha não muda nada: só o que mudou vira mudança.'] },
+  { id: 'importar', rota: 'importar', grupo: 'Cadastros › Planilha', nome: 'Importar e exportar planilha',
+    oque: 'Todos os dados numa planilha do Excel, nos dois sentidos: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, NCM, tabelas de preço, preços do terceiro, produção e configuração. Baixe com os dados de hoje para conferir ou mudar muita coisa de uma vez, e importe de volta.',
+    passos: ['Clique em <b>Baixar com todos os dados</b> (ou em <b>Baixar modelo em branco</b> para começar do zero). Cada aba do Excel é um tipo de cadastro.', 'Mude ou acrescente o que quiser. Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da primeira linha.', 'Em <b>Envie a planilha</b>, escolha o arquivo. O sistema confere linha por linha e mostra os problemas.', 'Confira o resumo (novos, alterados, iguais), escolha a data em que as mudanças passam a valer e clique em <b>Importar</b>.'],
+    extra: '<p><b>Célula em branco não apaga:</b> deixa o valor como está. Para tirar algo, mude na tela.</p><p><b>Produção:</b> cada linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.</p><p><b>Grupos:</b> na coluna Grupo das matérias-primas e das peças pode ir o código ou o nome do grupo.</p>',
+    atencao: ['Importar de volta a mesma planilha não muda nada: só o que está diferente vira mudança.', 'Não vão na planilha: valores de encargos por funcionário, horas extras além das duas primeiras, outros benefícios por funcionário, taxas digitadas dos setores e as fórmulas dos encargos. Esses se mudam na tela.'] },
+  { id: 'grupos', rota: 'grupos', grupo: 'Cadastros › Peças', nome: 'Grupos',
+    oque: 'Os grupos organizam as matérias-primas e as peças (ex.: Elastômeros, Cargas, Anéis, Retentores) e servem de filtro nas listas. Cada grupo tem um código e um nome; o mesmo grupo pode ter matérias-primas e peças.',
+    passos: ['Clique em <b>Adicionar grupo</b>: o código já vem sugerido.', 'Escreva o nome do grupo.', 'Clique em <b>Gravar grupos</b>.', 'No cadastro da matéria-prima ou da peça, escolha o grupo. Também dá para criar um grupo ali mesmo, em <b>+ Novo grupo</b>.'],
+    colunas: [['Código', 'Um código curto, ex.: 001. Depois de gravado não muda (os cadastros guardam o código).'], ['Nome', 'O nome do grupo, ex.: Elastômeros. Pode mudar quando quiser.'], ['Matérias-primas', 'Quantas matérias-primas estão no grupo. Clique para ver a lista.'], ['Peças', 'Quantas peças estão no grupo. Clique para ver a lista.']],
+    atencao: ['Grupo com itens não pode ser tirado: troque o grupo dos itens antes.'] },
   { id: 'motor', rota: 'motor', grupo: 'Ajustes', nome: 'Como calculamos',
     oque: 'A explicação técnica de cada conta do sistema: de onde vem cada número e em que manual ele se baseia. Útil para conferir com o contador ou com quem conhece o Hipercusto.' },
   { id: 'notificacoes', rota: 'notificacoes', grupo: 'Ajustes', nome: 'Notificações',
@@ -15494,6 +15747,183 @@ function htmlBotaoManual() {
   return '<button class="ico-btn nav-tema nav-ajuda" id="navAjuda" data-a="manualTela" aria-label="Ajuda: manual desta tela" title="Ajuda: manual desta tela">' + ic('help') + '</button>';
 }
 if (typeof ROTAS_VAZIA !== 'undefined') ROTAS_VAZIA.manual = 1;
+
+/* =====================================================================
+   Cadastros › Peças › Grupos — organizam matérias-primas e peças (sem histórico: ficam nos dados da empresa)
+   ===================================================================== */
+ROTA_MODULO.grupos = 'mps';
+function usoGrupos() {
+  var u = {}, conta = function (g, k) { if (!g) return; var x = u[g] = u[g] || { mp: 0, prod: 0 }; x[k]++; };
+  (S.emp.mps || []).forEach(function (m) { conta(m.grupo, 'mp'); });
+  (S.emp.produtos || []).forEach(function (p) { conta(p.grupo, 'prod'); });
+  return u;
+}
+function proximoGrupo(lista) {
+  var max = 0; (lista || []).forEach(function (g) { var m = /^(\d+)$/.exec(String(g.cod || '').trim()); if (m) max = Math.max(max, +m[1]); });
+  return String(max + 1).padStart(3, '0');
+}
+function grupoSalvo(cod) { return (S.emp.grupos || []).some(function (g) { return g.cod === cod; }); }
+// confere a lista: código e nome preenchidos, código sem repetir → texto do problema ou ''
+function problemaGrupos(lista) {
+  var vistos = {};
+  for (var i = 0; i < lista.length; i++) {
+    var c = String(lista[i].cod || '').trim(), d = String(lista[i].desc || '').trim();
+    if (!c) return 'A linha ' + (i + 1) + ' está sem código.';
+    if (!d) return 'O grupo ' + c + ' está sem nome.';
+    if (vistos[c.toLowerCase()]) return 'O código ' + c + ' aparece duas vezes.';
+    vistos[c.toLowerCase()] = 1;
+  }
+  return '';
+}
+TELAS.grupos = {
+  render: function () {
+    var e = S.emp, alt = pode('grupos', 'alterar'), u = usoGrupos();
+    var d = formProc('grupos', function () { return { lista: clone(e.grupos || []) }; });
+    var h = ph('Grupos', 'Os grupos organizam as matérias-primas e as peças e servem de filtro nas listas. Cada grupo tem um código e um nome; o mesmo grupo pode ter matérias-primas e peças.', alt ? btn('Adicionar grupo', 'grpAdd', '', 'btn-accent', 'plus') : '', 'Cadastros › Peças');
+    if (!d.lista.length) h += '<div class="vazio">Nenhum grupo ainda.' + (alt ? ' Clique em <b>Adicionar grupo</b>.' : '') + '</div>';
+    else h += tabelaBox('', '<table class="grp-tab"><thead><tr><th>Código</th><th>Nome</th><th class="r">Matérias-primas</th><th class="r">Peças</th>' + (alt ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      d.lista.map(function (g, i) {
+        var x = u[g.cod] || { mp: 0, prod: 0 }, usado = x.mp + x.prod > 0, fixo = !alt || (grupoSalvo(g.cod) && !g._novo);
+        var lk = function (n, rota, f) { return n ? '<button class="link" data-a="grpVer" data-rota="' + rota + '" data-f="' + f + '" data-cod="' + esc(g.cod) + '">' + n + '</button>' : '<span class="muted">0</span>'; };
+        return '<tr data-i="' + i + '"><td class="cod">' + (fixo ? esc(g.cod) : '<input class="i" data-b="lista.' + i + '.cod" value="' + esc(g.cod) + '" aria-label="Código do grupo" style="max-width:110px">') + '</td>' +
+          '<td>' + (alt ? '<input class="i" data-b="lista.' + i + '.desc" value="' + esc(g.desc || '') + '" aria-label="Nome do grupo" placeholder="Ex.: Elastômeros">' : esc(g.desc || '')) + '</td>' +
+          '<td class="r">' + lk(x.mp, 'mps', 'mpGrupo') + '</td><td class="r">' + lk(x.prod, 'produtos', 'pGrupo') + '</td>' +
+          (alt ? '<td class="r">' + (usado ? '<span class="muted" title="Em uso: troque o grupo dos itens antes de tirar">em uso</span>' : '<button class="btn btn-ghost btn-xs" data-a="grpDel" data-i="' + i + '">' + ic('x') + 'Tirar</button>') + '</td>' : '') + '</tr>';
+      }).join('') + '</tbody></table>');
+    if (alt && d.lista.length) h += '<div class="inline" style="margin-top:14px">' + btn('Gravar grupos', 'grpGravar', '', 'btn-accent', 'save') + btn('Descartar', 'grpDescartar', '', 'btn-ghost') + '</div>';
+    return h;
+  }
+};
+ACOES.grpAdd = function () {
+  var d = S.proc && S.proc.grupos; if (!d) return;
+  d.lista.push({ cod: proximoGrupo(d.lista.concat(S.emp.grupos || [])), desc: '', _novo: true });
+  renderPainel();
+  var x = $$('.grp-tab input[data-b$=".desc"]'); if (x.length) x[x.length - 1].focus();
+};
+ACOES.grpDel = function (el) {
+  var d = S.proc && S.proc.grupos, i = +el.dataset.i; if (!d || !d.lista[i]) return;
+  d.lista.splice(i, 1); renderPainel();
+};
+ACOES.grpDescartar = function () { if (S.proc) S.proc.grupos = null; renderPainel(); };
+ACOES.grpVer = function (el) { S.filtros[el.dataset.f] = el.dataset.cod; ir(el.dataset.rota, {}); };
+ACOES.grpGravar = function () {
+  var d = S.proc && S.proc.grupos; if (!d) return;
+  var p = problemaGrupos(d.lista); if (p) { toast('Confira os grupos', p, { tipo: 'err' }); return; }
+  var u = usoGrupos(), novos = {}; d.lista.forEach(function (g) { novos[String(g.cod).trim()] = 1; });
+  var sumiu = (S.emp.grupos || []).filter(function (g) { return !novos[g.cod] && u[g.cod]; });
+  if (sumiu.length) { toast('Grupo em uso', 'O grupo ' + sumiu[0].cod + ' tem itens: troque o grupo deles antes de tirar.', { tipo: 'err' }); return; }
+  var antes = JSON.stringify(S.emp.grupos || []);
+  S.emp.grupos = d.lista.map(function (g) { return { cod: String(g.cod).trim(), desc: String(g.desc).trim() }; });
+  S.proc.grupos = null;
+  if (JSON.stringify(S.emp.grupos) === antes) { renderPainel(); toast('Nada mudou', 'Os grupos já estavam assim.', { tipo: 'info' }); return; }
+  aposGravar('Grupos alterados', S.emp.grupos.length + ' grupo(s)', { soAlertas: true });
+  renderPainel(); toast('Gravado', 'Grupos atualizados.');
+};
+// "+ Novo grupo" ao lado do campo Grupo (matéria-prima e peça)
+function grupoNovoBtn() {
+  if (!pode('grupos', 'alterar') || (typeof edBloqueado === 'function' && edBloqueado())) return '';
+  return '<button type="button" class="link grp-novo" data-a="grupoNovo">' + ic('plus') + 'Novo grupo</button>';
+}
+ACOES.grupoNovo = function () {
+  janela('Novo grupo', '<div class="grid g2"><div class="campo"><label for="gn-cod">Código</label><input class="i" id="gn-cod" value="' + esc(proximoGrupo(S.emp.grupos)) + '"></div>' +
+    '<div class="campo"><label for="gn-desc">Nome</label><input class="i" id="gn-desc" placeholder="Ex.: Elastômeros"></div></div>' +
+    '<p class="muted" style="margin:6px 0 14px">O grupo fica disponível para as matérias-primas e para as peças. Para mudar ou tirar, use Cadastros › Peças › Grupos.</p>' +
+    '<div class="inline">' + btn('Criar grupo', 'grupoCriar', '', 'btn-accent', 'plus') + btn('Cancelar', 'modalFechar', '', 'btn-ghost') + '</div>');
+  setTimeout(function () { var x = $('#gn-desc'); if (x) x.focus(); }, 30);
+};
+ACOES.grupoCriar = function () {
+  var cod = String(($('#gn-cod') || {}).value || '').trim(), desc = String(($('#gn-desc') || {}).value || '').trim();
+  var p = problemaGrupos((S.emp.grupos || []).concat([{ cod: cod, desc: desc }])); if (p) { toast('Confira o grupo', p, { tipo: 'err' }); return; }
+  $('#modal').innerHTML = '';
+  S.emp.grupos = (S.emp.grupos || []).concat([{ cod: cod, desc: desc }]);
+  var noRascunho = S.draft && S.draftInfo && (S.draftInfo.tipo === 'mp' || S.draftInfo.tipo === 'prod');
+  if (S.proc && S.proc.grupos) S.proc.grupos.lista.push({ cod: cod, desc: desc });
+  aposGravar('Grupo criado', cod + ' — ' + desc, { soAlertas: true });
+  if (noRascunho) { S.draft.grupo = cod; S.sujo = true; }
+  renderPainel();
+  toast('Grupo criado', cod + ' — ' + desc + (noRascunho ? ': já escolhido aqui. Grave o cadastro para valer.' : '.'));
+};
+
+/* =====================================================================
+   Ordenar qualquer tabela clicando no título da coluna: crescente → decrescente → ordem original.
+   Entende R$, %, números brasileiros e datas. A escolha fica guardada ao voltar à tela.
+   Ficam de fora: tabelas que já ordenam sozinhas, contas (linhas de total, em ordem de cálculo) e listas agrupadas.
+   ===================================================================== */
+S.ui.ordem = S.ui.ordem || {};
+var ORD_FORA = /\b(grp|ra-tot|ra-menor|or-foco|tot|sub|det)\b/;
+function ordTexto(el) { return String(el ? el.textContent : '').replace(/\?/g, '').replace(/\s+/g, ' ').trim(); }
+function ordChave(t) { return S.rota + '|' + (S.params && S.params.id || '') + '|' + Array.prototype.map.call(t.querySelectorAll('thead th'), ordTexto).join('¦'); }
+function ordElegivel(t) {
+  if (t.hasAttribute('data-sem-ordem') || t.closest('.manual, .modal-fundo')) return false;
+  var th = t.tHead; if (!th || th.rows.length !== 1 || !t.tBodies.length) return false;
+  if (th.querySelector('th.ord, [data-a], [rowspan], [colspan]')) return false;   // já ordena sozinha ou tem título em duas linhas
+  var rows = t.tBodies[0].rows; if (rows.length < 2) return false;
+  for (var i = 0; i < rows.length; i++) if (ORD_FORA.test(rows[i].className) || rows[i].hasAttribute('data-total')) return false;
+  return true;
+}
+// o valor da célula para ordenar: data (aaaammdd), número (R$, %, 1.234,56, −3) ou texto
+function ordValor(td) {
+  if (!td) return { t: '', n: null };
+  var cb = td.querySelector('input[type=checkbox]');
+  var inp = td.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea');
+  var t = td.hasAttribute('data-ord') ? td.getAttribute('data-ord') : inp ? (inp.tagName === 'SELECT' ? ((inp.options[inp.selectedIndex] || {}).text || '') : inp.value) : ordTexto(td);
+  t = String(t || '').trim();
+  if (!t && cb) return { t: cb.checked ? '1' : '0', n: cb.checked ? 1 : 0 };
+  var d = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(t);
+  if (d) return { t: t, n: +(d[3] + d[2].padStart(2, '0') + d[1].padStart(2, '0') + (d[4] ? d[4].padStart(2, '0') + d[5] : '0000')) };
+  var s = t.replace(/^R\$\s*/, '').replace(/\s*(%|p\.p\.|pp|h|min|pç|peças?|pessoas?|un|kg|g|dias?)$/i, '').trim();
+  var neg = /^[−\-–]/.test(s) || /^\(.*\)$/.test(s);
+  s = s.replace(/^[−\-–+]\s*/, '').replace(/^\((.*)\)$/, '$1').replace(/^R\$\s*/, '');
+  if (/^\d{1,3}(\.\d{3})*(,\d+)?$|^\d+(,\d+)?$/.test(s)) { var n = +s.replace(/\./g, '').replace(',', '.'); return { t: t, n: neg ? -n : n }; }
+  return { t: t, n: null };
+}
+function ordenarTabela(t, col, dir) {
+  var tb = t.tBodies[0], rows = Array.prototype.slice.call(tb.rows);
+  rows.forEach(function (r, i) { if (!r.hasAttribute('data-ord-i')) r.setAttribute('data-ord-i', i); });
+  if (!dir) rows.sort(function (a, b) { return +a.getAttribute('data-ord-i') - +b.getAttribute('data-ord-i'); });
+  else {
+    var vals = rows.map(function (r) { return ordValor(r.cells[col]); });
+    var cheios = vals.filter(function (v) { return v.t !== '' && v.t !== '—'; }), numerica = cheios.length && cheios.filter(function (v) { return v.n !== null; }).length >= cheios.length * 0.6;
+    var par = rows.map(function (r, i) { return { r: r, v: vals[i], i: +r.getAttribute('data-ord-i') }; });
+    par.sort(function (a, b) {
+      var va = numerica ? a.v.n : a.v.t, vb = numerica ? b.v.n : b.v.t;
+      var ea = va === null || va === '' || va === '—', eb = vb === null || vb === '' || vb === '—';
+      if (ea || eb) return ea && eb ? a.i - b.i : ea ? 1 : -1;   // vazios sempre no fim
+      var c = numerica ? va - vb : String(va).localeCompare(String(vb), 'pt-BR', { numeric: true, sensitivity: 'base' });
+      return c ? c * dir : a.i - b.i;
+    });
+    rows = par.map(function (x) { return x.r; });
+  }
+  rows.forEach(function (r) { tb.appendChild(r); });
+  Array.prototype.forEach.call(t.tHead.rows[0].cells, function (c, i) { if (c.classList.contains('ord-g')) c.setAttribute('aria-sort', i === col && dir ? (dir > 0 ? 'ascending' : 'descending') : 'none'); });
+  t.setAttribute('data-ord-ap', col + ':' + dir + ':' + rows.length);
+}
+function ordAplicar(raiz) {
+  Array.prototype.forEach.call((raiz || document).querySelectorAll('table'), function (t) {
+    if (t.hasAttribute('data-ord-ok')) {
+      var e0 = S.ui.ordem[t.getAttribute('data-ord-k')];
+      if (e0 && t.getAttribute('data-ord-ap') !== e0.col + ':' + e0.dir + ':' + t.tBodies[0].rows.length) ordenarTabela(t, e0.col, e0.dir);
+      return;
+    }
+    if (!ordElegivel(t)) return;
+    var k = ordChave(t); t.setAttribute('data-ord-ok', '1'); t.setAttribute('data-ord-k', k);
+    Array.prototype.forEach.call(t.tHead.rows[0].cells, function (c, i) {
+      if (!ordTexto(c)) return;
+      c.classList.add('ord-g'); c.setAttribute('tabindex', '0'); c.setAttribute('aria-sort', 'none'); c.setAttribute('data-ord-col', i);
+      c.setAttribute('title', 'Ordenar por ' + ordTexto(c).toLowerCase());
+    });
+    var e = S.ui.ordem[k]; if (e && e.dir) ordenarTabela(t, e.col, e.dir);
+  });
+}
+function ordClique(th) {
+  var t = th.closest('table'); if (!t) return;
+  var k = t.getAttribute('data-ord-k'), col = +th.getAttribute('data-ord-col'), e = S.ui.ordem[k] || {};
+  var dir = e.col === col ? (e.dir === 1 ? -1 : e.dir === -1 ? 0 : 1) : 1;
+  S.ui.ordem[k] = { col: col, dir: dir };
+  ordenarTabela(t, col, dir);
+}
+document.addEventListener('click', function (ev) { var th = ev.target.closest && ev.target.closest('th.ord-g'); if (th && !ev.target.closest('button, a, input, select')) ordClique(th); });
+document.addEventListener('keydown', function (ev) { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('th.ord-g')) { ev.preventDefault(); ordClique(ev.target); } });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
