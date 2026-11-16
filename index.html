@@ -1184,6 +1184,20 @@ table.imp-itens tr.imp-fora .imp-erro{display:none}
 .imp-rep table{width:auto;min-width:min(100%,420px)}
 .imp-rep table td.c{width:36px}
 
+/* fórmula: o número do passo vira campo no modo de edição (digitar outro número muda a ordem) */
+.fx-num-i{box-sizing:border-box;padding:0;margin:0;text-align:center;line-height:1;cursor:text;outline:none;-webkit-appearance:none;appearance:none;min-width:0}
+.fx-num-i:hover:not(:disabled){box-shadow:0 0 0 3px color-mix(in srgb,var(--tc) 30%,transparent)}
+.fx-num-i:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--tc) 55%,transparent)}
+.fx-num-i:disabled{opacity:1;cursor:default;color:var(--text);-webkit-text-fill-color:var(--text)}
+.fx-item.fx-movido{animation:fxMovido 1.4s ease-out}
+@keyframes fxMovido{from{background:rgba(var(--acc-rgb),.16)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.fx-item.fx-movido{animation:none}}
+/* lista de peças filtrada por matéria-prima: como a matéria-prima entra em cada peça */
+.uso-mp{display:block;margin-top:2px;font-size:11.5px;font-weight:500;color:var(--text3)}
+/* antecipar o início: a nota do fim da janela */
+.ant-nota{font-size:13px;color:var(--text3)}
+.fx-dica-ordem{margin:-4px 0 10px;font-size:12.5px;color:var(--text3)}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -4327,6 +4341,34 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     return montar(tipo, ref, doItem(efetivosNum(emp, opts), tipo, ref), D, opts && opts.avisos);
   }
 
+  // o item como a criação em vigor o fez, para criá-lo de novo noutra data ou com outro código: as linhas com os números
+  // de sempre (as mudanças seguintes acham a linha); os campos sem data com o valor de hoje (a criação nova é a gravada
+  // por último e manda neles). null se o item não existe
+  function itemDaCriacao(emp, tipo, ref) {
+    var grupo = doItem(efetivosNum(emp), tipo, ref), c = criacaoNum(grupo), item = {}, atual;
+    if (!c) return null;
+    aplicar(item, tipo, ref, c.ev, false, null);
+    Object.keys(LISTAS[tipo] || {}).forEach(function (cam) { listaEm(item, cam, true); });
+    atual = montar(tipo, ref, grupo, txt(c.ev.desde), null) || {};
+    (SEM_DATA[tipo] || []).forEach(function (k) { var v = ler(atual, k); gravar(item, k, v === undefined ? null : v); });
+    // citação a um cadastro que não existe no dia da criação (o código dele foi corrigido depois): vale a que o item tem nesse dia
+    var criacoes = criacoesEm(emp), D0 = txt(c.ev.desde), noDia = {};
+    referenciasDoItem(tipo, atual).forEach(function (r) { noDia['#' + r.onde] = r.cod; });
+    referenciasDoItem(tipo, item).forEach(function (r) {
+      var w = criacoes[r.tipo + '|' + r.cod];
+      if ((w && txt(w.ev.desde) <= D0) || !tem(noDia, '#' + r.onde)) return;
+      escreverCitacao(tipo, item, r.onde, noDia['#' + r.onde]);
+    });
+    return copia(item);
+  }
+  // grava o valor no lugar de uma citação: 'molde', 'limpeza.setor' ou o campo de uma linha, 'itens[L3].ref'
+  function escreverCitacao(tipo, item, onde, valor) {
+    var m = /^([\w.]+)\[([^\]]+)\]\.(\w+)$/.exec(onde), l, p;
+    if (!m) { gravar(item, onde, valor); return; }
+    l = listaEm(item, m[1], false); p = l ? posicao(l, (LISTAS[tipo] || {})[m[1]] || 'id', m[2]) : -1;
+    if (p >= 0) gravar(l[p], m[3], valor);
+  }
+
   // uma linha por (peça, data) da tabela do terceiro, de todas as datas; na mesma data vale a gravada por último
   function precosTerceiro(ef) {
     var ganha = {}, linhas = [];
@@ -4418,7 +4460,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     return res;
   }
 
-  // a mensagem da primeira citação NOVA de um cadastro que não existe em "desde"; null quando não há.
+  // a recusa da primeira citação NOVA de um cadastro que não existe em "desde"; null quando não há.
   // Nova = o item não a tinha em "desde" antes da mudança ("anterior"; ausente num cadastro novo). Quem já citava algo que
   // ainda não existe (um molde comprado depois) segue gravando os outros campos
   function falhaDeReferencia(emp, tipo, depois, desde, anterior) {
@@ -4430,9 +4472,17 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (ja[chave(r)]) continue;
       w = criacoes[r.tipo + '|' + r.cod];
       if (w && txt(w.ev.desde) <= desde) continue;
-      return w ? r.cod + ' só existe desde ' + dataBR(w.ev.desde) + '.' : r.cod + ' não existe em ' + dataBR(desde) + '.';
+      if (!w) return falha(r.cod + ' não existe em ' + dataBR(desde) + '.');
+      return falhaAntes(r.cod + ' só existe desde ' + dataBR(w.ev.desde) + '.', r.tipo, r.cod, desde, w.ev.desde);
     }
     return null;
+  }
+  // recusa por usar (ou mudar) um cadastro antes de ele existir: diz qual e desde quando ele precisaria valer
+  // (quem chama pode oferecer antecipar o início dele)
+  function falhaAntes(motivo, tipo, cod, desde, criado) {
+    var f = falha(motivo);
+    f.antecipar = { tipo: tipo, ref: cod, desde: desde, criado: txt(criado) };
+    return f;
   }
 
   // req = {tipo, ref, desde, por, hoje, em?, obs?, base?, novo?, campos?, linhas?, corrige?}
@@ -4451,7 +4501,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (!criar && !existe && tipo !== 'terceiro') return falha(ref + ' não existe.');
     if (criar && ehData(req.hoje) && desde > req.hoje) return falha('Um cadastro novo não pode começar no futuro.');
     c = criacaoNum(grupo);
-    if (c && desde < txt(c.ev.desde)) return falha(ref + ' só existe desde ' + dataBR(c.ev.desde) + ': a mudança não pode valer antes disso.');
+    if (c && desde < txt(c.ev.desde)) return falhaAntes(ref + ' só existe desde ' + dataBR(c.ev.desde) + ': a mudança não pode valer antes disso.', tipo, ref, desde, c.ev.desde);
     if (criar) {
       numerar(tipo, req.novo, piso(tipo, null, emp, ref));
       campos = folhasDaCriacao(tipo, req.novo);
@@ -4497,9 +4547,10 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (!vazio(req.obs)) ev.obs = req.obs;
     // o que a mudança passa a citar (o item como ficaria em "desde" já com ela, menos o que ele citava antes) tem de existir nessa data.
     // Sem mudança nada é citado de novo: fica em 'Nada mudou.'
-    if (!nada && tipo !== 'terceiro') {
+    // req.semConferir: cópia de um item com outro código (as mesmas citações que ele já tinha nas mesmas datas)
+    if (!nada && tipo !== 'terceiro' && !req.semConferir) {
       motivo = falhaDeReferencia(emp, tipo, itemEm(emp, tipo, ref, desde, { extras: [ev] }), desde, item);
-      if (motivo) return falha(motivo);
+      if (motivo) return motivo;
     }
     if (nada) return falha('Nada mudou.');
     return registrar(emp, ev, req.hoje);
@@ -4788,7 +4839,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     folhas: folhas, garantirIds: garantirIds, novoIdLinha: novoIdLinha, diferenca: diferenca,
     adicionar: adicionar, cancelar: cancelar, efetivos: efetivos, itemEm: itemEm, estadoEm: estadoEm,
     materializar: materializar, migrar: migrar,
-    criacao: criacao, existeEm: existeEm, statusEvento: statusEvento, historicoCampo: historicoCampo, mudancasDoItem: mudancasDoItem,
+    criacao: criacao, itemDaCriacao: itemDaCriacao, existeEm: existeEm, statusEvento: statusEvento, historicoCampo: historicoCampo, mudancasDoItem: mudancasDoItem,
     ultimaMudanca: ultimaMudanca, programadas: programadas, jaUsado: jaUsado, citadoresTodos: citadoresTodos, referenciasDoItem: referenciasDoItem, janelas: janelas, registrarProducao: registrarProducao,
     fronteiras: fronteiras, hojeDe: hojeDe
   };
@@ -5160,6 +5211,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     return { ok: true, eventos: eventos };
   }
 
+  // confere o lote num rascunho, sem gravar nada: {ok: true} ou a recusa do primeiro pedido que não passa
+  function conferir(emp, reqs) { var x = rascunho(emp, reqs); return x.ok ? { ok: true } : x; }
+
   function cancelarMudanca(emp, req) {
     req = req || {};
     var r = aplicarMudancas(emp, [{ cancela: req.id, por: req.por, hoje: req.hoje, em: req.em, obs: req.obs, semEfeito: req.semEfeito }]);
@@ -5329,7 +5383,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
 
   return {
     fonte: fonte, dependencias: dependencias, efeitoDe: efeitoDe, compararNaData: compararNaData,
-    aplicarMudanca: aplicarMudanca, aplicarMudancas: aplicarMudancas, cancelarMudanca: cancelarMudanca,
+    aplicarMudanca: aplicarMudanca, aplicarMudancas: aplicarMudancas, cancelarMudanca: cancelarMudanca, conferir: conferir,
     impacto: impacto, valorPrincipal: valorPrincipal, serie: serie, degraus: degraus, ponte: ponte
   };
 });
@@ -5516,9 +5570,13 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (d.gravar.length) passos.push(function () { return api.gravarProducao(empresa, d.gravar); });
     if (d.tirar.length) {
       if (escreve) {
-        var porDia = {};
-        d.tirar.forEach(function (x) { (porDia[x.data] = porDia[x.data] || []).push(x.prod); });
-        Object.keys(porDia).forEach(function (dia) { passos.push(function () { return api.apagarProducao(empresa, dia, porDia[dia]); }); });
+        var porDia = {}, porPeca = {};
+        d.tirar.forEach(function (x) { (porDia[x.data] = porDia[x.data] || []).push(x.prod); (porPeca[x.prod] = porPeca[x.prod] || []).push(x.data); });
+        if (api.apagarProducaoDaPeca && Object.keys(porPeca).length < Object.keys(porDia).length)
+          Object.keys(porPeca).forEach(function (prod) {
+            for (var i = 0; i < porPeca[prod].length; i += 100) (function (ds) { passos.push(function () { return api.apagarProducaoDaPeca(empresa, prod, ds); }); })(porPeca[prod].slice(i, i + 100));
+          });
+        else Object.keys(porDia).forEach(function (dia) { passos.push(function () { return api.apagarProducao(empresa, dia, porDia[dia]); }); });
       } else passos.push(function () { return api.gravarProducao(empresa, d.tirar.map(function (x) { return { data: x.data, prod: x.prod }; })); });
     }
     if (d.dados && escreve) passos.push(function () { return api.gravarDados(empresa, d.dados); });
@@ -5686,6 +5744,13 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
             return papelEm(empresa).then(function (p) { return nao(mensagem(r.error, p)); }, function () { return nao(mensagem(r.error)); });
           });
         }).then(null, function (e) { return nao(mensagem(e)); });
+      },
+
+      // apaga os lançamentos de uma peça nos dias dados (o código da peça foi corrigido). Só administrador e gestor
+      apagarProducaoDaPeca: function (empresa, prod, datas) {
+        return cli.from('producao').delete().eq('empresa_id', empresa).eq('prod', txt(prod)).in('data', (datas || []).map(dataDe)).select('*').then(function (r) {
+          return r.error ? nao(mensagem(r.error)) : ok({ apagadas: (r.data || []).length });
+        }, function (e) { return nao(mensagem(e)); });
       },
 
       // apaga o dia (ou só as peças dadas). Só administrador e gestor
@@ -5984,6 +6049,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         emp.producao = (emp.producao || []).filter(function (x) { return !(dia && x.data === dia) && !chave2['#' + x.data + '|' + x.prod]; })
           .concat(novos.filter(function (x) { return !zerada(x); }));
         return promessa(gravarOuFalhar(db, { producao: novos }));
+      },
+      apagarProducaoDaPeca: function (empresa, prod, datas) {
+        var db = ler(), emp = empresaDe(db, empresa), ds = {}, antes;
+        if (!emp) return promessa(nao('Empresa não encontrada: ' + empresa + '.'));
+        (datas || []).forEach(function (x) { ds['#' + dataDe(x)] = true; });
+        antes = (emp.producao || []).length;
+        emp.producao = (emp.producao || []).filter(function (x) { return !(x.prod === prod && ds['#' + x.data]); });
+        return promessa(gravarOuFalhar(db, { apagadas: antes - emp.producao.length }));
       },
       apagarProducao: function (empresa, data, prods) {
         var db = ler(), emp = empresaDe(db, empresa), d = dataDe(data), antes;
@@ -9172,7 +9245,7 @@ function primeiraRota(emp) {
 // ação → operação exigida no módulo da tela atual
 var ACAO_OP = { cadDesligar: 'alterar', novoProd: 'incluir', cfgGravar: 'alterar', diaLimpar: 'excluir', limpReajGravar: 'alterar', limpPrecoDesfazer: 'alterar', limpTerceiroGravar: 'alterar', limpSetorGravar: 'alterar' };
 // ações que mexem no registro aberto (exigem incluir, se é novo, ou alterar)
-var ACAO_EDICAO = { fxSetupV: 1, fxSetupU: 1, fxQtdV: 1, fxQtdU: 1, benAdd: 1, benDel: 1, fxAdd: 1, fxDel: 1, fxMover: 1, fxTipo: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
+var ACAO_EDICAO = { fxSetupV: 1, fxSetupU: 1, fxQtdV: 1, fxQtdU: 1, benAdd: 1, benDel: 1, fxAdd: 1, fxDel: 1, fxMover: 1, fxOrdem: 1, fxTipo: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
 var ACAO_ADMIN = { restaurarTudo: 1, restaurarEmpresa: 1, dadosCopiar: 1, dadosImportar: 1, dadosColar: 1, usrNovo: 1, usrEditar: 1, usrCancelar: 1, usrPerfil: 1, usrCopiarEmp: 1, usrCopiarDe: 1, usrDir: 1, usrGravar: 1, usrExcluir: 1 };
 var ACAO_ROTA = { detalharTaxa: 'setores' };
 var ACAO_SEM_LOGIN = { lgDemo: 1, lgAlterarSenha: 1, modalFechar: 1, restaurarTudo: 1 };
@@ -9566,6 +9639,8 @@ function cadastroAcoes(o) {
     var novo = S.draftInfo.novo;
     if (!validarRegistro(o.lista(), o.chave, o.validar)) return;
     var ref = d[o.chave], det = ref + (d.desc || d.nome ? ' — ' + (d.desc || d.nome) : '');
+    // código corrigido (Editar › Corrigir um erro): troca em todas as datas e em tudo que usa o cadastro
+    if (!novo && orig && ref !== S.draftInfo.cod) { trocarCodigo(o, orig, d); return; }
     // a mudança vale a partir de hoje; cadastro novo é criado hoje (o registro guarda o que mudou, campo a campo)
     var req = { tipo: o.tipo, ref: ref, desde: hojeRef(), base: novo ? null : clone(orig), novo: novo ? semIdsDeLinha(o.tipo, clone(d)) : clone(d) };
     var junto = o.extrasGravar ? o.extrasGravar(d, ref, novo) || [] : [];
@@ -9602,6 +9677,122 @@ function cadastroAcoes(o) {
 }
 // por que o cadastro não pode ser excluído sem mudar o passado (null: pode). Já usado = citado em fórmula (em qualquer data),
 // com alguma mudança registrada depois de criado, ou existindo antes de hoje (já entrou no custo de algum dia que passou)
+// o código fica liberado só em "Corrigir um erro" (ele vale em todas as datas) e para quem pode mudar o passado
+function trocaCodigoLiberada() {
+  var di = S.draftInfo;
+  return !!(di && !di.novo && /^(mp|setor|func|prod|molde)$/.test(di.tipo) && edAtivo() && S.ui.ed.modo === 'corrigir' && podeDataPassada());
+}
+function fCampoCodigo(rotulo, chave, valor, novo) {
+  var lib = !novo && trocaCodigoLiberada();
+  return fCampo(rotulo, fTexto(chave, valor, { ro: !novo && !lib }), lib ? 'Pode corrigir: o código novo vale em todas as datas e em tudo que usa este cadastro.' : '');
+}
+function seqDoId(id) { var m = /(\d+)$/.exec(String(id || '')); return m ? +m[1] : 0; }
+// os pedidos que trocam o código A por B em todas as datas: B nasce na data de A como A era nesse dia e, a cada data
+// em que A mudou, muda igual (o histórico refeito pelos valores de cada data, já com as citações corrigidas: copiar as
+// mudanças uma a uma traria de volta códigos que também foram corrigidos). Na peça, a tabela do terceiro vai junto.
+// Quem cita A passa a citar B em cada data em que citava; A sai do registro
+function planoTrocaCodigo(tipo, A, B, corr) {
+  var emp = S.emp, cri = R.criacao(emp, tipo, A), chave = R.CHAVE[tipo], ef = R.efetivos(emp);
+  var prev = cri ? R.itemEm(emp, tipo, A, cri.desde) : null, item, datas = {}, vivo = {};
+  if (!prev) return { ok: false, motivo: A + ' não está no registro de mudanças.' };
+  var obs = 'Código corrigido: era ' + A, fora = 'Código corrigido para ' + B, reqs = [], cancelar = [];
+  var res = { ok: true, desde: cri.desde, mudancas: 0, terceiro: 0, producao: 0, citadores: [] };
+  function obsDe(D) {
+    var l = [];
+    ef.forEach(function (ev) { if (ev.tipo === tipo && ev.ref === A && ev.desde === D && ev.obs && l.indexOf(ev.obs) < 0) l.push(ev.obs); });
+    return (l.length ? l.join(' · ') + ' · ' : '') + obs;
+  }
+  // 1. B como A era em cada data (semConferir: são as mesmas citações que A já tinha nessas datas)
+  item = clone(prev); item[chave] = B;
+  reqs.push({ tipo: tipo, ref: B, desde: cri.desde, base: null, novo: item, obs: obs, semEfeito: true, efeitoZero: true, semConferir: true });
+  ef.forEach(function (ev) {
+    vivo['#' + ev.id] = true;
+    if (ev.tipo === tipo && ev.ref === A) { datas[ev.desde] = true; if (ev.acao === 'alterar') cancelar.push(ev.id); }
+  });
+  Object.keys(datas).sort().forEach(function (D) {
+    if (D <= cri.desde) return;
+    var cur = R.itemEm(emp, tipo, A, D), base = clone(prev), novo = clone(cur);
+    base[chave] = B; novo[chave] = B;
+    if (R.diferenca(tipo, clone(base), clone(novo))) { reqs.push({ tipo: tipo, ref: B, desde: D, base: base, novo: novo, obs: obsDe(D), semEfeito: true, efeitoZero: true, semConferir: true }); res.mudancas++; }
+    prev = cur;
+  });
+  // a tabela do terceiro da peça: preço por data, na ordem em que foi gravado (não cita nada: vai como está)
+  if (tipo === 'prod') (emp.mudancas || []).filter(function (ev) { return ev && vivo['#' + ev.id] && ev.tipo === 'terceiro' && ev.ref === A && ev.acao === 'alterar'; })
+    .sort(function (x, y) { return seqDoId(x.id) - seqDoId(y.id); })
+    .forEach(function (ev) {
+      reqs.push({ tipo: 'terceiro', ref: B, desde: ev.desde, campos: clone(ev.campos || {}), obs: ev.obs || obs, semEfeito: true, efeitoZero: true });
+      cancelar.push(ev.id); res.terceiro++;
+    });
+  // 2. as outras correções feitas agora no formulário (já divididas pela data de cada campo), no código novo
+  (corr || []).forEach(function (q0) {
+    var q = copiaRasa(q0); delete q._n; q.ref = B;
+    if (q.base) { q.base = clone(q.base); if (q.tipo === tipo) q.base[chave] = B; }
+    if (q.novo) { q.novo = clone(q.novo); if (q.tipo === tipo) q.novo[chave] = B; }
+    reqs.push(q);
+  });
+  // 3. quem cita A passa a citar B, em cada data em que citava (a partir de quando A existe). A correção de uma data
+  // entra depois de tudo o que foi gravado nela e vale até a próxima mudança do item, que já vê B (extras)
+  var cit = R.citadoresTodos(emp)[tipo + '|' + A] || {}, extras = [];
+  Object.keys(cit).sort().forEach(function (k) {
+    var i = k.indexOf('|'), T = k.slice(0, i), C = k.slice(i + 1), datas = {}, mexeu = false;
+    if ((T === tipo && C === A) || !R.criacao(emp, T, C)) return;
+    datas[cri.desde] = true;
+    ef.forEach(function (ev) { if (ev.tipo === T && ev.ref === C && ev.desde >= cri.desde) datas[ev.desde] = true; });
+    Object.keys(datas).sort().forEach(function (D) {
+      var it = R.itemEm(emp, T, C, D, { extras: extras }), campos = {}, linhas = {}, n = 0;
+      if (!it) return;
+      R.referenciasDoItem(T, it).forEach(function (r) {
+        if (r.tipo !== tipo || r.cod !== A) return;
+        var m = /^([\w.]+)\[([^\]]+)\]\.(\w+)$/.exec(r.onde);   // itens[L3].ref, aloc[A1].setor
+        if (m) { if (m[2].charAt(0) === '#') return; (linhas[m[1]] = linhas[m[1]] || []).push({ op: 'set', id: m[2], campo: m[3], valor: B }); }
+        else campos[r.onde] = B;
+        n++;
+      });
+      if (!n) return;
+      reqs.push({ tipo: T, ref: C, desde: D, campos: campos, linhas: linhas, obs: 'Código ' + A + ' corrigido para ' + B, semEfeito: true, efeitoZero: true });
+      extras.push({ id: 'troca' + extras.length, tipo: T, ref: C, acao: 'alterar', desde: D, campos: campos, linhas: linhas, em: '9999-12-31T23:59:59.999Z' });
+      mexeu = true;
+    });
+    if (mexeu) res.citadores.push(C);
+  });
+  // 4. A sai: as mudanças dele e a criação (o código A fica livre)
+  cancelar.forEach(function (id) { reqs.push({ cancela: id, obs: fora, semEfeito: true, efeitoZero: true }); });
+  reqs.push({ cancela: cri.id, obs: fora, semEfeito: true, efeitoZero: true });
+  if (tipo === 'prod') res.producao = (emp.producao || []).filter(function (x) { return x && x.prod === A; }).length;
+  res.reqs = reqs;
+  return res;
+}
+function trocarCodigo(o, orig, d) {
+  var tipo = o.tipo, A = S.draftInfo.cod, B = d[o.chave];
+  if (!trocaCodigoLiberada()) { toast('O código não muda assim', 'Para corrigir o código, clique em Editar › Corrigir um erro.', { tipo: 'err', tempo: 7000 }); return; }
+  if (R.criacao(S.emp, tipo, B)) { toast('Código já existe', 'Já há um cadastro com o código ' + B + '.', { tipo: 'err' }); return; }
+  // as outras correções do formulário: calculadas no código antigo (cada campo desde quando valia) e passadas para o novo
+  var dA = clone(d), corr = [];
+  dA[o.chave] = A;
+  if (R.diferenca(tipo, clone(orig), clone(dA))) corr = dividirCorrecao({ tipo: tipo, ref: A, base: clone(orig), novo: dA });
+  if (o.extrasGravar) (o.extrasGravar(dA, A, false) || []).forEach(function (q) { corr = corr.concat(dividirCorrecao(q)); });
+  var p = planoTrocaCodigo(tipo, A, B, corr), nCorr = 0, li = [], nc;
+  if (!p.ok) { toast('Não foi possível corrigir o código', p.motivo, { tipo: 'err', tempo: 8000 }); return; }
+  corr.forEach(function (q) { nCorr += contarCampos(q); });
+  nc = p.citadores.length;
+  if (p.mudancas) li.push(p.mudancas + (p.mudancas === 1 ? ' mudança do histórico passa' : ' mudanças do histórico passam') + ' para ' + B);
+  if (nc) li.push((nc === 1 ? '1 cadastro que usa ' + A + ' passa' : nc + ' cadastros que usam ' + A + ' passam') + ' a usar ' + B + ': ' + p.citadores.slice(0, 6).join(', ') + (nc > 6 ? ' e mais ' + (nc - 6) : ''));
+  if (p.terceiro) li.push(p.terceiro + (p.terceiro === 1 ? ' preço' : ' preços') + ' da limpeza no terceiro');
+  if (p.producao) li.push(p.producao + (p.producao === 1 ? ' lançamento' : ' lançamentos') + ' de produção');
+  if (nCorr) li.push(nCorr + (nCorr === 1 ? ' outro valor corrigido' : ' outros valores corrigidos') + ' agora');
+  var html = '<p><b>' + esc(A) + '</b> passa a se chamar <b>' + esc(B) + '</b> em todas as datas, desde que o cadastro existe (' + fmtData(p.desde) + '), com o mesmo histórico.</p>' +
+    (li.length ? '<ul class="ed-lista">' + li.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+    '<p>' + (nCorr ? 'Só as outras correções mudam o custo.' : 'O custo das peças não muda.') + ' No registro de mudanças, ' + esc(A) + ' aparece como corrigido para ' + esc(B) + '.</p>';
+  confirmar({ titulo: 'Trocar o código ' + A + ' por ' + B + '?', html: html, ok: 'Trocar o código', perigo: true }, function () {
+    gravarMudancaBase(p.reqs, function () {
+      if (tipo === 'prod') (S.emp.producao || []).forEach(function (x) { if (x && x.prod === A) x.prod = B; });
+      S.ui.ed = null; S.params = { id: B }; S.draft = null; S.draftInfo = null;
+      aposGravar(o.nome + ' com código corrigido', A + ' → ' + B);
+      toast('Código corrigido', A + ' agora é ' + B + ', em todas as datas.');
+      renderPainel();
+    }, { semHoje: true, semAntecipar: true });
+  });
+}
 function motivoNaoExcluir(tipo, cod) {
   var c = R.criacao(S.emp, tipo, cod), hoje = hojeRef();
   if (R.jaUsado(S.emp, tipo, cod)) return 'Já foi usado em fórmulas.';
@@ -9712,7 +9903,7 @@ function telaMpEditor(id) {
   var h = ph(novo ? 'Nova matéria-prima' : esc(d.cod) + ' — ' + esc(d.desc), novo ? 'Preencha os dados e grave.' : (d.grupo ? 'Grupo ' + esc(nomeGrupo(d.grupo)) + ' · ' : '') + 'unidade: ' + esc(unidadeExt(d.un, 1)), botoesEdicao('mp'), 'Cadastros › Matérias-primas');
   h += '<div class="grid g-side"><div>' +
     caixa('Identificação', '<div class="grid g3">' +
-      fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
+      fCampoCodigo('Código', 'cod', d.cod, novo) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
       fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + grupoNovoBtn()) +
       fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
@@ -9813,7 +10004,7 @@ function telaSetorEditor(id) {
   var h = ph(novo ? 'Novo setor' : esc(d.cod) + ' — ' + esc(d.desc), 'Mão de obra ' + fmtR2(T.mod.taxa) + '/h · máquina ' + fmtR2(T.maq.taxa) + '/h' + (d.cod === setorLimpeza() ? ' · setor da limpeza interna' : ''), botoesEdicao('setor'), 'Cadastros › Setores e máquinas');
   h += abas('setor', [['dados', 'Dados e taxas'], ['maquinas', 'Máquinas e equipamentos (' + (d.equipamentos || []).length + ')'], ['mod', 'Mão de obra'], ['comp', 'Composição da taxa']].concat(novo ? [] : [['hist', 'Histórico']]), aba, aba === 'hist' ? 'hist' : '');
   if (aba === 'dados') {
-    h += '<div class="grid g-side"><div>' + caixa('Dados do setor', '<div class="grid g3">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
+    h += '<div class="grid g-side"><div>' + caixa('Dados do setor', '<div class="grid g3">' + fCampoCodigo('Código', 'cod', d.cod, novo) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
       fCampo('Horas de operação por mês', fNum('horasOperacao', d.horasOperacao, { suf: 'h' }), 'Ex.: 2 turnos × 8 h × 22 dias = 352 h.') + '</div>') +
       caixa('Taxa digitada (opcional)', '<p class="desc">Deixe em branco para o sistema calcular. Preencha só se quiser fixar uma taxa.</p><div class="grid g3">' +
         fCampo('Mão de obra', fNum('manual.mod', d.manual.mod, { ph: 'calcular', suf: 'R$/h' })) + fCampo('Máquinas', fNum('manual.maq', d.manual.maq, { ph: 'calcular', suf: 'R$/h' })) + '</div>') +
@@ -9998,7 +10189,7 @@ function htmlIdentFunc(d, novo) {
     fCampo('Código', fTexto('mat', d.mat, { ro: true })) +
     fCampo('Função', fTexto('nome', d.nome, { ph: 'Ex.: Operador de injetora' }), '', 'span2') +
     fCampo('Pessoas nessa função', fNum('qtd', d.qtd, { suf: 'pessoas', ph: '1' }), 'Salário, horas, encargos e benefícios abaixo são de cada pessoa. No setor entra: pessoas × custo de 1 pessoa.') + '</div>';
-  return h + '<div class="grid g3">' + fCampo('Matrícula', fTexto('mat', d.mat, { ro: !novo })) + fCampo('Nome', fTexto('nome', d.nome), '', 'span2') + fCampo('Cargo', fTexto('cargo', d.cargo || '')) +
+  return h + '<div class="grid g3">' + fCampoCodigo('Matrícula', 'mat', d.mat, novo) + fCampo('Nome', fTexto('nome', d.nome), '', 'span2') + fCampo('Cargo', fTexto('cargo', d.cargo || '')) +
     fCampo('Admissão', '<input class="i" type="date" id="b-admissao" data-b="admissao" value="' + esc(d.admissao || '') + '">') + '</div>';
 }
 ACOES.alocAdd = function () { S.draft.aloc.push({ setor: '', pct: Math.max(0, 100 - S.draft.aloc.reduce(function (t, a) { return t + n(a.pct); }, 0)) }); S.sujo = true; renderPainel(); };
@@ -10028,7 +10219,7 @@ cadastroAcoes({
     var lp = d.limpeza || {};
     PROD_TERC = null;
     if (lp.modo === 'terceiro' && !vazio(lp.precoTerceiro)) {
-      var atual = M.precoTerceiroEm(S.emp, d.cod, hojeRef());
+      var atual = M.precoTerceiroEm(S.emp, (S.draftInfo && !S.draftInfo.novo && S.draftInfo.cod) || d.cod, hojeRef());
       if (!atual || +atual.valor !== n(lp.precoTerceiro)) PROD_TERC = { valor: n(lp.precoTerceiro), desde: hojeRef() };
     }
     delete lp.precoTerceiro; delete lp.precoDesde;
@@ -10072,17 +10263,41 @@ function badgeMargem(m) {
 }
 function telaProdLista() {
   var e = S.emp, f = S.filtros;
-  var lista = ordenarPor(e.produtos, 'cod').filter(function (p) { return (!f.pTipo || p.tipo === f.pTipo) && (!f.pGrupo || p.grupo === f.pGrupo) && (!f.pSit || (p.situacao || 'ativo') === f.pSit) && bate(p.cod + ' ' + p.desc, f.pBusca); });
+  var usoMp = f.pMp ? usoDaMp(f.pMp) : null;   // filtro por matéria-prima: {peça: como ela entra}
+  var lista = ordenarPor(e.produtos, 'cod').filter(function (p) { return (!f.pTipo || p.tipo === f.pTipo) && (!f.pGrupo || p.grupo === f.pGrupo) && (!f.pSit || (p.situacao || 'ativo') === f.pSit) && (!usoMp || usoMp[p.cod]) && bate(p.cod + ' ' + p.desc, f.pBusca); });
   var h = ph('Produtos e fórmulas', 'Peças (produtos acabados), kits e semi-acabados. A fórmula — a ficha técnica — define o custo; molde e limpeza entram por peça.', btn('Incluir semi-acabado', 'novoProd', 'data-tipo="SA"', 'btn-ghost', 'plus') + btn('Incluir produto', 'novoProd', 'data-tipo="PA"', 'btn-accent', 'plus'));
-  h += '<div class="tbl-tools">' + filtroTexto('pBusca') + filtroSelect('pTipo', 'Tipo', [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']]) + filtroSelect('pGrupo', 'Grupo', e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + filtroSelect('pSit', 'Situação', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']]) + '</div>';
+  h += '<div class="tbl-tools">' + filtroTexto('pBusca') + filtroSelect('pTipo', 'Tipo', [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']]) + filtroSelect('pGrupo', 'Grupo', e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + filtroSelect('pMp', 'Matéria-prima', ordenarPor(e.mps, 'cod').map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; }), 'Todas') + filtroSelect('pSit', 'Situação', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']]) + '</div>';
   h += legendaCats();
   h += tabelaBox('', '<table><thead><tr><th>Código</th><th>Descrição</th><th>Tipo</th><th>Molde</th><th>Limpeza</th><th class="r">Custo unitário</th><th>Composição</th><th class="r">Preço médio das tabelas</th><th class="r">Margem</th><th>Situação</th></tr></thead><tbody>' +
     (lista.length ? lista.map(function (p) {
       var c = custoDe(p.cod), m = margemPeca(p, c);
       var sit = c.erro ? badge('custo incompleto', 'b-crit') : c.semFormula ? badge('sem fórmula', 'b-warn') : p.situacao && p.situacao !== 'ativo' ? badge(p.situacao, 'b-mute') : badge('ativo', 'b-ok');
-      return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(p.cod) + '" tabindex="0"><td class="cod">' + esc(p.cod) + '</td><td class="pri">' + esc(p.desc) + '</td><td>' + tipoTag(p.tipo) + '</td><td class="cod">' + esc(p.molde || '—') + '</td><td>' + txtLimpeza(p) + '</td><td class="r"><b>' + (c.erro || c.semFormula ? fmtR(c.total) : orig(fmtR(c.total), od('custo', p.cod, hojeRef()))) + '</b></td><td>' + miniBarra(c.cats, 110) + '</td><td class="r">' + (m ? fmtR(m.preco) : '<span class="muted">—</span>') + '</td><td class="r">' + (m ? fmtP(m.pct, 1) : '<span class="muted">—</span>') + '</td><td>' + sit + '</td></tr>';
+      return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(p.cod) + '" tabindex="0"><td class="cod">' + esc(p.cod) + '</td><td class="pri">' + esc(p.desc) + (usoMp ? '<span class="uso-mp">' + esc(usoMp[p.cod]) + '</span>' : '') + '</td><td>' + tipoTag(p.tipo) + '</td><td class="cod">' + esc(p.molde || '—') + '</td><td>' + txtLimpeza(p) + '</td><td class="r"><b>' + (c.erro || c.semFormula ? fmtR(c.total) : orig(fmtR(c.total), od('custo', p.cod, hojeRef()))) + '</b></td><td>' + miniBarra(c.cats, 110) + '</td><td class="r">' + (m ? fmtR(m.preco) : '<span class="muted">—</span>') + '</td><td class="r">' + (m ? fmtP(m.pct, 1) : '<span class="muted">—</span>') + '</td><td>' + sit + '</td></tr>';
     }).join('') : linhaVazia(e.produtos.length, 10, 'Nenhum produto ainda. Clique em Incluir produto.', 'Nenhum produto encontrado.')) + '</tbody></table>', lista.length + ' de ' + e.produtos.length);
   return h;
+}
+// as peças que usam a matéria-prima: na fórmula, reaproveitada ou dentro de um semi-acabado (ou kit), em qualquer nível
+function usoDaMp(cod) {
+  var r = {}, prods = S.emp.produtos || [], fila = [], vistos = {}, c;
+  prods.forEach(function (p) {
+    (p.itens || []).forEach(function (it) {
+      if (it.tipo === 'MP' && it.ref === cod) r[p.cod] = 'na fórmula';
+      else if (it.reapMp === cod && !r[p.cod]) r[p.cod] = 'reaproveitamento';
+    });
+  });
+  Object.keys(r).forEach(function (k) { if (r[k] === 'na fórmula') fila.push(k); });
+  while (fila.length) {
+    c = fila.shift(); if (vistos[c]) continue; vistos[c] = true;
+    prods.forEach(function (p) {
+      (p.itens || []).forEach(function (it) {
+        if ((it.tipo !== 'SA' && it.tipo !== 'PA') || it.ref !== c) return;
+        if (!r[p.cod] || r[p.cod] === 'reaproveitamento') r[p.cod] = 'pelo ' + c;
+        else if (r[p.cod].indexOf('pelo ') === 0 && (', ' + r[p.cod].slice(5) + ',').indexOf(', ' + c + ',') < 0) r[p.cod] += ', ' + c;
+        fila.push(p.cod);
+      });
+    });
+  }
+  return r;
 }
 ACOES.novoProd = function (el) {
   var e = S.emp, tipo = el.dataset.tipo;
@@ -10149,7 +10364,7 @@ function htmlFxItem(it, i, L, d) {
   var p = 'itens.' + i + '.';
   var temErro = L && L.erro;
   var tipos = ['MP', 'SA', 'PA', 'SP'].concat(it.tipo === 'PS' ? ['PS'] : []).map(function (t) { return [t, nomeTipoItem(t)]; });
-  var head = '<div class="fx-head"><div class="fx-num">' + (i + 1) + '</div>' +
+  var head = '<div class="fx-head">' + fxNumero(i, d) +
     '<select class="i" data-ch="fxTipo" data-i="' + i + '" aria-label="Tipo do item">' + tipos.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === it.tipo ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
     fSelect(p + 'ref', it.ref, opcoesItem(it.tipo, d.cod), { vazio: 'Escolha o item', rr: true, id: 'fx-ref-' + i }) +
     '<div class="fx-q">' + (it.tipo === 'SP' ? '<div class="tempo-box"><select class="i" data-ch="fxModo" data-i="' + i + '" aria-label="Formato do tempo"' + (S.emp.config.tempos.usuarioEscolhe ? '' : ' disabled') + '>' + MODOS_TEMPO_CURTO.map(function (m) { return '<option value="' + m[0] + '"' + (it.tempo && it.tempo.modo === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select>' + (it.tempo && it.tempo.modo === 'sex' ? fTexto(p + 'tempo.valor', vazio(it.tempo.valor) ? '' : hmDoTexto(it.tempo.valor), { ph: '0:00', id: 'fx-t-' + i }) : fNum(p + 'tempo.valor', it.tempo ? it.tempo.valor : '', { ph: '0', id: 'fx-t-' + i })) + '</div>'
@@ -10293,7 +10508,7 @@ function telaProdEditor(id) {
   if (!n(d.lote) && c.temSetup) h += alerta('err', 'Peças por preparação (lote) em branco: a preparação está sendo cobrada inteira em cada peça. Informe quantas peças são feitas a cada preparação na aba Dados.');
   if (aba === 'dados' || aba === 'precos') {
     var moldes = (e.moldes || []).map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; });
-    h += caixa('Dados do produto', '<div class="grid g4">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
+    h += caixa('Dados do produto', '<div class="grid g4">' + fCampoCodigo('Código', 'cod', d.cod, novo) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') + fCampo('Tipo', fSelect('tipo', d.tipo, [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']], { rr: true })) +
       fCampo('Grupo', fSelect('grupo', d.grupo, e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; }), { vazio: 'Sem grupo' }) + grupoNovoBtn()) + fCampo('Unidade', fSelect('un', d.un, U.opcoes(), { rr: true })) +
       fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']])) +
       fCampo('Peças por preparação (lote)', fNum('lote', d.lote, { suf: 'peças' }), 'Quantas peças você costuma produzir cada vez que prepara a máquina. O custo da preparação é dividido por esse número: 2 h × R$ 80/h = R$ 160 ÷ 4.000 peças = R$ 0,04 por peça; com 500 peças, R$ 0,32.', 'span2') + fCampo('Quantidade de formulação', fNum('qf', d.qf === '' || d.qf == null ? 1 : d.qf), 'A fórmula é informada para esta quantidade. Ex.: lote de mistura de 182 kg.') +
@@ -10307,7 +10522,8 @@ function telaProdEditor(id) {
       (d.tipo === 'PA' ? caixa('Preços e impostos', htmlPrecosProd(d, c)) : caixa('Preços e impostos', '<p class="desc">Semi-acabados não são vendidos: o custo deles entra no produto que os usa.</p>')) + '</div>';
   } else if (aba === 'formula') {
     h += (n(d.qf) !== 1 ? alerta('info', 'Quantidades e tempos desta fórmula valem para <b>' + fmtQ(n(d.qf)) + ' ' + esc(unidadeExt(d.un, n(d.qf))) + '</b> (quantidade de formulação). O custo é dividido por ' + fmtQ(n(d.qf)) + '.') : '') +
-      '<p class="sub muted" style="margin:-4px 0 12px;max-width:95ch">A ordem dos itens é a sequência de fabricação: o refugo de uma etapa perde tudo o que foi gasto até ela. A preparação é dividida pelas peças por preparação (' + fmtQ(n(d.lote)) + '). Molde e limpeza entram fora da fórmula, na aba Dados.</p>';
+      '<p class="sub muted" style="margin:-4px 0 12px;max-width:95ch">A ordem dos itens é a sequência de fabricação: o refugo de uma etapa perde tudo o que foi gasto até ela. Para mudar a ordem, clique em Editar e digite o número do passo (ou use as setas). A preparação é dividida pelas peças por preparação (' + fmtQ(n(d.lote)) + '). Molde e limpeza entram fora da fórmula, na aba Dados.</p>';
+    if (d.itens.length > 1 && !rascunhoSomenteLeitura() && !edBloqueado()) h += '<p class="fx-dica-ordem">Para mudar a ordem dos passos, digite o número no círculo (ou use as setas ao lado).</p>';
     h += '<div class="fx-lista">' + (d.itens.length ? d.itens.map(function (it, i) { return htmlFxItem(it, i, c.linhas[i], d); }).join('') : '<div class="vazio card">A fórmula está vazia. Adicione matérias-primas, componentes e setores.</div>') + '</div>';
     h += '<div class="fx-add">' + btn('Matéria-prima', 'fxAdd', 'data-tipo="MP"', 'btn-ghost btn-sm', 'plus') + btn('Semi-acabado', 'fxAdd', 'data-tipo="SA"', 'btn-ghost btn-sm', 'plus') + btn('Produto (kit)', 'fxAdd', 'data-tipo="PA"', 'btn-ghost btn-sm', 'plus') + btn('Etapa de produção (tempo no setor)', 'fxAdd', 'data-tipo="SP"', 'btn-ghost btn-sm', 'plus') + '</div>';
   } else if (aba === 'custo') {
@@ -10352,7 +10568,36 @@ ACOES.fxAdd = function (el) {
   var sel = document.getElementById('fx-ref-' + (S.draft.itens.length - 1)); if (sel) sel.focus();
 };
 ACOES.fxDel = function (el) { S.draft.itens.splice(+el.dataset.i, 1); S.sujo = true; renderPainel(); };
-ACOES.fxMover = function (el) { var i = +el.dataset.i, j = i + (+el.dataset.d), a = S.draft.itens; if (j < 0 || j >= a.length) return; var t = a[i]; a[i] = a[j]; a[j] = t; S.sujo = true; renderPainel(); };
+ACOES.fxMover = function (el) { var i = +el.dataset.i, j = i + (+el.dataset.d), a = S.draft.itens; if (j < 0 || j >= a.length) return; moverPassoFx(i, j, false); };
+// o número do passo: campo para digitar outra posição (fica travado, com cara de número, só para ver)
+function fxNumero(i, d) {
+  if (d.itens.length < 2 || rascunhoSomenteLeitura()) return '<div class="fx-num">' + (i + 1) + '</div>';
+  return '<input class="fx-num fx-num-i" type="text" inputmode="numeric" maxlength="3" id="fx-n-' + i + '" value="' + (i + 1) + '" data-ch="fxOrdem" data-i="' + i + '" aria-label="Passo ' + (i + 1) + ': digite outro número para mudar a ordem" title="Digite outro número para mudar a ordem do passo" autocomplete="off">';
+}
+ACOES.fxOrdem = function (el) {
+  var a = S.draft && S.draft.itens, i = +el.dataset.i, v = String(el.value || '').trim(), j = parseInt(v, 10);
+  if (!a || !a[i] || S._fxMovendo) return;   // o campo que sai da tela no meio da troca não move de novo
+  if (!/^\d+$/.test(v) || !(j >= 1)) { el.value = i + 1; toast('Número do passo', 'Digite um número de 1 a ' + a.length + '.', { tipo: 'warn' }); return; }
+  j = Math.min(j, a.length) - 1;
+  if (j === i) { el.value = i + 1; return; }
+  moverPassoFx(i, j, true);
+};
+// leva o passo i para a posição j; o refugo de uma etapa vale sobre o que vem antes dela, então a ordem pode mudar o custo
+function moverPassoFx(i, j, focar) {
+  var a = S.draft.itens, antes = custoFxAgora(), x, depois, el, inp;
+  x = a.splice(i, 1)[0]; a.splice(j, 0, x);
+  S.sujo = true; S._fxMovendo = true;
+  try { renderPainel(); } finally { S._fxMovendo = false; }
+  depois = custoFxAgora();
+  el = document.getElementById('fx-' + j);
+  if (el) {
+    el.classList.add('fx-movido'); setTimeout(function () { el.classList.remove('fx-movido'); }, 1500);
+    if (focar) { inp = document.getElementById('fx-n-' + j); if (inp) inp.focus(); }
+  }
+  if (antes !== null && depois !== null && Math.abs(depois - antes) > 1e-9)
+    toast('A ordem mudou o custo', 'De ' + fmtR(antes) + ' para ' + fmtR(depois) + ' por peça: o refugo de uma etapa vale sobre o que vem antes dela na lista.', { tipo: 'info', tempo: 8000 });
+}
+function custoFxAgora() { try { var c = custoDraftProd(); return c && !c.erro ? c.total : null; } catch (e) { return null; } }
 ACOES.fxTipo = function (el) {
   var it = S.draft.itens[+el.dataset.i], tipo = el.value, cfg = S.emp.config.tempos;
   it.tipo = tipo; it.ref = '';
@@ -11132,7 +11377,7 @@ function telaMoldeEditor(id) {
   S._moldePrev = previsaoMoldes();
   var novo = S.draftInfo.novo;
   var h = ph(novo ? 'Novo molde' : esc(d.cod) + ' — ' + esc(d.desc), novo ? 'Preencha e grave. Depois ligue o molde às peças.' : (d.setor ? 'Setor ' + esc(d.setor) + ' · ' : '') + fmtQ(n(d.cavidades)) + ' cavidades', botoesEdicao('molde'), 'Cadastros › Moldes');
-  h += '<div class="grid g-side"><div>' + caixa('Dados do molde', '<div class="grid g3">' + fCampo('Código', fTexto('cod', d.cod, { ro: !novo })) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
+  h += '<div class="grid g-side"><div>' + caixa('Dados do molde', '<div class="grid g3">' + fCampoCodigo('Código', 'cod', d.cod, novo) + fCampo('Descrição', fTexto('desc', d.desc), '', 'span2') +
     fCampo('Setor (injeção ou prensa)', fSelect('setor', d.setor || '', e.setores.map(function (s) { return [s.cod, s.cod + ' — ' + s.desc]; }), { vazio: 'Escolha o setor' }), 'O refugo da etapa deste setor corrige o custo por peça boa.') +
     fCampo('Situação', fSelect('situacao', d.situacao || 'ativo', [['ativo', 'Ativo'], ['inativo', 'Inativo']])) + fCampo('Data de compra', '<input class="i" type="date" id="b-compra" data-b="compra" value="' + esc(d.compra || '') + '">') + '</div>') +
     caixa(verValorMolde() ? 'Custo e vida útil' : 'Vida útil', '<div class="grid g4">' + (verValorMolde() ? fCampo('Valor do molde', fNum('valor', d.valor, { suf: 'R$', ph: '0' })) : '') + fCampo('Cavidades', fNum('cavidades', d.cavidades, { ph: '0' }), 'Peças por injetada.') +
@@ -11484,17 +11729,67 @@ TELAS.motor = {
 // Preenche quem grava (por) e o hoje de cada pedido; na recusa avisa o motivo e não chama "depois"
 // opts.semHoje: lote grande (importar planilha): não refaz o estado de hoje a cada mudança, só no fim (aposGravar)
 function gravarMudanca(reqs, depois, opts) {
-  var por = S.usuario ? S.usuario.login : 'Sistema', hoje = hojeRef(), r;
-  var lista = (reqs || []).map(function (q) { var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); c.por = por; if (!(opts && opts.semHoje)) c.hoje = hoje; return c; });
-  // versão oficial, empresa ainda sem configuração no registro: a configuração padrão entra no mesmo lote, antes
-  if (NUVEM && NUVEM.pedidosComConfig) lista = NUVEM.pedidosComConfig(lista);
+  var lista = pedidosProntos(reqs, opts), r;
   try { r = H.aplicarMudancas(S.emp, lista); }
   catch (e) { console.error(e); r = { ok: false, motivo: 'Erro ao gravar: ' + e.message }; }
   // gravar sem ter mudado nada não é erro: só avisa, sem vermelho
   if (!r.ok && r.motivo === 'Nada mudou.') { S.sujo = false; toast('Nada mudou', 'Não há alteração para gravar.', { tipo: 'info' }); return false; }
+  // usa (ou muda) um cadastro antes de ele existir: quem pode mudar o passado escolhe antecipar o início dele
+  if (!r.ok && r.antecipar && !(opts && (opts.semAntecipar || opts.semHoje)) && podeDataPassada()) return oferecerAntecipar(reqs, depois, opts, r);
   if (!r.ok) { toast('Não foi possível gravar', r.motivo, { tipo: 'err', tempo: 7000 }); return false; }
+  // pedidos que só mudam a forma do registro (antecipar o início, corrigir o código): nenhuma peça muda de custo por eles
+  lista.forEach(function (q, i) { if (q && q.efeitoZero && r.eventos[i] && r.eventos[i].efeito === undefined) r.eventos[i].efeito = { pecas: 0 }; });
   if (depois) depois(r.eventos);
   return true;
+}
+// cada pedido com quem grava (por) e o hoje. Versão oficial, empresa ainda sem configuração no registro: a configuração
+// padrão entra no mesmo lote, antes
+function pedidosProntos(reqs, opts) {
+  var por = S.usuario ? S.usuario.login : 'Sistema', hoje = hojeRef();
+  var lista = (reqs || []).map(function (q) { var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); c.por = por; if (!(opts && opts.semHoje)) c.hoje = hoje; return c; });
+  if (NUVEM && NUVEM.pedidosComConfig) lista = NUVEM.pedidosComConfig(lista);
+  return lista;
+}
+// "CX-G — Caixa grande", para as mensagens
+function nomeCadastro(tipo, ref) {
+  var x = porCod(S.emp[R.COLECAO[tipo]] || [], ref, R.CHAVE[tipo]);
+  return ref + (x && (x.desc || x.nome) ? ' — ' + (x.desc || x.nome) : '');
+}
+// antecipar o início: a criação é cancelada e feita de novo, igual, na data pedida. As mudanças gravadas no cadastro
+// depois continuam valendo nas datas delas
+function reqsAntecipar(a) {
+  var c = R.criacao(S.emp, a.tipo, a.ref), item = c ? R.itemDaCriacao(S.emp, a.tipo, a.ref) : null;
+  if (!item) return [];
+  var obs = 'Início antecipado de ' + fmtData(c.desde) + ' para ' + fmtData(a.desde);
+  return [{ cancela: c.id, obs: obs, semEfeito: true, efeitoZero: true },
+    { tipo: a.tipo, ref: a.ref, desde: a.desde, base: null, novo: item, obs: obs, semEfeito: true, efeitoZero: true }];
+}
+// "X só existe desde…": junta tudo o que precisa antecipar (um cadastro pode puxar outro: o semi-acabado novo usa a
+// matéria-prima nova), confere o lote inteiro num rascunho e pergunta uma vez só
+function oferecerAntecipar(reqs, depois, opts, r) {
+  var ant = [], x = r, voltas = 0;
+  function pos(a) { for (var i = 0; i < ant.length; i++) if (ant[i].tipo === a.tipo && ant[i].ref === a.ref) return i; return -1; }
+  function pedidos() { var pre = []; ant.forEach(function (a) { pre = pre.concat(reqsAntecipar(a)); }); return pre.concat(reqs); }
+  while (x && !x.ok && x.antecipar && voltas++ < 12) {
+    var a = x.antecipar, i = pos(a), c = R.criacao(S.emp, a.tipo, a.ref), y;
+    if (!c) break;
+    if (i === 0 && ant[0].desde <= a.desde) break;   // já vai antes de tudo e já começa nessa data: antecipar não resolve
+    if (i >= 0) { y = ant.splice(i, 1)[0]; if (a.desde < y.desde) y.desde = a.desde; }
+    else y = { tipo: a.tipo, ref: a.ref, desde: a.desde, era: c.desde };
+    ant.unshift(y);   // o que falta vai antes de quem precisa dele
+    try { x = H.conferir(S.emp, pedidosProntos(pedidos(), opts)); }
+    catch (e) { console.error(e); x = { ok: false, motivo: 'Erro ao conferir: ' + e.message }; }
+  }
+  if (!x || !x.ok) { toast('Não foi possível gravar', (x && x.motivo) || r.motivo, { tipo: 'err', tempo: 8000 }); return false; }
+  var um = ant.length === 1;
+  var html = (um ? '<p><b>' + esc(nomeCadastro(ant[0].tipo, ant[0].ref)) + '</b> começa a valer em <b>' + fmtData(ant[0].era) + '</b>, mas o que você está gravando precisa dele desde <b>' + fmtData(ant[0].desde) + '</b>.</p>'
+      : '<p>O que você está gravando precisa destes cadastros antes da data em que eles começam a valer:</p><ul class="ed-lista">' + ant.map(function (a) { return '<li><b>' + esc(nomeCadastro(a.tipo, a.ref)) + '</b>: de ' + fmtData(a.era) + ' para ' + fmtData(a.desde) + '</li>'; }).join('') + '</ul>') +
+    '<p>Antecipar faz ' + (um ? 'o cadastro valer' : 'os cadastros valerem') + ' desde essa data, com os mesmos dados. O que já foi gravado ' + (um ? 'nele' : 'neles') + ' depois continua igual.</p>' +
+    '<p class="ant-nota">Se ' + (um ? 'ele' : 'eles') + ' só começou a ser usado agora, clique em Cancelar e registre a mudança a partir de hoje (Editar › Registrar uma mudança).</p>';
+  confirmar({ titulo: um ? 'Antecipar o início de ' + ant[0].ref + '?' : 'Antecipar o início de ' + ant.length + ' cadastros?', html: html, ok: 'Antecipar e gravar' }, function () {
+    (typeof gravarMudancaBase === 'function' ? gravarMudancaBase : gravarMudanca)(pedidos(), depois, Object.assign({}, opts || {}, { semAntecipar: true }));
+  });
+  return false;
 }
 // cadastro novo: as linhas das listas vão sem número, para o registro numerar (um número nunca volta)
 function semIdsDeLinha(tipo, item) {
@@ -16083,6 +16378,8 @@ var MANUAL = [
       'Clique em <b>Confirmar</b>. Uma janela mostra o resumo do que muda; confira e confirme. Para desistir, clique em <b>Cancelar</b>.'
     ],
     extra: '<p><b>Cadastro novo:</b> nas listas, use o botão <b>Incluir</b>. O cadastro novo começa a valer hoje.</p>' +
+      '<p><b>Cadastro novo numa correção do passado:</b> se uma correção ou uma mudança com data passada usar um cadastro feito depois dessa data (ex.: a caixa cadastrada hoje que já ia na peça), o sistema oferece <b>antecipar o início</b> dele para essa data. O cadastro passa a valer desde lá, com os mesmos dados.</p>' +
+      '<p><b>Código errado:</b> em <b>Editar › Corrigir um erro</b> o código fica liberado. O código novo vale em todas as datas, com o mesmo histórico, e tudo o que usava o antigo (fórmulas, moldes, funcionários, produção lançada, preço do terceiro) passa para o novo. O custo não muda.</p>' +
       '<p><b>Errou ao gravar?</b> Em <a data-man="historico">Histórico</a> você abre a mudança e pode desfazê-la.</p>' +
       '<p><b>Quem pode:</b> administrador e gestor mudam cadastros. Só eles mudam datas passadas. Quem é “consulta” só vê; o “operador” só lança a produção.</p>' },
 
@@ -16141,9 +16438,9 @@ var MANUAL = [
   { id: 'produtos', rota: 'produtos', grupo: 'Cadastros › Peças', nome: 'Produtos e fórmulas',
     oque: 'Cada peça que a empresa faz e a fórmula dela (a ficha técnica): quais matérias-primas leva, em quais setores passa e por quanto tempo. É da fórmula que sai o custo de fazer. Também ficam aqui o molde, a limpeza e os preços de venda da peça.',
     antes: 'Matérias-primas, setores (com funcionários) e moldes cadastrados.',
-    passos: ['Clique em <b>Incluir</b> e preencha a aba <b>Cadastro</b>: código, descrição, tipo, unidade, molde e limpeza.', 'Na aba <b>Fórmula</b>, adicione os itens na ordem da produção: primeiro os materiais, depois as etapas (mistura, injeção, rebarbação…).', 'Em cada etapa, informe o tempo no setor, as pessoas, as máquinas, o refugo e a preparação da máquina.', 'Na aba <b>Preços e impostos</b>, escolha a NCM e coloque o preço em cada tabela.', 'Grave e confira o custo por peça.'],
+    passos: ['Clique em <b>Incluir</b> e preencha a aba <b>Cadastro</b>: código, descrição, tipo, unidade, molde e limpeza.', 'Na aba <b>Fórmula</b>, adicione os itens na ordem da produção: primeiro os materiais, depois as etapas (mistura, injeção, rebarbação…).', 'Em cada etapa, informe o tempo no setor, as pessoas, as máquinas, o refugo e a preparação da máquina.', 'Na aba <b>Preços e impostos</b>, escolha a NCM e coloque o preço em cada tabela.', 'Grave e confira o custo por peça.', 'Para mudar a ordem dos passos da fórmula, clique em <b>Editar</b> e digite o número do passo (ou use as setas). A ordem conta no custo: o refugo de uma etapa vale sobre o que vem antes dela.', 'Na lista de peças, o filtro <b>Matéria-prima</b> mostra as peças que usam uma matéria-prima: na fórmula, reaproveitada ou dentro de um semi-acabado.'],
     abas: [['Cadastro', [
-        ['cod', 'Código', 'O código da peça, o mesmo do seu sistema de vendas. Ex.: VB-OR-2112. Não muda depois de gravado.'],
+        ['cod', 'Código', 'O código da peça, o mesmo do seu sistema de vendas. Ex.: VB-OR-2112. Gravou errado? Em Editar › Corrigir um erro o código pode ser trocado: vale em todas as datas e em tudo que usa o cadastro.'],
         ['desc', 'Descrição', 'O nome da peça como aparece para o cliente. Ex.: Anel O-ring NBR 70.'],
         ['tipo', 'Tipo', '<b>Produto acabado</b>: a peça que você vende. <b>Semi-acabado</b>: algo que você fabrica e usa dentro de outras peças, como o composto de borracha.'],
         ['grupo', 'Grupo', 'Opcional: para organizar e filtrar. Ex.: Anéis, Retentores, Compostos. Para criar um grupo, use + Novo grupo ou Cadastros › Peças › Grupos.'],
@@ -16176,7 +16473,7 @@ var MANUAL = [
     antes: 'O setor onde o molde trabalha (injeção ou prensa).',
     passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, setor e situação.', 'Aba Custo e vida útil: valor, cavidades e vida útil (em injetadas).', 'Grave e ligue o molde às peças (Produtos e fórmulas › Molde).'],
     abas: [['Cadastro', [
-        ['cod', 'Código', 'O código do molde, ex.: MD-V01. Não muda depois de gravado.'],
+        ['cod', 'Código', 'O código do molde, ex.: MD-V01. Gravou errado? Em Editar › Corrigir um erro o código pode ser trocado: vale em todas as datas e em tudo que usa o cadastro.'],
         ['desc', 'Descrição', 'O que o molde faz, ex.: Molde O-ring 2-112, 64 cavidades.'],
         ['setor', 'Setor (injeção ou prensa)', 'Onde o molde trabalha.', '+'],
         ['situacao', 'Situação', '<b>Ativo</b>: em uso. <b>Inativo</b>: aposentado; sai dos avisos de vida útil. Se alguma peça ainda usa este molde, o custo dele continua entrando nela: troque o molde da peça.'],
@@ -16192,7 +16489,7 @@ var MANUAL = [
     oque: 'Tudo o que você compra e usa nas peças: borrachas, cargas, aceleradores, insertos metálicos, embalagens. O sistema tira do preço de compra os impostos que a empresa recupera (créditos) e soma frete e outros gastos. O resultado é o custo líquido, usado nas fórmulas.',
     passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, unidade (kg, g, L, un…).', 'Aba Preço e impostos: o preço da nota, os impostos da nota e se cada um gera crédito, e o frete.', 'Grave e confira o custo líquido no cartão ao lado.'],
     abas: [['Cadastro', [
-        ['cod', 'Código', 'O código da matéria-prima, ex.: MP-001. Não muda depois de gravado.'],
+        ['cod', 'Código', 'O código da matéria-prima, ex.: MP-001. Gravou errado? Em Editar › Corrigir um erro o código pode ser trocado: vale em todas as datas e em tudo que usa o cadastro.'],
         ['desc', 'Descrição', 'O nome do material, ex.: Borracha NBR 33% ACN.'],
         ['grupo', 'Grupo', 'Opcional: para organizar e filtrar, ex.: Elastômeros, Cargas. Para criar um grupo, use + Novo grupo ou Cadastros › Peças › Grupos.'],
         ['un', 'Unidade', 'Em que unidade você compra e usa na fórmula: kg, g, L, un… O preço de compra é por essa unidade.'],
@@ -16252,7 +16549,7 @@ var MANUAL = [
     oque: 'Cada lugar da fábrica por onde a peça passa: mistura, injeção, rebarbação, embalagem… Cada setor tem um custo por hora: o de quem trabalha nele (mão de obra) e o das máquinas dele (depreciação, energia, manutenção). A peça paga esse custo pelo tempo que passa no setor.',
     passos: ['Clique em <b>Incluir</b>.', 'Aba Dados e taxas: código, descrição e horas de operação por mês.', 'Aba Máquinas e equipamentos: adicione cada máquina com o valor, a vida útil, as horas por mês e os gastos mensais.', 'Grave. Depois cadastre os funcionários e coloque cada um no setor (Funcionários › Alocação nos setores).', 'Volte ao setor e confira a hora de mão de obra e de máquina no cartão ao lado.'],
     abas: [['Dados e taxas', [
-        ['cod', 'Código', 'Um código curto para o setor, ex.: S03. Não muda depois de gravado.'],
+        ['cod', 'Código', 'Um código curto para o setor, ex.: S03. Gravou errado? Em Editar › Corrigir um erro o código pode ser trocado: vale em todas as datas e em tudo que usa o cadastro.'],
         ['desc', 'Descrição', 'O nome do setor, ex.: Injeção de borracha.'],
         ['horasOperacao', 'Horas de operação por mês', 'Quantas horas o setor trabalha no mês: turnos × horas por turno × dias. Os gastos gerais do setor são divididos por essas horas.', '+'],
         ['manual.mod', 'Mão de obra (taxa digitada)', 'Deixe em branco: o sistema calcula pelo custo das pessoas do setor. Preencha só para forçar um valor por hora (ex.: setor novo, ainda sem pessoas cadastradas).'],
