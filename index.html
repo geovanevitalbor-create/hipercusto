@@ -1197,6 +1197,15 @@ table.imp-itens tr.imp-fora .imp-erro{display:none}
 /* antecipar o início: a nota do fim da janela */
 .ant-nota{font-size:13px;color:var(--text3)}
 .fx-dica-ordem{margin:-4px 0 10px;font-size:12.5px;color:var(--text3)}
+/* notas da peça */
+.notas-txt{width:100%;min-height:260px;resize:vertical;line-height:1.55;font-size:14px;padding:12px 14px}
+.notas-pe{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
+.notas-quem{font-size:12.5px;color:var(--text3)}
+.notas-aviso{display:none;color:var(--st-warn,#d9a21b);font-weight:600}
+.notas-pe.sujo .notas-aviso{display:inline}
+.notas-ler{white-space:pre-wrap;line-height:1.55;font-size:14px;color:var(--text)}
+.nota-ic{display:inline-flex;vertical-align:-2px;margin-left:4px;color:var(--text3)}
+.nota-ic svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
@@ -3986,7 +3995,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     setor: ['cod', 'desc'],
     func: ['mat', 'nome', 'cargo', 'obs', 'admissao'],
     molde: ['cod', 'desc', 'obs', 'compra'],
-    prod: ['cod', 'desc', 'tipo', 'grupo', 'un', 'obs'],
+    prod: ['cod', 'desc', 'tipo', 'grupo', 'un', 'obs', 'notas'],
     cfg: ['empresa', 'dataReferencia', 'recalculo', 'diasAlertaPreco', 'ggfBaseMeses', 'tempos.fabricacao', 'tempos.setup', 'tempos.usuarioEscolhe'],
     terceiro: []
   };
@@ -6538,14 +6547,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, colunas: [
       ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
       ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1'], ['Peças por preparação (lote)', 'lote', 'numero', false, 'Quantas peças são feitas a cada preparação da máquina', ['Lote econômico']], ['Preço na tabela geral (R$)', 'preco', 'numero', false, 'Só produto acabado. As outras tabelas ficam na aba Tabelas de preço', ['Preço de venda (R$)']], ['NCM', 'ncm', 'ncm', false, '8 dígitos, cadastrado na aba NCM'], ['Molde', 'molde', 'texto'],
-      ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Só na limpeza interna (obrigatório). Limpeza no terceiro: o preço por peça vai na aba Preços do terceiro'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'],
+      ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Só na limpeza interna (obrigatório). Limpeza no terceiro: o preço por peça vai na aba Preços do terceiro'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'], ['Notas', 'notas', 'texto', false, 'Texto livre sobre a peça (não entra no custo)'],
       ['Tipo da linha', 'lTipo', 'tipoLinha', false, 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção. Uma linha da planilha por linha da fórmula'],
       ['Item da linha (código)', 'lRef', 'texto'], ['Quantidade', 'lQtd', 'numero', false, 'Para matéria-prima e componentes, na quantidade de formulação'],
       ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção. Ou use uma das colunas de tempo da etapa'], ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'], ['Pessoas', 'lHomens', 'numero'], ['Máquinas', 'lMaquinas', 'numero'], ['Refugo (%)', 'lRefugo', 'numero'], ['Fase', 'lFase', 'texto'],
       ['Tempo da etapa (hh:mm)', 'lTempoSex', 'horas', false, 'Só etapa de produção, no lugar das peças por hora: o tempo para a quantidade de formulação, ex.: 1:30'], ['Tempo da etapa (horas centesimais)', 'lTempoCen', 'numero', false, 'Ex.: 1,5 = uma hora e meia'],
       ['Preparação (minutos)', 'lSetupMin', 'numero'], ['Preparação (horas centesimais)', 'lSetupCen', 'numero'],
       ['Reaproveitamento (matéria-prima)', 'lReapMp', 'texto', false, 'O código da matéria-prima que volta para o estoque'], ['Quantidade reaproveitada', 'lReapQtd', 'numero']],
-      exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', '40169300', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção', '', '', '', '', '', ''] },
+      exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', '40169300', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', '', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção', '', '', '', '', '', ''] },
     { id: 'ncm', nome: 'NCM', chave: 'cod', colunas: [
       ['Código NCM', 'cod', 'ncm', true, '8 dígitos, ex.: 4016.93.00'], ['Descrição', 'desc', 'texto'], ['IPI (%)', 'ipi', 'numero', false, 'Por fora: soma na nota, não é receita'],
       ['ICMS (%) — exceção', 'icms', 'numero', false, 'Em branco = o ICMS do estado de cada tabela'], ['PIS (%) — exceção', 'pis', 'numero', false, 'Em branco = o geral'], ['COFINS (%) — exceção', 'cofins', 'numero', false, 'Em branco = o geral']],
@@ -7011,7 +7020,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       return grupos;
     }
     var setores = agrupar('setor', ['desc', 'horasOperacao', 'postos', 'manualMod', 'manualMaq', 'dt1', 'dt2', 'dt3', 'dt4', 'dt5']);
-    var pecas = agrupar('prod', ['desc', 'tipo', 'grupo', 'un', 'qf', 'lote', 'preco', 'ncm', 'molde', 'limpezaModo', 'limpezaPph', 'situacao', 'obs', 'descComp']);
+    var pecas = agrupar('prod', ['desc', 'tipo', 'grupo', 'un', 'qf', 'lote', 'preco', 'ncm', 'molde', 'limpezaModo', 'limpezaPph', 'situacao', 'obs', 'descComp', 'notas']);
     /* ---- grupos: cria ou renomeia pelo código; matérias-primas e peças podem citar o código ou o nome ---- */
     var gruposNovos = copia(emp.grupos || []), gruposAntes = JSON.stringify(gruposNovos), vistosG = {};
     (L.grupo || []).forEach(function (l) {
@@ -7501,7 +7510,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedido('prod', 'prod', g.cod, g._linha, function (it) {
         it = it || { cod: g.cod, grupo: '', qf: 1, lote: '', situacao: 'ativo', obs: '', itens: [] };
         it.desc = d.desc; it.tipo = d.tipo; it.un = d.un;
-        setTxt(it, 'grupo', d.grupo); setNum(it, 'qf', d.qf); setNum(it, 'lote', d.lote); setTxt(it, 'situacao', d.situacao); setTxt(it, 'obs', d.obs); setTxt(it, 'descComp', d.descComp);
+        setTxt(it, 'grupo', d.grupo); setNum(it, 'qf', d.qf); setNum(it, 'lote', d.lote); setTxt(it, 'situacao', d.situacao); setTxt(it, 'obs', d.obs); setTxt(it, 'descComp', d.descComp); setTxt(it, 'notas', d.notas);
         if (d.tipo === 'PA') setNum(it, 'preco', d.preco); else delete it.preco;
         setTxt(it, 'ncm', d.ncm);
         aplicarPrecosTab(it, d.tipo, g._linha, d.preco);
@@ -7729,7 +7738,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (a.id === 'prod') (emp.produtos || []).forEach(function (x0) {
       var x = hojeDe('prod', x0, 'cod'), lim = x.limpeza || {}, itens = x.itens || [];
       var base = { cod: x.cod, desc: x.desc, tipo: NOME_TIPO_PECA[x.tipo] || x.tipo, grupo: x.grupo || '', un: x.un, qf: brNum(x.qf), lote: brNum(x.lote), preco: x.tipo === 'PA' ? brNum(x.preco) : '',
-        ncm: x.ncm || '', molde: x.molde || '', limpezaModo: lim.modo || '', limpezaPph: brNum(lim.pph), situacao: x.situacao || '', obs: x.obs || '', descComp: x.descComp || '' };
+        ncm: x.ncm || '', molde: x.molde || '', limpezaModo: lim.modo || '', limpezaPph: brNum(lim.pph), situacao: x.situacao || '', obs: x.obs || '', descComp: x.descComp || '', notas: x.notas || '' };
       if (!itens.length) { nova(base); return; }
       itens.forEach(function (it, i) {
         var o = i ? { cod: x.cod } : Object.assign({}, base);
@@ -7812,7 +7821,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var ws = XLSX.utils.aoa_to_sheet([cab, un].concat(linhas));
     var chave = a.colunas.map(function (c) { return c[1]; }).indexOf(a.chave);
     var ehExemplo = function (l) { return /^exemplo/i.test(txt(l[0])) || (chave >= 0 && /^exemplo/i.test(txt(l[chave]))); };
-    var longos = { desc: 1, obs: 1, nome: 1, fornecedor: 1, cargo: 1, aloc: 1, descComp: 1, resumo: 1, formula: 1, eqDesc: 1, tabela: 1 };
+    var longos = { desc: 1, obs: 1, nome: 1, fornecedor: 1, cargo: 1, aloc: 1, descComp: 1, notas: 1, resumo: 1, formula: 1, eqDesc: 1, tabela: 1 };
     cols.forEach(function (c, j) {
       var obrig = !!c[3], exc = c[1] === 'excluir', u = uReal[j], fmt = formatoDaUnidade(u), fundoCab = exc ? COR.exc : obrig ? COR.cinza : 'FFFFFF', corCab = exc ? COR.excTxt : '000000';
       var h = ws[enc({ r: 0, c: j })];
@@ -8041,6 +8050,7 @@ var IC = {
   search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>',
   lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',
   file: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>',
+  nota: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
   bell: '<path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
   tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/><circle cx="7" cy="7" r="1.5"/>',
@@ -10264,15 +10274,15 @@ function badgeMargem(m) {
 function telaProdLista() {
   var e = S.emp, f = S.filtros;
   var usoMp = f.pMp ? usoDaMp(f.pMp) : null;   // filtro por matéria-prima: {peça: como ela entra}
-  var lista = ordenarPor(e.produtos, 'cod').filter(function (p) { return (!f.pTipo || p.tipo === f.pTipo) && (!f.pGrupo || p.grupo === f.pGrupo) && (!f.pSit || (p.situacao || 'ativo') === f.pSit) && (!usoMp || usoMp[p.cod]) && bate(p.cod + ' ' + p.desc, f.pBusca); });
+  var lista = ordenarPor(e.produtos, 'cod').filter(function (p) { return (!f.pTipo || p.tipo === f.pTipo) && (!f.pGrupo || p.grupo === f.pGrupo) && (!f.pSit || (p.situacao || 'ativo') === f.pSit) && (!usoMp || usoMp[p.cod]) && bate(p.cod + ' ' + p.desc + ' ' + (p.notas || ''), f.pBusca); });
   var h = ph('Produtos e fórmulas', 'Peças (produtos acabados), kits e semi-acabados. A fórmula — a ficha técnica — define o custo; molde e limpeza entram por peça.', btn('Incluir semi-acabado', 'novoProd', 'data-tipo="SA"', 'btn-ghost', 'plus') + btn('Incluir produto', 'novoProd', 'data-tipo="PA"', 'btn-accent', 'plus'));
-  h += '<div class="tbl-tools">' + filtroTexto('pBusca') + filtroSelect('pTipo', 'Tipo', [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']]) + filtroSelect('pGrupo', 'Grupo', e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + filtroSelect('pMp', 'Matéria-prima', ordenarPor(e.mps, 'cod').map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; }), 'Todas') + filtroSelect('pSit', 'Situação', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']]) + '</div>';
+  h += '<div class="tbl-tools">' + filtroTexto('pBusca', 'Código, descrição ou notas') + filtroSelect('pTipo', 'Tipo', [['PA', 'Produto acabado'], ['SA', 'Semi-acabado']]) + filtroSelect('pGrupo', 'Grupo', e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + filtroSelect('pMp', 'Matéria-prima', ordenarPor(e.mps, 'cod').map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; }), 'Todas') + filtroSelect('pSit', 'Situação', [['ativo', 'Ativo'], ['suspenso', 'Suspenso'], ['inativo', 'Inativo']]) + '</div>';
   h += legendaCats();
   h += tabelaBox('', '<table><thead><tr><th>Código</th><th>Descrição</th><th>Tipo</th><th>Molde</th><th>Limpeza</th><th class="r">Custo unitário</th><th>Composição</th><th class="r">Preço médio das tabelas</th><th class="r">Margem</th><th>Situação</th></tr></thead><tbody>' +
     (lista.length ? lista.map(function (p) {
       var c = custoDe(p.cod), m = margemPeca(p, c);
       var sit = c.erro ? badge('custo incompleto', 'b-crit') : c.semFormula ? badge('sem fórmula', 'b-warn') : p.situacao && p.situacao !== 'ativo' ? badge(p.situacao, 'b-mute') : badge('ativo', 'b-ok');
-      return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(p.cod) + '" tabindex="0"><td class="cod">' + esc(p.cod) + '</td><td class="pri">' + esc(p.desc) + (usoMp ? '<span class="uso-mp">' + esc(usoMp[p.cod]) + '</span>' : '') + '</td><td>' + tipoTag(p.tipo) + '</td><td class="cod">' + esc(p.molde || '—') + '</td><td>' + txtLimpeza(p) + '</td><td class="r"><b>' + (c.erro || c.semFormula ? fmtR(c.total) : orig(fmtR(c.total), od('custo', p.cod, hojeRef()))) + '</b></td><td>' + miniBarra(c.cats, 110) + '</td><td class="r">' + (m ? fmtR(m.preco) : '<span class="muted">—</span>') + '</td><td class="r">' + (m ? fmtP(m.pct, 1) : '<span class="muted">—</span>') + '</td><td>' + sit + '</td></tr>';
+      return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(p.cod) + '" tabindex="0"><td class="cod">' + esc(p.cod) + '</td><td class="pri">' + esc(p.desc) + (p.notas ? ' <span class="nota-ic" title="' + esc(String(p.notas).slice(0, 300)) + '" aria-label="Tem notas">' + ic('nota') + '</span>' : '') + (usoMp ? '<span class="uso-mp">' + esc(usoMp[p.cod]) + '</span>' : '') + '</td><td>' + tipoTag(p.tipo) + '</td><td class="cod">' + esc(p.molde || '—') + '</td><td>' + txtLimpeza(p) + '</td><td class="r"><b>' + (c.erro || c.semFormula ? fmtR(c.total) : orig(fmtR(c.total), od('custo', p.cod, hojeRef()))) + '</b></td><td>' + miniBarra(c.cats, 110) + '</td><td class="r">' + (m ? fmtR(m.preco) : '<span class="muted">—</span>') + '</td><td class="r">' + (m ? fmtP(m.pct, 1) : '<span class="muted">—</span>') + '</td><td>' + sit + '</td></tr>';
     }).join('') : linhaVazia(e.produtos.length, 10, 'Nenhum produto ainda. Clique em Incluir produto.', 'Nenhum produto encontrado.')) + '</tbody></table>', lista.length + ' de ' + e.produtos.length);
   return h;
 }
@@ -10500,11 +10510,11 @@ function telaProdEditor(id) {
   if (!d) return naoEncontrado('Produto', 'produtos');
   d.itens = d.itens || []; d.limpeza = d.limpeza || { modo: 'nenhuma', pph: '' };
   var novo = S.draftInfo.novo, aba = abaAtual('prod', novo ? 'dados' : 'formula');
-  if (['dados', 'precos', 'formula', 'custo', 'uso'].concat(novo ? [] : ['hist']).indexOf(aba) < 0) aba = 'dados';
+  if (['dados', 'precos', 'formula', 'custo', 'uso', 'notas'].concat(novo ? [] : ['hist']).indexOf(aba) < 0) aba = 'dados';
   var c = custoDraftProd();
   var h = ph(novo ? 'Novo ' + (d.tipo === 'SA' ? 'semi-acabado' : 'produto') : esc(d.cod) + ' — ' + esc(d.desc), [d.tipo === 'SA' ? 'Semi-acabado' : 'Produto acabado', d.grupo ? esc(nomeGrupo(d.grupo)) : '', d.molde ? 'molde ' + esc(d.molde) : ''].filter(Boolean).join(' · '), botoesEdicao('prod'), 'Cadastros › Produtos e fórmulas');
   h += faixaEdicao() + '<div class="resumo" id="prevResumo">' + htmlResumoProd(c, d) + '</div>';
-  h += abas('prod', [['dados', 'Cadastro'], ['precos', 'Preços e impostos'], ['formula', 'Fórmula (' + d.itens.length + ')'], ['custo', 'Custo detalhado'], ['uso', 'Onde é usado']].concat(novo ? [] : [['hist', 'Histórico']]), aba, aba === 'dados' ? 'cadastro' : aba === 'precos' ? 'valores' : aba === 'hist' ? 'hist' : '');
+  h += abas('prod', [['dados', 'Cadastro'], ['precos', 'Preços e impostos'], ['formula', 'Fórmula (' + d.itens.length + ')'], ['custo', 'Custo detalhado'], ['uso', 'Onde é usado'], ['notas', 'Notas' + (notasNaTela(d, novo) ? ' •' : '')]].concat(novo ? [] : [['hist', 'Histórico']]), aba, aba === 'dados' ? 'cadastro' : aba === 'precos' ? 'valores' : aba === 'hist' ? 'hist' : '');
   if (!n(d.lote) && c.temSetup) h += alerta('err', 'Peças por preparação (lote) em branco: a preparação está sendo cobrada inteira em cada peça. Informe quantas peças são feitas a cada preparação na aba Dados.');
   if (aba === 'dados' || aba === 'precos') {
     var moldes = (e.moldes || []).map(function (m) { return [m.cod, m.cod + ' — ' + m.desc]; });
@@ -10544,11 +10554,71 @@ function telaProdEditor(id) {
       c.linhas.map(function (L, i) { return '<tr><td class="muted">' + (i + 1) + '</td><td>' + tipoTag(L.tipo) + ' <span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + '</td>' + catsL.map(function (k) { return '<td class="r">' + (L.cats[k] ? fmtR(L.cats[k] / c.qf) : '<span class="muted">—</span>') + '</td>'; }).join('') + '<td class="r"><b>' + fmtR(L.total / c.qf) + '</b></td></tr>'; }).join('') +
       (own.MOL > 0 ? linhaExtra('Molde ' + esc(d.molde || ''), 'MOL', own.MOL) : '') + (own.LIMP > 0 ? linhaExtra('Limpeza ' + (d.limpeza.modo === 'terceiro' ? 'no terceiro' : 'interna'), 'LIMP', own.LIMP) : '') +
       '</tbody><tfoot><tr><td colspan="' + (catsL.length + 2) + '">Custo de fabricação</td><td class="r">' + fmtR(t) + '</td></tr></tfoot></table>');
+  } else if (aba === 'notas') {
+    h += htmlNotasProd(d, novo);
   } else {
     h += novo ? '<div class="vazio">Grave o produto primeiro.</div>' : htmlOndeUsado('PROD', d.cod);
   }
   return h;
 }
+/* ---- notas da peça: texto livre, sem data (vale para todas as datas) e fora do custo. Na peça já gravada, salvar as
+   notas não passa por Editar: grava só elas, na hora. Quem mudou e quando fica no histórico da peça ---- */
+var NOTAS_MAX = 5000;
+var NOTAS_PH = 'Escreva o que quiser guardar sobre a peça: cuidados na produção, pedidos do cliente, pendências, problemas que já aconteceram…';
+function notasGravadas(cod) { var p = porCod(S.emp.produtos, cod); return (p && p.notas) || ''; }
+// o que aparece no campo: na peça nova, o rascunho; na gravada, o texto ainda não salvo (se houver) ou o gravado
+function notasNaTela(d, novo) {
+  if (novo) return d.notas || '';
+  return S._notasRasc && S._notasRasc.cod === d.cod ? S._notasRasc.txt : notasGravadas(d.cod);
+}
+function ultimaNota(cod) {
+  var u = null;
+  R.efetivos(S.emp).forEach(function (ev) {
+    if (ev.tipo === 'prod' && ev.ref === cod && ev.campos && Object.prototype.hasOwnProperty.call(ev.campos, 'notas') && (!u || String(ev.em) > String(u.em))) u = ev;
+  });
+  return u;
+}
+function htmlNotasProd(d, novo) {
+  var txt = notasNaTela(d, novo), u, sujo, area = function (extra) {
+    return '<textarea class="i notas-txt" rows="14" maxlength="' + NOTAS_MAX + '" placeholder="' + esc(NOTAS_PH) + '" aria-label="Notas da peça"' + extra + '>' + esc(txt) + '</textarea>';
+  };
+  if (novo) return caixa('Notas da peça', area(' id="b-notas" data-b="notas"') + '<div class="notas-pe"><span class="notas-quem">As notas são gravadas junto com a peça. Não entram no custo.</span></div>');
+  u = ultimaNota(d.cod);
+  var quem = u ? 'Salvas em ' + fmtDataHora(u.em) + ' por ' + esc(u.por || 'Sistema') : 'Ainda sem notas.';
+  if (rascunhoSomenteLeitura()) return caixa('Notas da peça', (txt ? '<div class="notas-ler">' + esc(txt) + '</div>' : '<div class="vazio">Esta peça não tem notas.</div>') + (u ? '<div class="notas-pe"><span class="notas-quem">' + quem + '</span></div>' : ''));
+  sujo = !!(S._notasRasc && S._notasRasc.cod === d.cod && S._notasRasc.txt !== notasGravadas(d.cod));
+  return caixa('Notas da peça', area(' id="prodNotas"') +
+    '<div class="notas-pe' + (sujo ? ' sujo' : '') + '"><span class="notas-quem">' + quem + '<span class="notas-aviso"> · não salvas</span> · não entram no custo</span>' + btn('Salvar notas', 'prodNotasGravar', '', 'btn-accent', 'save') + '</div>');
+}
+// o rascunho da edição (Editar) mudou algo além das notas?
+function rascunhoProdMudou(cod) {
+  var o = porCod(S.emp.produtos, cod), a, b;
+  if (!o || !S.draft) return false;
+  a = clone(o); b = clone(S.draft); delete a.notas; delete b.notas;
+  try { return !!R.diferenca('prod', a, b); } catch (e) { return true; }
+}
+ACOES.prodNotasGravar = function () {
+  var el = $('#prodNotas'), di = S.draftInfo;
+  if (!el || !di || di.novo || di.tipo !== 'prod') return;
+  var cod = di.cod, txt = el.value.replace(/\s+$/, '');
+  if (txt === notasGravadas(cod)) { S._notasRasc = null; if (!edAtivo()) S.sujo = false; toast('Nada mudou', 'As notas já estão salvas assim.', { tipo: 'info' }); renderPainel(); return; }
+  gravarMudancaBase([{ tipo: 'prod', ref: cod, desde: hojeRef(), campos: { notas: txt === '' ? null : txt }, obs: 'Notas da peça' }], function () {
+    var editando = edAtivo() && rascunhoProdMudou(cod);
+    S._notasRasc = null;
+    if (S.draft && S.draftInfo === di) { if (txt) S.draft.notas = txt; else delete S.draft.notas; }
+    aposGravar('Notas da peça', cod, { silencioso: true });
+    if (editando) S.sujo = true;   // salvar as notas não descarta o que está sendo editado
+    toast('Notas salvas', cod + (txt ? '' : ': notas apagadas.'));
+    renderPainel();
+  }, { semAntecipar: true });
+};
+// digitando: guarda o texto (trocar de aba não perde) e avisa ao sair sem salvar
+document.addEventListener('input', function (ev) {
+  var el = ev.target;
+  if (!el || el.id !== 'prodNotas' || !S.draftInfo || S.draftInfo.novo) return;
+  S._notasRasc = { cod: S.draftInfo.cod, txt: el.value }; S.sujo = true;
+  var pe = el.parentNode && el.parentNode.querySelector('.notas-pe'); if (pe) pe.classList.toggle('sujo', el.value.replace(/\s+$/, '') !== notasGravadas(S.draftInfo.cod));
+});
 function graficoCustoProd() {
   var X = S._custoProd; if (!X || !document.getElementById('gProd')) return;
   var c = X.c, l = X.cats.slice().sort(function (a, b) { return c.cats[a] - c.cats[b]; });
@@ -12002,7 +12072,7 @@ var CAMPOS_TXT = {
   func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo', benef: 'benefícios desta pessoa', qtd: 'pessoas nessa função', modo: 'tipo de cadastro' },
   setor: { horasOperacao: 'horas de operação no mês', manual: 'taxa digitada', equipamentos: 'máquinas', despTotal: 'gastos das máquinas', desc: 'nome' },
   molde: { valor: 'valor do molde', vida: 'vida útil', cavidades: 'cavidades', setor: 'setor', situacao: 'situação', desc: 'descrição' },
-  prod: { preco: 'preço na tabela geral', precos: 'preço nas tabelas', ncm: 'NCM', itens: 'fórmula', molde: 'molde', limpeza: 'limpeza', lote: 'peças por preparação (lote)', qf: 'quantidade de formulação', situacao: 'situação', desc: 'descrição' },
+  prod: { notas: 'notas', obs: 'observações', descComp: 'descrição complementar', preco: 'preço na tabela geral', precos: 'preço nas tabelas', ncm: 'NCM', itens: 'fórmula', molde: 'molde', limpeza: 'limpeza', lote: 'peças por preparação (lote)', qf: 'quantidade de formulação', situacao: 'situação', desc: 'descrição' },
   terceiro: { preco: 'preço da limpeza no terceiro' },
   cfg: { impostosVendaPct: 'outros impostos sobre a venda', fiscal: 'impostos sobre a venda', icmsUF: 'ICMS por estado', ncms: 'NCM', tabelas: 'tabelas de preço', encargos: 'encargos e provisões', taxas: 'regras das taxas hora', gastosEquip: 'gastos dos equipamentos', limpeza: 'setor da limpeza', impostos: 'impostos de entrada', tempos: 'tempos', precisao: 'precisão', dataReferencia: 'data de hoje', beneficios: 'benefícios padrão' }
 };
@@ -16249,6 +16319,8 @@ ACOES.tabAdd = function (el, ev) { if (edBloqueado()) { edAbrir(function () { ta
 // sair do cadastro sai do modo de edição
 var irAntesEd = ir;
 ir = function (rota, params, forcar) { var r = irAntesEd(rota, params, forcar); if (!S.sujo) S.ui.ed = null; return r; };
+var irAntesNotas = ir;
+ir = function (rota, params, forcar) { var r = irAntesNotas(rota, params, forcar); if (!S.sujo) S._notasRasc = null; return r; };
 
 // correção: cada campo volta para a data em que o valor dele começou a valer (até hoje)
 function inicioCampo(tipo, ref, k) {
@@ -16464,7 +16536,8 @@ var MANUAL = [
         ['itens.#.homens', 'Homens', 'Quantas pessoas trabalham ao mesmo tempo nesta etapa. Um operador cuidando de 2 máquinas = 0,5.'],
         ['itens.#.maquinas', 'Máquinas', 'Quantas máquinas ficam ocupadas nesta etapa. Normalmente 1.'],
         ['itens.#.refugo', 'Refugo', 'Quanto se perde nesta etapa, em %. Ex.: 3 = de cada 100 peças, 3 vão para o lixo. A perda encarece tudo o que veio antes dela na fórmula.']]],
-      ['Preços e impostos', [['ncm', 'NCM', 'A classificação fiscal da peça (8 dígitos), a mesma da nota fiscal.', '+']]]],
+      ['Preços e impostos', [['ncm', 'NCM', 'A classificação fiscal da peça (8 dígitos), a mesma da nota fiscal.', '+']]],
+      ['Notas', [['notas', 'Notas da peça', 'Texto livre sobre a peça: cuidados na produção, pedidos do cliente, pendências. Não entra no custo e vale para todas as datas. Na peça já gravada, use o botão <b>Salvar notas</b> (não precisa clicar em Editar). Quem mudou e quando fica no Histórico da peça. A busca da lista de peças também procura nas notas.']]]],
     blocos: [{ sel: '.fx-lista', txt: 'Cada linha é um item da ficha técnica, na ordem da produção. Na linha: 1) o <b>tipo</b> (matéria-prima, semi-acabado, produto acabado ou etapa de produção); 2) o <b>item</b>; 3) a <b>quantidade</b> (material e componentes) ou o <b>tempo no setor</b> (etapa de produção: em horas e minutos, horas centesimais ou peças por hora), sempre para a quantidade de formulação. À direita, quanto a linha custa por peça. As setas mudam a ordem: ela importa, porque o refugo de uma etapa encarece o que veio antes.' }],
     colunas: [['Tabela', 'O nome da tabela de preço (criada em Tabelas de preço).'], ['Estado', 'O estado de destino da tabela; define o ICMS da venda.'], ['Preço por', 'O preço de venda da peça nesta tabela, com impostos. Em branco: a peça não está nesta tabela.'], ['Impostos', 'Calculado: quanto do preço vai para impostos nesta tabela.'], ['Margem', 'Calculado: quanto sobra do preço sem impostos depois do custo de fazer, em %.']],
     atencao: ['Quantidade de formulação diferente da usada na fórmula multiplica ou divide o custo por mil. Se o custo parece absurdo, confira esse campo.', 'Peça com preparação e sem “peças por preparação” paga a preparação inteira em cada peça.', 'Etapa num setor sem funcionários fica sem mão de obra.'] },
