@@ -1259,6 +1259,9 @@ table.imp-itens tr.imp-fora .imp-erro{display:none}
 .fx-item:has(select[data-ch="fxTipo"] option[value="FO"]:checked){--tc:var(--tipo-FO)}
 .fx-add .btn[data-tipo="FO"]{--tc:var(--tipo-FO)}
 
+/* 46: a conta de cada linha em Custo de cada item */
+.ci-conta{font-size:11.5px;color:var(--text3);margin-top:2px;font-variant-numeric:tabular-nums}
+
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
    rótulos pequenos em caixa alta, cartões de número com a barra de cor à esquerda (um de cada cor),
@@ -3940,6 +3943,25 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     Object.keys(ctx.mpVal).forEach(function (k) {
       var v = ctx.mpVal[k], m = ctx.mp[k];
       if (v.origem === 'mistura' && v.erro) add('critico', 'custos', 'A fórmula ' + k + (m ? ' ' + m.desc : '') + ' está incompleta: ' + v.erro + '. O custo dela fica zero até completar a receita.', 'formulas', k);
+    });
+    // o mesmo código em dois cadastros: a planilha não sabe qual é qual
+    var mesmoCod = {};
+    [['mp', emp.mps], ['prod', emp.produtos], ['setor', emp.setores]].forEach(function (x) {
+      (x[1] || []).forEach(function (r) { if (r && r.cod) (mesmoCod['#' + r.cod] = mesmoCod['#' + r.cod] || []).push([x[0], r]); });
+    });
+    Object.keys(mesmoCod).forEach(function (k) {
+      var l = mesmoCod[k]; if (l.length < 2) return;
+      var nomeC = function (x) { return x[0] === 'setor' ? 'setor' : x[0] === 'prod' ? (x[1].tipo === 'SA' ? 'semi-acabado' : 'peça') : M.ehMistura(x[1]) ? 'fórmula' : 'matéria-prima'; };
+      var alvo = l.filter(function (x) { return x[0] === 'prod'; })[0] || l[l.length - 1];
+      add('aviso', 'custos', 'O código ' + k.slice(1) + ' é ' + l.map(function (x) { return nomeC(x) + ' (' + (x[1].desc || '') + ')'; }).join(' e também ') + '. Na planilha o código é que diz o que é cada passo da composição: mude o código de um deles (Editar › Corrigir um erro).', alvo[0] === 'prod' ? 'produtos' : alvo[0] === 'setor' ? 'setores' : M.ehMistura(alvo[1]) ? 'formulas' : 'mps', k.slice(1));
+    });
+    // etapa sem tempo: a tela e a planilha aceitam, mas o custo do setor fica fora da peça
+    emp.produtos.forEach(function (p) {
+      if (p.situacao === 'inativo') return;
+      var sem = (p.itens || []).filter(function (it) { return it.tipo === 'SP' && !(M.tempoHoras(it.tempo) > 0); }).map(function (it) { return it.ref; });
+      if (sem.length) add('aviso', 'custos', p.cod + ' tem ' + (sem.length === 1 ? 'a etapa ' + sem[0] + ' sem tempo' : 'as etapas ' + sem.join(', ') + ' sem tempo') + ' (peças por hora): mão de obra, máquinas e gastos ' + (sem.length === 1 ? 'desse setor' : 'desses setores') + ' não entram no custo da peça.', 'produtos', p.cod);
+      var semQ = (p.itens || []).filter(function (it) { return it.tipo !== 'SP' && it.ref && !(num(it.qtd) > 0); }).map(function (it) { return it.ref; });
+      if (semQ.length) add('aviso', 'custos', p.cod + ' tem ' + semQ.join(', ') + ' sem quantidade na composição: ' + (semQ.length === 1 ? 'esse item não entra' : 'esses itens não entram') + ' no custo da peça.', 'produtos', p.cod);
     });
     var mpErro = Object.keys(ctx.mpVal).filter(function (k) { return ctx.mpVal[k].origem === 'erro'; });
     if (mpErro.length) add('critico', 'custos', 'A fórmula do valor líquido de compra tem erro (' + ctx.mpVal[mpErro[0]].erro + '): ' + mpErro.length + (mpErro.length === 1 ? ' matéria-prima está' : ' matérias-primas estão') + ' usando o valor bruto, sem impostos.', 'cfg-impostos');
@@ -6926,9 +6948,10 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   function nLinha(aba, linha) { var v = linhaVista(aba, linha); return v.n + (aba && ABA[aba] && v.nome !== ABA[aba].nome ? ' da aba ' + v.nome : ''); }
   function erro(lista, aba, linha, msg) { var v = linhaVista(aba, linha); lista.push({ aba: v.nome, id: aba || '', linha: linha || 0, ver: v.n, msg: msg }); }
   // → {linhas: {mp: [{_linha, cod, …}], …}, erros, exemplos (linhas de exemplo ignoradas), abas (as que vieram)}
-  function ler(XLSX, dados) {
+  function ler(XLSX, dados, opts) {
+    opts = opts || {};
     var wb = dados && dados.SheetNames ? dados : XLSX.read(dados, { type: dados instanceof ArrayBuffer ? 'array' : undefined });
-    var res = { linhas: {}, erros: [], exemplos: 0, abas: [], fora: [] };
+    var res = { linhas: {}, erros: [], exemplos: 0, abas: [], fora: [], ajustes: [], antigo: !!opts.antigo };
     var porNome = {};
     wb.SheetNames.forEach(function (n) { porNome[semAcento(n)] = n; });
     var ehComposicao = function (nm) { var w = wb.Sheets[nm], l = w ? XLSX.utils.sheet_to_json(w, { header: 1, raw: true, defval: '' }) : []; for (var r = 0; r < Math.min(l.length, 3); r++) if (l[r].some(function (t) { return semAcento(t) === semAcento('Código da peça'); })) return true; return false; };
@@ -6973,6 +6996,11 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         (c[5] || []).forEach(function (t) { if (i < 0) i = tit.indexOf(semAcento(t)); });   // títulos antigos ("Lote econômico")
         if (i >= 0) idx[c[1]] = i; else if (c[3]) faltam.push(c[0]);
       });
+      // backup no modelo antigo: a 1ª coluna é sempre o código; o título trocado (ex.: "p") vale como o código, com aviso
+      if (opts.antigo && faltam.length === 1 && faltam[0] === a.colunas[0][0] && !Object.keys(idx).some(function (k) { return idx[k] === 0; })) {
+        idx[a.colunas[0][1]] = 0; faltam = [];
+        res.ajustes.push({ aba: a.nome, msg: (vazio(m[0][0]) ? 'a coluna A está sem título' : 'a coluna A está com o título “' + txt(m[0][0]) + '”') + ': foi lida como “' + a.colunas[0][0] + '” (a primeira coluna do modelo).' });
+      }
       if (faltam.length) { erro(res.erros, a.id, 1, 'Faltam as colunas ' + faltam.join(', ') + '. Baixe o modelo e use os mesmos títulos.'); return; }
       var din = [], usadas = {}; Object.keys(idx).forEach(function (k) { usadas[idx[k]] = true; });
       if (a.id === 'setor') m[0].forEach(function (t, i) {
@@ -7370,6 +7398,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (!velha[k] || !nova[k]) return;
       if (velha[k].modo === nova[k].modo && Math.abs(horasDe(velha[k]) - horasDe(nova[k])) < 1e-9) nova[k] = copia(velha[k]);
       else if (k === 'setup' && vazio(nova[k].valor)) nova[k] = copia(velha[k]);
+      else if (k === 'tempo' && vazio(nova[k].valor) && vazio(velha[k].valor)) nova[k] = copia(velha[k]);
     });
   }
   function juntarAntigas(antigas, novas, objetos, ajuste) {
@@ -8055,7 +8084,16 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
           if (existe('setor', ref)) cand.push('SP');
           if (existe('mp', ref)) cand.push('MP');
           if (existe('prod', ref)) cand.push(tipoDaPecaPl(ref));
-          if (cand.length > 1) { erro(erros, 'prod', l._linha, pp(l) + 'o código ' + ref + ' é ' + cand.map(function (t) { return NOME_CITA[t]; }).join(' e também ') + '. Mude o código de um deles para não confundir.'); l._ruim = true; return; }
+          if (cand.length > 1) {
+            var jaPeca = itemDe(emp, 'prod', g.cod, D), usou = {};
+            ((jaPeca && jaPeca.itens) || []).forEach(function (x) { if (x.ref === ref && cand.indexOf(x.tipo) >= 0) usou[x.tipo] = 1; });
+            var tiposJa = Object.keys(usou), NOME_TIPO_AMB = { SP: 'setor', MP: 'matéria-prima', SA: 'semi-acabado', PA: 'produto acabado' };
+            // só o que já estava assim na Central (a planilha não cria a confusão): os dois cadastros existem antes dela
+            var jaNaCentral = cand.every(function (t) { return R.existeEm(emp, CITA[t], ref, D); });
+            if (!jaNaCentral || tiposJa.length !== 1) { erro(erros, 'prod', l._linha, pp(l) + 'o código ' + ref + ' é ' + cand.map(function (t) { return NOME_CITA[t]; }).join(' e também ') + '. Mude o código de um deles para não confundir.'); l._ruim = true; return; }
+            avisos.push({ k: 'prod|' + g.cod, aba: 'prod', linha: l._linha, msg: pp(l) + 'o código ' + ref + ' é ' + cand.map(function (t) { return NOME_CITA[t]; }).join(' e também ') + '; ficou como ' + NOME_TIPO_AMB[tiposJa[0]] + ', como já está na peça. Mude o código de um deles na Central (Editar › Corrigir um erro) para não confundir.' });
+            cand = tiposJa;
+          }
           if (!cand.length) { erro(erros, 'prod', l._linha, pp(l) + ref + ' não existe (não é matéria-prima, peça nem setor).'); l._ruim = true; return; }
           l.lTipo = cand[0];
           if (l.lTipo !== 'SP') return;
@@ -8075,13 +8113,17 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (!vazio(l.lReapMp) && !existe('mp', txt(l.lReapMp))) { erro(erros, 'prod', l._linha, pp(l) + 'reaproveitamento: matéria-prima ' + txt(l.lReapMp) + ' não existe.'); ok = false; return null; }
         if (l.lTipo === 'SP') {
           var tempo = l.lPph > 0 ? { modo: 'pph', valor: l.lPph } : !vazio(l.lTempoSex) && M.sexParaHoras(l.lTempoSex) > 0 ? { modo: 'sex', valor: l.lTempoSex } : l.lTempoCen > 0 ? { modo: 'cen', valor: l.lTempoCen } : null;
-          if (!tempo) { erro(erros, 'prod', l._linha, l._passo ? pp(l) + 'informe a velocidade da etapa (coluna "Etapa' + (l._etapaN > 1 ? ' ' + l._etapaN : '') + ': peças por hora", maior que zero).' : 'Etapa de produção: informe as peças por hora ou o tempo da etapa (maior que zero).'); ok = false; return null; }
+          if (!tempo) {
+            tempo = { modo: ((emp.config || {}).tempos || {}).fabricacao || 'pph', valor: '' };
+            avisos.push({ k: 'prod|' + g.cod, aba: 'prod', linha: l._linha, msg: (l._passo ? pp(l) : '') + 'a etapa ' + txt(l.lRef) + ' está sem velocidade' + (l._passo && l._etapaN ? ' (coluna "' + tituloEtapa(l._etapaN, 'peças por hora', (l._etapas || []).length <= 1) + '")' : '') + ': o custo desse setor não entra na peça até preencher.' });
+          }
           var setup = !vazio(l.lSetup) ? { modo: 'sex', valor: l.lSetup } : l.lSetupMin !== null && l.lSetupMin !== undefined ? { modo: 'min', valor: l.lSetupMin } : l.lSetupCen !== null && l.lSetupCen !== undefined ? { modo: 'cen', valor: l.lSetupCen } : { modo: 'sex', valor: '' };
           if (l.lRefugo !== null && (l.lRefugo < 0 || l.lRefugo >= 100)) { erro(erros, 'prod', l._linha, pp(l) + 'o refugo vai de 0 a menos de 100%.'); ok = false; return null; }
           return comReap(l, { tipo: 'SP', ref: l.lRef, tempo: tempo, setup: setup, homens: l.lHomens === null ? 1 : l.lHomens, maquinas: l.lMaquinas === null ? 1 : l.lMaquinas, fatorGGF: 1, refugo: l.lRefugo || 0, fase: l.lFase || '' });
         }
-        if (!(l.lQtd > 0)) { erro(erros, 'prod', l._linha, l._passo ? pp(l) + 'informe a quantidade (maior que zero).' : 'Informe a quantidade da linha (maior que zero).'); ok = false; return null; }
-        return comReap(l, { tipo: l.lTipo, ref: l.lRef, qtd: l.lQtd, fase: l.lFase || '' });
+        if (typeof l.lQtd === 'number' && l.lQtd < 0) { erro(erros, 'prod', l._linha, (l._passo ? pp(l) : '') + 'a quantidade não pode ser negativa.'); ok = false; return null; }
+        if (!(l.lQtd > 0)) avisos.push({ k: 'prod|' + g.cod, aba: 'prod', linha: l._linha, msg: (l._passo ? pp(l) : '') + txt(l.lRef) + ' está sem quantidade: não entra no custo da peça até preencher.' });
+        return comReap(l, { tipo: l.lTipo, ref: l.lRef, qtd: l.lQtd > 0 || l.lQtd === 0 ? l.lQtd : '', fase: l.lFase || '' });
       });
       var faltam = [], jaDito = function (col) { return erros.some(function (e) { return e.id === 'prod' && g.nums.indexOf(e.linha) >= 0 && e.msg.indexOf(col + ':') === 0; }); };
       // só linhas na aba Fórmulas (a peça não veio na aba Peças): os dados da peça ficam como estão
@@ -8238,7 +8280,25 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     }
 
     // a ordem final: o que é citado antes (setores, configuração, matérias-primas, funcionários, moldes, peças, terceiro)
-    pedidos.sort(function (a, b) { return ORDEM.indexOf(a._aba) - ORDEM.indexOf(b._aba); });
+    var setorDepois = [];
+    pedidos.forEach(function (q) {
+      if (q.tipo !== 'mp' || !q.novo || vazio(q.novo.setor) || R.existeEm(emp, 'setor', q.novo.setor, D)) return;
+      var antes = q.base && !vazio(q.base.setor) ? q.base.setor : '';
+      if (antes === q.novo.setor) return;
+      setorDepois.push({ tipo: 'mp', ref: q.ref, desde: D, campos: { setor: q.novo.setor }, semEfeito: true, _aba: '_setorDaFormula' });
+      q.novo = copia(q.novo); if (antes) q.novo.setor = antes; else delete q.novo.setor;
+      if (q.base && !R.diferenca('mp', copia(q.base), copia(q.novo))) q._tirar = true;   // só o setor mudou: vai no pedido de depois
+    });
+    for (var iq = pedidos.length - 1; iq >= 0; iq--) if (pedidos[iq]._tirar) pedidos.splice(iq, 1);
+    Array.prototype.push.apply(pedidos, setorDepois);
+    var faseGravar = function (q) {
+      if (q._aba === 'mp') return q.novo && M.ehMistura(q.novo) ? 1 : 0;
+      if (q._aba === 'setor') return 2;
+      if (q._aba === 'cfg') return 3;
+      if (q._aba === '_setorDaFormula') return 4;
+      return 5 + ORDEM.indexOf(q._aba);
+    };
+    pedidos.sort(function (a, b) { return faseGravar(a) - faseGravar(b); });
     erros.forEach(function (e) { if (!e.k && e.id && e.linha) e.k = kLinha[e.id + '|' + e.linha] || null; });
     var naLista = {}; itens.forEach(function (x) { naLista[x.k] = true; });
     erros.forEach(function (e) { if (e.k && !naLista[e.k]) { naLista[e.k] = true; itens.push({ k: e.k, aba: e.k.split('|')[0], ref: refDaChave(e.k), desc: '', acao: 'erro', linha: e.linha }); } });
@@ -8315,8 +8375,17 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var cols = [['Código da peça', 'cod', 'texto', true, 'A peça (da aba Peças ou já cadastrada). Uma linha por peça. A peça que não estiver aqui fica com a composição como está'],
       ['Descrição da peça — só para ver', '_descPeca', 'ver', false, 'O nome da peça (aba Peças)'],
       ['Custo de fabricação por peça (R$) — só para ver', '_custo', 'ver', false, 'O custo de fazer uma peça hoje, com esta composição, o molde e a limpeza']];
-    for (var n = 1; n <= E; n++) CAMPOS_ETAPA.forEach(function (c, j) { if (j >= 5 && !tempos) return; cols.push([tituloEtapa(n, c[0], E === 1), 'e' + n + ':' + c[1], c[2], false, (n > 1 ? 'A ' + n + 'ª etapa de produção da peça, na ordem dos passos. ' : '') + c[3], null, false, { etapa: n, primeiro: j === 0 }]); });
-    for (var k = 1; k <= K; k++) CAMPOS_PASSO.forEach(function (c, j) { if (j >= 3 && !reap) return; cols.push(['Passo ' + k + ': ' + c[0], 'p' + k + ':' + c[1], c[2], false, c[3], null, false, { passo: k, primeiro: j === 0 }]); });
+    for (var n = 1; n <= E; n++) {
+      // de qual setor é esta etapa nesta peça (o setor do passo, na mesma ordem): só para ver
+      cols.push([tituloEtapa(n, 'setor — só para ver', E === 1), 'e' + n + ':_setor', 'ver', false, 'O setor desta etapa nesta peça: é o setor que aparece nos passos, na mesma ordem (a ' + n + 'ª etapa = o ' + n + 'º setor dos passos). A Central preenche; para mudar o setor, mude o passo', null, false, { etapa: n, primeiro: true }]);
+      CAMPOS_ETAPA.forEach(function (c, j) { if (j >= 5 && !tempos) return; cols.push([tituloEtapa(n, c[0], E === 1), 'e' + n + ':' + c[1], c[2], false, (n > 1 ? 'A ' + n + 'ª etapa de produção da peça, na ordem dos passos. ' : '') + c[3], null, false, { etapa: n }]); });
+    }
+    for (var k = 1; k <= K; k++) CAMPOS_PASSO.forEach(function (c, j) {
+      if (j >= 3 && !reap) return;
+      cols.push(['Passo ' + k + ': ' + c[0], 'p' + k + ':' + c[1], c[2], false, c[3], null, false, { passo: k, primeiro: j === 0 }]);
+      // ao lado do código, o nome do item: só para ver
+      if (j === 0) cols.push(['Passo ' + k + ': descrição — só para ver', 'p' + k + ':_desc', 'ver', false, 'O nome do item deste passo, com o tipo quando não é matéria-prima comprada (Fórmula, Etapa, Semi-acabado, Produto). A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
+    });
     cols.larga = { K: K, E: E };
     return cols;
   }
@@ -8327,6 +8396,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var cols = b.slice(0, 6).map(function (c) { return c.slice(); });
     for (var k = 1; k <= J; k++) {
       cols.push(['Componente ' + k, 'c' + k + ':mp', 'texto', false, 'O código de uma matéria-prima comprada que entra na receita da fórmula. Passe o mouse no código para ver o nome, a unidade e o custo', null, false, { passo: k, primeiro: true }]);
+      cols.push(['Componente ' + k + ': descrição — só para ver', 'c' + k + ':_desc', 'ver', false, 'O nome do componente. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
       cols.push(['Quantidade ' + k, 'c' + k + ':qtd', 'numero', false, 'Quanto do componente ' + k + ' vai na receita, na unidade dele (aparece ao lado do número)', null, false, { passo: k }]);
     }
     b.slice(6).forEach(function (c) { cols.push(c.slice()); });
@@ -8339,7 +8409,8 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (emp) J = Math.max(3, (emp.setores || []).reduce(function (mx, s) { return Math.max(mx, (s.mps || []).filter(function (c) { return c && !vazio(c.mp); }).length + 1); }, 0));
     var cols = ABA.processo.colunas.map(function (c) { return c.slice(); });
     for (var k = 1; k <= J; k++) {
-      cols.push(['Matéria-prima ' + k, 'm' + k + ':mp', 'texto', false, 'O código de uma matéria-prima usada neste setor. Na composição das peças, ela aparece neste setor. Passe o mouse no código para ver o nome e o custo. "nenhuma" na primeira = tira todas', null, false, { passo: k, primeiro: true }]);
+      cols.push(['Matéria-prima ' + k, 'm' + k + ':mp', 'texto', false, 'O código de uma matéria-prima (ou fórmula) usada neste setor. Na composição das peças, ela aparece neste setor. Passe o mouse no código para ver o nome e o custo. "nenhuma" na primeira = tira todas', null, false, { passo: k, primeiro: true }]);
+      cols.push(['Matéria-prima ' + k + ': descrição — só para ver', 'm' + k + ':_desc', 'ver', false, 'O nome da matéria-prima. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
       cols.push(['Para que serve ' + k, 'm' + k + ':obs', 'texto', false, 'Texto livre (ex.: misturar 1:2 com o prime)', null, false, { passo: k }]);
     }
     cols.larga = { K: J };
@@ -8406,6 +8477,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         var k = i + 1, cx = itemDe(emp, 'mp', c.mp, hoje) || (emp.mps || []).filter(function (m) { return m.cod === c.mp; })[0] || null, cv = ctx && ctx.mpVal[c.mp], un = cx ? U.sigla(cx.un) : '';
         var nota = [cx ? cx.desc || '' : '', cv && isFinite(cv.valor) ? 'custo líquido ' + fmtNota(cv.valor) + (un ? ' por ' + un : '') : '', cv && isFinite(cv.valor) ? 'na receita: ' + fmtNota((+c.qtd || 0) * cv.valor) : ''].filter(Boolean).join(' · ');
         o['c' + k + ':mp'] = nota ? { v: c.mp, nota: nota } : c.mp;
+        o['c' + k + ':_desc'] = cx ? cx.desc || '' : '(não cadastrado)';
         o['c' + k + ':qtd'] = un ? { v: brNum(c.qtd), fmt: formatoUn(un) } : brNum(c.qtd);
       });
       nova(o);
@@ -8416,6 +8488,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         var k = i + 1, cx = itemDe(emp, 'mp', c.mp, hoje) || (emp.mps || []).filter(function (m) { return m.cod === c.mp; })[0] || null, cv = ctx && ctx.mpVal[c.mp];
         var nota = [cx ? cx.desc || '' : '', cx ? 'em ' + U.sigla(cx.un) : '', cv && isFinite(cv.valor) ? 'custo líquido ' + fmtNota(cv.valor) : ''].filter(Boolean).join(' · ');
         o['m' + k + ':mp'] = nota ? { v: c.mp, nota: nota } : c.mp; o['m' + k + ':obs'] = c.obs || '';
+        o['m' + k + ':_desc'] = cx ? (M.ehMistura(cx) ? 'Fórmula: ' : '') + (cx.desc || '') : '(não cadastrado)';
       });
       nova(o);
     });
@@ -8501,9 +8574,12 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         var nota = [ref ? ref.desc || '' : '', it.tipo === 'SP' ? 'etapa de produção' : un ? 'em ' + un : '', L ? 'custo na peça ' + fmtNota(L.total / qf) : ''].filter(Boolean).join(' · ');
         o[p + 'lRef'] = nota ? { v: it.ref, nota: nota } : it.ref;
         o[p + 'lFase'] = it.fase || '';
+        var tipoTxt = it.tipo === 'SP' ? 'Etapa' : it.tipo === 'SA' ? 'Semi-acabado' : it.tipo === 'PA' ? 'Produto' : it.tipo === 'MP' && ref && M.ehMistura(ref) ? 'Fórmula' : '';
+        o[p + '_desc'] = ref ? (tipoTxt ? tipoTxt + ': ' : '') + (ref.desc || '') : (it.ref ? '(não cadastrado)' : '');
         if (it.tipo === 'SP') {
           ne++;
           var e = 'e' + ne + ':', t = it.tempo || {}, s = it.setup || {};
+          o[e + '_setor'] = it.ref + (ref && ref.desc ? ' — ' + ref.desc : '');
           if (t.modo === 'pph') o[e + 'lPph'] = brNum(t.valor); else if (t.modo === 'sex') o[e + 'lTempoSex'] = sexTexto(t.valor); else o[e + 'lTempoCen'] = brNum(t.valor);
           if (!vazio(s.valor)) { if (s.modo === 'min') o[e + 'lSetupMin'] = brNum(s.valor); else if (s.modo === 'cen') o[e + 'lSetupCen'] = brNum(s.valor); else o[e + 'lSetup'] = sexTexto(s.valor); }
           o[e + 'lHomens'] = brNum(it.homens); o[e + 'lMaquinas'] = brNum(it.maquinas); o[e + 'lRefugo'] = brNum(it.refugo);
@@ -8716,13 +8792,13 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   var LEIA_ABAS = {
     grupo: ['grupo', 'A coluna Grupo das matérias-primas e das peças aceita o código ou o nome.'],
     mp: ['matéria-prima', 'Tipo: comprada ou mistura. Ao lado de cada imposto da compra, a coluna do crédito (Crédito de ICMS…): sim = sai do custo; não = fica no custo; cinza = o padrão do regime.'],
-    mistura: ['fórmula', 'O que a fábrica prepara misturando matérias-primas compradas (ex.: adesivo pronto = Chem 11/42 + solvente). A fórmula inteira numa linha: código, descrição, unidade, o setor que fabrica, Componente 1 e Quantidade 1, Componente 2… (a quantidade na unidade do componente), "A receita rende" e como preparar. O custo sai dos componentes, cada um com os impostos dele. Na aba Composição, a fórmula entra num passo pelo código dela. A fórmula que não estiver aqui fica como está.'],
+    mistura: ['fórmula', 'O que a fábrica prepara misturando matérias-primas compradas (ex.: adesivo pronto = Chem 11/42 + solvente). A fórmula inteira numa linha: código, descrição, unidade, o setor que fabrica, Componente 1 (com a descrição ao lado, só para ver) e Quantidade 1, Componente 2… (a quantidade na unidade do componente), "A receita rende" e como preparar. O custo sai dos componentes, cada um com os impostos dele. Na aba Composição, a fórmula entra num passo pelo código dela. A fórmula que não estiver aqui fica como está.'],
     func: ['pessoa ou função', 'Setores: o código e o %, ex.: INJ 70; MAN 30. As últimas colunas são os encargos e os benefícios de cada pessoa (cinza = o padrão da empresa).'],
     setor: ['máquina', 'Repita o código do setor em cada máquina; os dados do setor vão na primeira linha.'],
-    processo: ['setor', 'O roteiro: a ordem do setor na fabricação (1, 2, 3…), como fazer e o que é usado nele (Matéria-prima 1, Para que serve 1…). Na composição das peças, cada matéria-prima aparece no setor em que está cadastrada.'],
+    processo: ['setor', 'O roteiro: a ordem do setor na fabricação (1, 2, 3…), como fazer e o que é usado nele (Matéria-prima 1 com a descrição ao lado, Para que serve 1…). Na composição das peças, cada matéria-prima aparece no setor em que está cadastrada.'],
     molde: ['molde', ''],
     peca: ['peça', 'Os preços de cada tabela (colunas "Preço: …") e o preço da limpeza no terceiro. O custo de fabricação fica ao lado dos preços, para comparar.'],
-    formula: ['peça', 'A composição inteira numa linha: os dados da etapa de produção (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem da fabricação (Passo 1: item, quantidade e setor; Passo 2…). O tipo de cada passo sai do código (matéria-prima, fórmula, peça ou setor). A quantidade mostra a unidade do item; passe o mouse no código para ver o nome e o custo. Para pôr um passo no meio, recorte os passos seguintes e cole uma casa à direita. A peça que não estiver aqui fica com a composição como está.'],
+    formula: ['peça', 'A composição inteira numa linha: os dados da etapa de produção (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem da fabricação (Passo 1: item, quantidade e setor; Passo 2…). Ao lado de cada código vem a descrição do item (só para ver), e cada bloco de etapa começa pelo setor daquela etapa na peça. O tipo de cada passo sai do código (matéria-prima, fórmula, peça ou setor). A quantidade mostra a unidade do item; passe o mouse no código para ver também o custo. Para pôr um passo no meio, recorte os passos seguintes e cole uma casa à direita. A peça que não estiver aqui fica com a composição como está.'],
     ncm: ['NCM', 'O IPI (por fora) e as exceções de ICMS, PIS e COFINS.'],
     tab: ['tabela de preço', 'Só cadastra a tabela (nome, estado, ativa). Os preços ficam na aba Peças.'],
     terceiro: ['preço do terceiro', 'O histórico dos preços da limpeza no terceiro, com a data de início de cada um.'],
@@ -9689,6 +9765,19 @@ function garantirRascunho(tipo, lista, chave, id, criarNovo) {
   abrirRascunho(tipo, reg, false);
   return S.draft;
 }
+// matéria-prima (ou fórmula), peça e setor entram nos passos da composição: o código de um não pode ser o de outro
+// (devolve "a peça X — desc" quando o código já é de outro cadastro; também os que só existem em outra data)
+function codigoEmOutroCadastro(tipo, cod) {
+  var CAD = [['mp', S.emp.mps, 'a matéria-prima'], ['prod', S.emp.produtos, 'a peça'], ['setor', S.emp.setores, 'o setor']];
+  if (!CAD.some(function (c) { return c[0] === tipo; })) return null;
+  for (var i = 0; i < CAD.length; i++) {
+    var c = CAD[i]; if (c[0] === tipo) continue;
+    var r = porCod(c[1] || [], cod, 'cod');
+    if (r) return (c[0] === 'mp' && M.ehMistura(r) ? 'a fórmula' : c[2]) + ' ' + cod + (r.desc ? ' — ' + r.desc : '');
+    if (R.criacao(S.emp, c[0], cod)) return c[2] + ' ' + cod + ' (em outra data)';
+  }
+  return null;
+}
 // as conferências de gravar um cadastro (código, código repetido, validar), com os avisos, sem gravar nada
 function validarRegistro(lista, chave, validar) {
   var d = S.draft, info = S.draftInfo;
@@ -9697,6 +9786,8 @@ function validarRegistro(lista, chave, validar) {
   d[chave] = cod;
   if (info.novo || info.cod !== cod) {
     if (porCod(lista, cod, chave)) { toast('Código já existe', 'Já há um registro com o código ' + cod + '.', { tipo: 'err' }); return false; }
+    var outro = codigoEmOutroCadastro(info.tipo, cod);
+    if (outro) { toast('Código já usado', 'O código ' + cod + ' já é ' + outro + '. Na planilha o código é que diz o que é cada passo da composição: use outro código.', { tipo: 'err', tempo: 8000 }); return false; }
   }
   if (validar) { var msg = validar(d); if (msg) { toast('Não foi possível gravar', msg, { tipo: 'err' }); return false; } }
   return true;
@@ -10927,21 +11018,58 @@ function telaMpEditor(id, comoFormula) {
     '</div></div>';
   return h;
 }
-function htmlOndeUsado(tipo, cod) {
-  var mi = tipo === 'MP' ? misturasCom(cod) : [];
-  if (!mi.length) return htmlOndeUsadoBase(tipo, cod);
-  return htmlOndeUsadoBase(tipo, cod) + tabelaBox('Nas fórmulas', '<table id="ondeMist"><thead><tr><th>Fórmula</th><th>Descrição</th><th class="r">Na receita</th></tr></thead><tbody>' +
-    mi.map(function (m) {
-      var x = porCod(S.emp.mps, m, 'cod'), c = x.mist.filter(function (y) { return y && y.mp === cod; })[0], u = (porCod(S.emp.mps, cod, 'cod') || {}).un;
-      return '<tr class="click" data-a="ir" data-rota="formulas" data-id="' + esc(m) + '"><td class="cod">' + esc(m) + '</td><td>' + esc(x.desc) + '</td><td class="r">' + fmtQ(n(c.qtd)) + ' ' + esc(unidadeExt(u || '', n(c.qtd))) + ' para ' + fmtQ(n(x.rende)) + ' ' + esc(unidadeExt(x.un, n(x.rende))) + '</td></tr>';
-    }).join('') + '</tbody></table>');
+// "0,012 mL", "28,33 g": a quantidade guardada na unidade do item, mostrada na unidade em que o número fica legível
+function qtdLegivel(v, base) {
+  v = n(v); if (!base) return fmtQ(v);
+  var u = unExibir({ q: v }, 'q', base);
+  return fmtQ(u === base ? v : U.converter(v, base, u)) + ' ' + U.sigla(u);
 }
-function htmlOndeUsadoBase(tipo, cod) {
-  var r = M.localizar(S.ctx, tipo, cod);
-  if (!r.diretos.length && !r.indiretos.length) return tabelaBox('Onde é usado', '<div class="vazio">Não está na composição de nenhuma peça.</div>');
-  var linhas = r.diretos.map(function (x) { var it = x.item; return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r">' + (it.tipo === 'SP' ? fmtH(M.tempoHoras(it.tempo, false)) : fmtQ(n(it.qtd))) + '</td><td>direto</td></tr>'; }).join('') +
-    r.indiretos.map(function (x) { return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r muted">—</td><td>via ' + esc(x.via.join(', ')) + '</td></tr>'; }).join('');
-  return tabelaBox('Onde é usado', '<table><thead><tr><th>Produto</th><th>Descrição</th><th class="r">Qtd / tempo</th><th>Uso</th></tr></thead><tbody>' + linhas + '</tbody></table>');
+// a linha da composição como aparece nas tabelas de custo: a matéria-prima que é fórmula leva a etiqueta Fórmula
+function tipoDaLinhaCusto(L) { return L && L.tipo === 'MP' && L.ref && mpMistura(L.ref) ? 'FO' : L.tipo; }
+// "0,012 mL por peça × R$ 41,5624/L": a conta de cada linha (quantidade e unidade erradas aparecem aqui)
+function contaDaLinha(L, it, c, d) {
+  if (!L || L.erro) return '';
+  if (L.tipo === 'SP') return '<div class="ci-conta">' + esc(tempoCurto(it || {})) + '</div>';
+  // a quantidade como foi digitada: por peça (quantidade de formulação 1) ou a cada N da formulação
+  var qf = n(c.qf) || 1, un = d.un || 'un', por = qf === 1 ? ' por ' + unidadeExt(un, 1) : ' a cada ' + fmtQ(qf) + ' ' + unidadeExt(un, qf);
+  return '<div class="ci-conta">' + esc(qtdLegivel(L.qtd, L.un) + por) + ' × ' + fmtR(L.unit || 0) + (L.un ? '/' + esc(U.sigla(L.un)) : '') + '</div>';
+}
+function htmlOndeUsado(tipo, cod) {
+  if (tipo !== 'MP') return htmlOndeUsadoBase(tipo, cod, [], false);
+  var mi = misturasCom(cod), u = (porCod(S.emp.mps, cod, 'cod') || {}).un || '';
+  var se = (S.emp.setores || []).filter(function (s) { return (s.mps || []).some(function (x) { return x && x.mp === cod; }); });
+  var h = htmlOndeUsadoBase(tipo, cod, mi, !!(mi.length || se.length));
+  if (mi.length) h += tabelaBox('Nas fórmulas', '<table id="ondeMist"><thead><tr><th>Fórmula</th><th>Descrição</th><th class="r">Na receita</th></tr></thead><tbody>' +
+    mi.map(function (m) {
+      var x = porCod(S.emp.mps, m, 'cod'), c = x.mist.filter(function (y) { return y && y.mp === cod; })[0];
+      return '<tr class="click" data-a="ir" data-rota="formulas" data-id="' + esc(m) + '"><td class="cod">' + esc(m) + '</td><td>' + esc(x.desc) + '</td><td class="r">' + esc(qtdLegivel(c.qtd, u)) + ' para ' + esc(qtdLegivel(x.rende, x.un)) + '</td></tr>';
+    }).join('') + '</tbody></table>');
+  if (se.length) h += tabelaBox('Nos setores (roteiro)', '<table id="ondeSetor"><thead><tr><th>Setor</th><th>Descrição</th><th>Para que serve</th></tr></thead><tbody>' +
+    se.map(function (s) {
+      var x = s.mps.filter(function (y) { return y && y.mp === cod; })[0];
+      return '<tr class="click" data-a="ir" data-rota="setores" data-id="' + esc(s.cod) + '"><td class="cod">' + esc(s.cod) + '</td><td>' + esc(s.desc) + '</td><td>' + (x.obs ? esc(x.obs) : '<span class="muted">—</span>') + '</td></tr>';
+    }).join('') + '</tbody></table>');
+  return h;
+}
+// as peças que usam: direto (ou como reaproveitamento), pelo semi-acabado e, para a matéria-prima, pela fórmula que leva o item
+function htmlOndeUsadoBase(tipo, cod, formulas, temOutros) {
+  var r = M.localizar(S.ctx, tipo, cod), linhas = [];
+  // a descrição embaixo do código: a caixa fica na coluna estreita da matéria-prima
+  var linha = function (prod, q, uso) { return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(prod) + '"><td><span class="cod">' + esc(prod) + '</span><div class="td-sub muted">' + esc(nomeProd(prod)) + '</div></td><td class="r nw">' + q + '</td><td>' + esc(uso) + '</td></tr>'; };
+  r.diretos.forEach(function (x) {
+    var it = x.item, reap = it.ref !== cod && it.reapMp === cod;
+    var q = it.tipo === 'SP' && !reap ? fmtH(M.tempoHoras(it.tempo, false)) : esc(reap ? qtdLegivel(it.reapQtd, unDaLinha('MP', cod)) : qtdLegivel(it.qtd, unDaLinha(it.tipo, it.ref)));
+    linhas.push(linha(x.prod, q, reap ? 'reaproveitamento (volta ao estoque)' : 'direto'));
+  });
+  r.indiretos.forEach(function (x) { linhas.push(linha(x.prod, '<span class="muted">—</span>', 'via ' + x.via.join(', '))); });
+  (formulas || []).forEach(function (f) {
+    var rf = M.localizar(S.ctx, 'MP', f);
+    rf.diretos.forEach(function (x) { if (x.item.ref === f) linhas.push(linha(x.prod, esc(qtdLegivel(x.item.qtd, unDaLinha('MP', f))) + ' de ' + esc(f), 'pela fórmula ' + f)); });
+    rf.indiretos.forEach(function (x) { linhas.push(linha(x.prod, '<span class="muted">—</span>', 'pela fórmula ' + f + ', via ' + x.via.join(', '))); });
+  });
+  var ehF = tipo === 'MP' && mpMistura(cod);
+  if (!linhas.length) return tabelaBox('Onde é usado', '<div class="vazio">' + (ehF ? 'Nenhuma peça usa esta fórmula.' : temOutros ? 'Nenhuma peça usa, nem pelas fórmulas. Veja abaixo onde mais ela está.' : tipo === 'MP' ? 'Não está na composição de nenhuma peça, fórmula ou setor.' : 'Não está na composição de nenhuma peça.') + '</div>');
+  return tabelaBox('Onde é usado', '<table id="ondeUso"><thead><tr><th>Produto</th><th class="r">Qtd / tempo</th><th>Uso</th></tr></thead><tbody>' + linhas.join('') + '</tbody></table>');
 }
 
 /* ======================= SETORES E MÁQUINAS ======================= */
@@ -11826,7 +11954,7 @@ function telaProdEditor(id) {
     var catsL = M.CATS.filter(function (k) { return c.linhas.some(function (L) { return (L.cats[k] || 0) > 0; }) || (k === 'MOL' && own.MOL > 0) || (k === 'LIMP' && own.LIMP > 0); });
     var linhaExtra = function (rot, k, v) { return '<tr><td class="muted">—</td><td>' + rot + '</td>' + catsL.map(function (x) { return '<td class="r">' + (x === k ? fmtR(v) : '<span class="muted">—</span>') + '</td>'; }).join('') + '<td class="r"><b>' + fmtR(v) + '</b></td></tr>'; };
     h += tabelaBox('Custo de cada item', '<table><thead><tr><th>#</th><th>Item</th>' + catsL.map(function (k) { return '<th class="r">' + CAT_CURTO[k] + '</th>'; }).join('') + '<th class="r">Total</th></tr></thead><tbody>' +
-      c.linhas.map(function (L, i) { return '<tr><td class="muted">' + (i + 1) + '</td><td>' + tipoTag(L.tipo) + ' <span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + '</td>' + catsL.map(function (k) { return '<td class="r">' + (L.cats[k] ? fmtR(L.cats[k] / c.qf) : '<span class="muted">—</span>') + '</td>'; }).join('') + '<td class="r"><b>' + fmtR(L.total / c.qf) + '</b></td></tr>'; }).join('') +
+      c.linhas.map(function (L, i) { return '<tr><td class="muted">' + (i + 1) + '</td><td>' + tipoTag(tipoDaLinhaCusto(L)) + ' <span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + contaDaLinha(L, d.itens[i], c, d) + '</td>' + catsL.map(function (k) { return '<td class="r">' + (L.cats[k] ? fmtR(L.cats[k] / c.qf) : '<span class="muted">—</span>') + '</td>'; }).join('') + '<td class="r"><b>' + fmtR(L.total / c.qf) + '</b></td></tr>'; }).join('') +
       (own.MOL > 0 ? linhaExtra('Molde ' + esc(d.molde || ''), 'MOL', own.MOL) : '') + (own.LIMP > 0 ? linhaExtra('Limpeza ' + (d.limpeza.modo === 'terceiro' ? 'no terceiro' : 'interna'), 'LIMP', own.LIMP) : '') +
       '</tbody><tfoot><tr><td colspan="' + (catsL.length + 2) + '">Custo de fabricação</td><td class="r">' + fmtR(t) + '</td></tr></tfoot></table>');
   } else if (aba === 'notas') {
@@ -12062,9 +12190,9 @@ function fichaCompleta(cod, modo) {
       var rows = f.modo === 'explosao' ? M.explodir(S.ctx, p.cod) : c.linhas.map(function (L) { return { nivel: 0, L: L, fator: 1 / (c.qf || 1), qtd: L.qtd / (c.qf || 1), total: L.total / (c.qf || 1), tempo: (L.tempoH || 0) / (c.qf || 1) }; });
       h += '<div class="tbl-scroll"><table><thead><tr><th>Tipo</th><th>Item</th><th>Fase</th><th class="r">Quantidade ou tempo por ' + esc(unN) + '</th><th class="r">Valor unitário</th><th class="r">Custo por ' + esc(unN) + '</th></tr></thead><tbody>' +
         rows.map(function (r) {
-          var L = r.L, q = L.tipo === 'SP' ? fmtH(r.tempo) + (L.setupH ? ' + preparação ' + fmtH(L.setupH) + ' ÷ ' + fmtQ(c.lote) : '') : fmtQ(r.qtd) + ' ' + esc(L.un ? unidadeExt(L.un, r.qtd) : '');
+          var L = r.L, q = L.tipo === 'SP' ? fmtH(r.tempo) + (L.setupH ? ' + preparação ' + fmtH(L.setupH) + ' ÷ ' + fmtQ(c.lote) : '') : esc(L.un ? qtdLegivel(r.qtd, L.un) : fmtQ(r.qtd));
           var unit = L.tipo === 'SP' ? (L.taxas ? fmtR2(L.homens * L.taxas.mod + L.maquinas * L.taxas.maq + L.fatorGGF * L.taxas.ggf) + '/h' : '') : fmtR(L.unit);
-          return '<tr class="nivel-' + Math.min(r.nivel, 4) + '"><td>' + tipoTag(L.tipo) + '</td><td>' + (r.nivel ? '<span class="muted">' + new Array(r.nivel + 1).join('↳ ') + '</span>' : '') + '<span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + '</td><td>' + esc(L.fase || '') + '</td><td class="r">' + q + '</td><td class="r">' + unit + '</td><td class="r">' + (r.nivel ? '<span class="muted">' + fmtR(r.total) + '</span>' : '<b>' + fmtR(r.total) + '</b>') + '</td></tr>';
+          return '<tr class="nivel-' + Math.min(r.nivel, 4) + '"><td>' + tipoTag(tipoDaLinhaCusto(L)) + '</td><td>' + (r.nivel ? '<span class="muted">' + new Array(r.nivel + 1).join('↳ ') + '</span>' : '') + '<span class="cod">' + esc(L.ref) + '</span> ' + esc(L.desc || '') + (L.erro ? ' ' + badge('erro', 'b-crit') : '') + '</td><td>' + esc(L.fase || '') + '</td><td class="r">' + q + '</td><td class="r">' + unit + '</td><td class="r">' + (r.nivel ? '<span class="muted">' + fmtR(r.total) + '</span>' : '<b>' + fmtR(r.total) + '</b>') + '</td></tr>';
         }).join('') + extras + '</tbody><tfoot><tr><td colspan="5">Custo de fabricação</td><td class="r">' + fmtR(c.total) + '</td></tr></tfoot></table></div>' + (f.modo === 'explosao' ? '<div class="hint">Linhas recuadas detalham o que já está somado no componente de cima; o total considera só o primeiro nível.</div>' : '');
     } else {
       var fases = {}, cats = catsVisiveis(c.cats);
@@ -16931,15 +17059,23 @@ TELAS.importar = {
     var h = ph('Importar e exportar planilha', 'Todos os dados da ' + esc(S.emp.nome) + ' numa planilha do Excel: baixe com os dados de hoje, mude o que quiser e importe de volta. Código novo é criado; código que já existe só muda no que estiver diferente.', '', 'Cadastros');
     if (!XL) return h + alerta('err', 'A biblioteca de planilhas não carregou. Confira a internet e recarregue a página.');
     h += '<div class="grid g2"><div>' + caixa('1. Baixe a planilha', '<p class="desc">Uma aba por tipo de cadastro: grupos, matérias-primas, fórmulas, funcionários, setores e máquinas, processos, moldes, peças, composição, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e configuração. Todo campo da tela tem a sua coluna. <b>Com todos os dados</b>: vem preenchida com o que está na Central hoje; mude o que quiser e importe de volta. <b>Modelo em branco</b>: só os títulos e uma linha de exemplo, para começar do zero.</p><div class="inline imp-baixar">' + btn('Baixar com todos os dados', 'impExportar', '', 'btn-accent', 'download') + btn('Baixar modelo em branco', 'impModelo', '', 'btn-ghost', 'file') + '</div>') + '</div><div>' +
-      caixa('2. Envie a planilha preenchida', '<div class="campo"><label for="impArq">Arquivo .xlsx</label><input class="i" type="file" id="impArq" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>' + (I.arquivo ? '<div class="hint hint-fixo">Arquivo lido: <b>' + esc(I.arquivo) + '</b></div>' : '<div class="hint">Nada é gravado antes da conferência e da sua confirmação.</div>')) + '</div></div>';
+      caixa('2. Envie a planilha preenchida', '<div class="campo"><label for="impArq">Arquivo .xlsx</label><input class="i" type="file" id="impArq" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>' + (I.arquivo && !I.antigo ? '<div class="hint hint-fixo">Arquivo lido: <b>' + esc(I.arquivo) + '</b></div>' : '<div class="hint">Nada é gravado antes da conferência e da sua confirmação.</div>')) + '</div></div>';
+    h += caixa('Backup no modelo antigo', '<p class="desc">A planilha baixada antes da mudança de modelo (com a aba <b>Peças e fórmulas</b>, uma linha para cada linha da composição) também entra: envie por aqui. O modelo novo continua igual — a Central só lê o antigo e passa os dados para Peças e Composição. ' +
+      'O que o modelo antigo não tinha (fórmulas, processos dos setores, o setor que fabrica cada fórmula) fica como está na Central. A conferência é a mesma: nada é gravado antes de você marcar o que entra e confirmar.</p>' +
+      '<div class="campo"><label for="impArqAntigo">Arquivo .xlsx no modelo antigo</label><input class="i" type="file" id="impArqAntigo" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>' +
+      (I.arquivo && I.antigo ? '<div class="hint hint-fixo">Arquivo lido' + (I.lido && I.lido.layoutNovo ? ' (já está no modelo novo: lido normalmente)' : ' no modelo antigo') + ': <b>' + esc(I.arquivo) + '</b></div>' :
+        '<div class="hint">Aqui o título da coluna A pode estar trocado (ex.: “p” no lugar de “Código da peça”): a Central lê a coluna A como o código e avisa na conferência.</div>'), '', 'imp-antigo');
     if (!I.lido) return h;
     var P = impPreparar(I), r0 = P.todos, r = P.final;
     var linhaErro = function (e) { return '<tr><td class="nw">' + esc(NOME_ABA_IMP[e.aba] || e.aba || '—') + '</td><td class="r">' + (e.ver || e.linha || '—') + '</td><td>' + esc(e.msg) + '</td></tr>'; };
     var tabErros = function (l) { return '<table data-sem-ordem><thead><tr><th>Aba</th><th class="r">Linha</th><th>Problema</th></tr></thead><tbody>' + l.map(linhaErro).join('') + '</tbody></table>'; };
     // problema que não é de um item (coluna que falta, data de início): não há o que escolher
     var gerais = r.erros.filter(function (e) { return !e.k; });
+    var ajustes = I.lido.ajustes || [];
+    if (ajustes.length) h += alerta('info', '<b>Modelo antigo:</b> ' + ajustes.map(function (x) { return 'aba ' + esc(x.aba) + ', ' + esc(x.msg); }).join(' '));
     if (gerais.length) {
-      return h + '<div id="impErros">' + alerta('err', '<b>' + gerais.length + (gerais.length === 1 ? ' problema' : ' problemas') + ' na planilha.</b> Corrija e envie de novo: nada foi gravado.') + tabelaBox('O que corrigir', tabErros(gerais)) + '</div>';
+      var dicaAntigo = !I.antigo && I.lido.abas.indexOf('prod') >= 0 && gerais.some(function (e) { return /^Faltam as colunas/.test(e.msg); });
+      return h + '<div id="impErros">' + (dicaAntigo ? alerta('info', 'Esta planilha está no modelo antigo (aba “Peças e fórmulas”). Se for um backup, envie no campo <b>Backup no modelo antigo</b>, logo acima: ele lê a coluna A como o código mesmo com o título trocado.') : '') + alerta('err', '<b>' + gerais.length + (gerais.length === 1 ? ' problema' : ' problemas') + ' na planilha.</b> Corrija e envie de novo: nada foi gravado.') + tabelaBox('O que corrigir', tabErros(gerais)) + '</div>';
     }
     var ab = ['grupo', 'setor', 'cfg', 'ncm', 'tab', 'enc', 'benef', 'mp', 'func', 'molde', 'prod', 'terceiro', 'producao'];
     var marcados = impMarcados(I, P).filter(function (x) { return x.acao !== 'erro'; });
@@ -17005,18 +17141,20 @@ TELAS.importar = {
   },
   montar: function () {
     Array.prototype.forEach.call(document.querySelectorAll('input[data-meio]'), function (c) { c.indeterminate = true; });
-    var f = $('#impArq'); if (!f) return;
-    f.onchange = function () {
-      var arq = f.files && f.files[0]; if (!arq) return;
-      var rd = new FileReader();
-      rd.onload = function () {
-        var I = nvImp();
-        try { I.lido = window.Importar.ler(window.XLSX, new Uint8Array(rd.result)); I.arquivo = arq.name; I.pular = {}; I.escolha = {}; I.n = (I.n || 0) + 1; I._cache = null; }
-        catch (e) { console.error(e); I.lido = null; I.arquivo = ''; toast('Não foi possível ler a planilha', 'Confira se o arquivo é .xlsx (' + e.message + ').', { tipo: 'err', tempo: 8000 }); }
-        renderPainel();
+    [['#impArq', false], ['#impArqAntigo', true]].forEach(function (q) {
+      var f = $(q[0]); if (!f) return;
+      f.onchange = function () {
+        var arq = f.files && f.files[0]; if (!arq) return;
+        var rd = new FileReader();
+        rd.onload = function () {
+          var I = nvImp();
+          try { I.lido = window.Importar.ler(window.XLSX, new Uint8Array(rd.result), { antigo: q[1] }); I.antigo = q[1]; I.arquivo = arq.name; I.pular = {}; I.escolha = {}; I.n = (I.n || 0) + 1; I._cache = null; }
+          catch (e) { console.error(e); I.lido = null; I.arquivo = ''; toast('Não foi possível ler a planilha', 'Confira se o arquivo é .xlsx (' + e.message + ').', { tipo: 'err', tempo: 8000 }); }
+          renderPainel();
+        };
+        rd.readAsArrayBuffer(arq);
       };
-      rd.readAsArrayBuffer(arq);
-    };
+    });
   }
 };
 function baixarPlanilha(wb, nome) {
@@ -18130,6 +18268,7 @@ var MANUAL = [
       '<p><b>Colunas “— só para ver”</b> (título azul-claro): a Central calcula com os dados de hoje — custo da matéria-prima, da peça e de cada linha da composição, custo do funcionário, horas-base e taxa hora dos setores, depreciação das máquinas. Servem para conferir; a importação não lê.</p>' +
       '<p><b>Peças e Composição:</b> a aba Peças tem uma linha por peça, com os preços de cada tabela (colunas “Preço: …”), o preço da limpeza no terceiro e o custo de fabricação ao lado. A aba Composição também tem uma linha por peça: os dados da etapa (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem (Passo 1: item, quantidade e setor; Passo 2…). O tipo de cada passo sai do código. Planilhas antigas (aba “Peças e fórmulas”, ou “Fórmulas” com a coluna Código da peça) continuam sendo lidas.</p>' +
       '<p><b>Fórmulas</b> (ex.: adesivo pronto = Chem 11/42 + solvente): a aba <b>Fórmulas</b> tem a fórmula inteira numa linha: código, descrição, unidade, setor que fabrica, Componente 1 e Quantidade 1, Componente 2…, “A receita rende” e como preparar. A aba Matérias-primas só tem as compradas. Planilhas antigas (aba “Misturas”) continuam sendo lidas. <b>Créditos da compra:</b> cada imposto tem a coluna do crédito ao lado (Crédito de ICMS, de IPI, de PIS, de COFINS): sim, não ou padrão (em cinza, o padrão do regime). <b>Desconto de benefício</b> em % do salário: escreva 6%.</p>' +
+      '<p><b>Backup no modelo antigo:</b> a planilha baixada antes da mudança de modelo (aba “Peças e fórmulas”, uma linha por linha da composição) entra pelo campo <b>Backup no modelo antigo</b>, abaixo dos outros dois. O modelo novo não muda: a Central lê o antigo e passa para Peças e Composição; o que ele não tinha (fórmulas, processos dos setores) fica como está. Nesse campo, o título da coluna A trocado vale como o código, com aviso.</p>' +
       '<p><b>Linhas que ficaram de fora:</b> a linha sem as colunas obrigatórias (uma anotação, uma conta) não entra e a tela avisa; o resto importa normalmente.</p><p><b>Escolher o que entra:</b> depois de enviar, a tela lista item por item (novo, muda, exclui). Desmarque o que não quer; <b>Só os novos</b> não mexe no que já existe; <b>Desmarcar os que têm problema</b> deixa o resto entrar.</p><p><b>Código repetido na planilha:</b> se as linhas são iguais, entra uma vez; se são diferentes, você marca qual linha vale.</p><p><b>Apagar:</b> escreva <b>sim</b> na coluna <b>Excluir</b> da linha. Some de todas as datas (fica no histórico de mudanças). Peça excluída leva junto a produção e os preços do terceiro dela.</p><p><b>Célula em branco não apaga:</b> deixa o valor como está.</p><p><b>Produção:</b> cada linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.</p><p><b>Grupos:</b> na coluna Grupo das matérias-primas e das peças pode ir o código ou o nome do grupo.</p><p><b>Encargos e Benefícios:</b> uma linha por item. Linha nova com o código em branco vira item novo (o sistema numera).</p><p><b>Funcionários:</b> as últimas colunas, “Encargo do funcionário: …” e “Benefício: …”, são os valores próprios de cada pessoa; em branco vale o padrão da empresa. Benefício novo: crie na aba Benefícios e acrescente as colunas com o mesmo nome (ou importe, baixe de novo e elas já vêm).</p><p><b>Valor digitado</b> (custo líquido da matéria-prima, taxa do setor): escreva <b>calcular</b> para o sistema voltar a calcular.</p>',
     atencao: ['Importar de volta a mesma planilha não muda nada: só o que está diferente vira mudança.', 'Não vão na planilha: os acessos (usuários e senhas) e o histórico dos valores antigos. A planilha traz os valores de hoje.', 'Excluir (coluna no fim de cada aba): só o administrador da empresa. O que ainda é usado hoje (matéria-prima numa composição ou fórmula, NCM numa peça, grupo com itens) não sai: a tela diz quem usa.', 'Para tirar só um passo da composição ou uma máquina, apague a linha da planilha; a coluna Excluir apaga a peça ou o setor inteiro.'] },
   { id: 'grupos', rota: 'grupos', grupo: 'Cadastros › Peças', nome: 'Grupos',
