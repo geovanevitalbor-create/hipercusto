@@ -6667,7 +6667,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Outros valores (R$)', 'v2', 'numero', false, 'Despachante, alfândega: R$ por unidade'], ['Créditos sobre outros valores (%)', 'v2Cred', 'numero'],
       ['Outros acréscimos (+) ou créditos (−) sobre o preço (%)', 'ajuste', 'numero', false, 'Veio dos impostos de entrada da versão antiga. Normalmente 0'],
       ['Custo líquido digitado (R$)', 'liquidoManual', 'numLimpar', false, 'Só para fixar o custo. Em branco = não muda; "calcular" = o sistema volta a calcular'],
-      ['Custo líquido por unidade (R$) — só para ver', '_custo', 'ver', false, 'O custo que entra nas peças hoje: o preço de compra menos os créditos dos impostos, mais o frete'],
+      ['Custo líquido por unidade (R$)', '_custo', 'ver', false, 'O custo que entra nas peças hoje: o preço de compra menos os créditos dos impostos, mais o frete'],
       ['Observação', 'obs', 'texto'],
       // planilhas antigas: ainda são lidas, não saem mais
       ['Gera crédito (ICMS; IPI; PIS; COFINS)', 'cred', 'creditos', false, 'Só nas planilhas antigas: agora cada imposto tem a coluna "Crédito de …" ao lado', null, true],
@@ -6685,7 +6685,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Situação', 'situacao', 'situacao', false, 'Em branco = ativo'],
       ['Setor que fabrica', 'setor', 'texto', false, 'O código do setor onde a fórmula é preparada (ex.: ADESIVO). "nenhum" tira o setor'],
       ['A receita rende', 'rende', 'numero', false, 'Quanto a receita inteira faz, na unidade da fórmula (aparece ao lado do número). Ex.: 1 kg de Chem + 2 L de solvente rendem 3 L'],
-      ['Custo da fórmula por unidade (R$) — só para ver', '_custoMist', 'ver', false, 'A soma dos componentes (cada um com os créditos dos impostos dele) ÷ o que a receita rende'],
+      ['Custo da fórmula por unidade (R$)', '_custoMist', 'ver', false, 'A soma dos componentes (cada um com os créditos dos impostos dele) ÷ o que a receita rende'],
       ['Como preparar', 'preparo', 'texto', false, 'O passo a passo da fórmula. Para pular linha dentro da célula: Alt+Enter'],
       ['Observação', 'obs', 'texto']],
       exemplo: { cod: 'EXEMPLO-FO1', desc: 'Adesivo pronto (linha de exemplo: apague)', un: 'L', setor: 'EXEMPLO-S1', 'c1:mp': 'EXEMPLO-MP1', 'c1:qtd': '1', rende: '3', preparo: '1. Misturar. 2. Usar em até 4 horas.' } },
@@ -6698,7 +6698,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês ou % do salário)', 'bVtD', 'desconto', false, 'Em reais por mês ou em % do salário base, ex.: 6% (o funcionário paga até 6% do salário base, nunca mais que o vale). Em branco = o padrão da empresa', ['Desconto no vale transporte (R$ por mês)']],
       ['Pessoas nessa função', 'qtd', 'inteiro', false, 'Em branco = uma pessoa (matrícula e nome). Preencha (ex.: 4) quando a linha for uma função, sem nome de operador: o custo no setor fica pessoas × custo de 1'],
       ['Horas extras: 3ª faixa por mês', 'he2', 'numero', false, 'Só se a configuração tiver a 3ª faixa de horas extras (aba Configuração)'], ['Horas extras: 4ª faixa por mês', 'he3', 'numero'], ['Horas extras: 5ª faixa por mês', 'he4', 'numero'],
-      ['Custo por mês (R$) — só para ver', '_custo', 'ver', false, 'Salário, encargos, provisões e benefícios (função: de todas as pessoas)'], ['Custo por hora produtiva (R$/h) — só para ver', '_custoHora', 'ver', false, 'O custo por mês ÷ as horas produtivas (horas trabalhadas + extras × eficiência)']],
+      ['Custo por mês (R$)', '_custo', 'ver', false, 'Salário, encargos, provisões e benefícios (função: de todas as pessoas)'], ['Custo por hora produtiva (R$/h)', '_custoHora', 'ver', false, 'O custo por mês ÷ as horas produtivas (horas trabalhadas + extras × eficiência)']],
       exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', '', '', '', '240,00', '144,00', ''] },
     { id: 'setor', nome: 'Setores e máquinas', chave: 'cod', agrupada: true, colunas: [
       ['Código do setor', 'cod', 'texto', true], ['Descrição do setor', 'desc', 'texto', true], ['Horas de operação por mês', 'horasOperacao', 'numero', true], ['Postos de trabalho', 'postos', 'numero'],
@@ -6709,26 +6709,26 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Taxa digitada: mão de obra (R$/h)', 'manualMod', 'numLimpar', false, 'Só para fixar a taxa (basta na primeira linha do setor). Em branco = não muda; "calcular" = o sistema calcula'], ['Taxa digitada: máquinas (R$/h)', 'manualMaq', 'numLimpar'],
       ['Total do setor por mês: manutenção de ferramental (R$)', 'dt1', 'numero', false, 'Só quando os gastos dos equipamentos são lançados pelo total do setor (aba Configuração)'], ['Total do setor por mês: lubrificação (R$)', 'dt2', 'numero'],
       ['Total do setor por mês: manutenção (R$)', 'dt3', 'numero'], ['Total do setor por mês: energia elétrica (R$)', 'dt4', 'numero'], ['Total do setor por mês: outros (R$)', 'dt5', 'numero'],
-      ['Mão de obra por mês (R$) — só para ver', '_modCusto', 'ver', false, 'O custo dos funcionários no setor (cada um pelo % do tempo dele aqui). Na primeira linha do setor'],
-      ['Horas-base da mão de obra por mês — só para ver', '_modHoras', 'ver', false, 'As horas produtivas das pessoas no setor: (horas trabalhadas + extras) × eficiência × % do tempo no setor'],
-      ['Taxa da mão de obra (R$/h) — só para ver', '_modTaxa', 'ver', false, 'Mão de obra por mês ÷ horas-base da mão de obra'],
-      ['Máquinas por mês (R$) — só para ver', '_maqCusto', 'ver', false, 'Depreciação das máquinas + gastos mensais'],
-      ['Horas-base das máquinas por mês — só para ver', '_maqHoras', 'ver', false, 'Quantidade de máquinas × horas da máquina por mês, somando as máquinas do setor'],
-      ['Taxa das máquinas (R$/h) — só para ver', '_maqTaxa', 'ver', false, 'Máquinas por mês ÷ horas-base das máquinas'],
-      ['Valor residual de cada máquina (R$) — só para ver', '_eqResidual', 'ver', false, 'Valor da máquina × valor residual (%): o que ela ainda vale no fim da vida útil'],
-      ['Depreciação por mês (R$) — só para ver', '_eqDepr', 'ver', false, 'Quantidade × (valor − valor residual) ÷ (vida útil em anos × 12)']],
+      ['Mão de obra por mês (R$)', '_modCusto', 'ver', false, 'O custo dos funcionários no setor (cada um pelo % do tempo dele aqui). Na primeira linha do setor'],
+      ['Horas-base da mão de obra por mês', '_modHoras', 'ver', false, 'As horas produtivas das pessoas no setor: (horas trabalhadas + extras) × eficiência × % do tempo no setor'],
+      ['Taxa da mão de obra (R$/h)', '_modTaxa', 'ver', false, 'Mão de obra por mês ÷ horas-base da mão de obra'],
+      ['Máquinas por mês (R$)', '_maqCusto', 'ver', false, 'Depreciação das máquinas + gastos mensais'],
+      ['Horas-base das máquinas por mês', '_maqHoras', 'ver', false, 'Quantidade de máquinas × horas da máquina por mês, somando as máquinas do setor'],
+      ['Taxa das máquinas (R$/h)', '_maqTaxa', 'ver', false, 'Máquinas por mês ÷ horas-base das máquinas'],
+      ['Valor residual de cada máquina (R$)', '_eqResidual', 'ver', false, 'Valor da máquina × valor residual (%): o que ela ainda vale no fim da vida útil'],
+      ['Depreciação por mês (R$)', '_eqDepr', 'ver', false, 'Quantidade × (valor − valor residual) ÷ (vida útil em anos × 12)']],
       exemplo: ['EXEMPLO-S1', 'Injeção de borracha (linha de exemplo: apague)', '440', '8', 'Injetora de borracha 300 t', '8', '420.000,00', '10', '12', '440', '450', '180', '1.400', '6.300', ''] },
     // o processo de cada setor: uma linha por setor; as matérias-primas em colunas (Matéria-prima 1, Para que serve 1…)
     { id: 'processo', nome: 'Processos', chave: 'cod', colunas: [
       ['Código do setor', 'cod', 'texto', true, 'O setor (aba Setores e máquinas). Uma linha por setor'],
-      ['Descrição do setor — só para ver', '_descSetor', 'ver', false, 'O nome do setor'],
+      ['Descrição do setor', '_descSetor', 'ver', false, 'O nome do setor'],
       ['Ordem no roteiro', 'ordem', 'inteiro', false, 'A posição do setor na fabricação: 1 = o primeiro, 2 = o segundo… Em branco = não muda; "não" = o setor sai do roteiro'],
       ['Como fazer (processo)', 'processo', 'texto', false, 'O passo a passo do setor. Para pular linha dentro da célula: Alt+Enter']],
       exemplo: { cod: 'EXEMPLO-S1', ordem: '1', processo: '1. Preparar a mistura. 2. Aplicar. 3. Secar 10 minutos.', 'm1:mp': 'EXEMPLO-MP1', 'm1:obs': 'base da mistura' } },
     { id: 'molde', nome: 'Moldes', chave: 'cod', colunas: [
       ['Código', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Setor', 'setor', 'texto', true], ['Cavidades', 'cavidades', 'inteiro', true], ['Valor (R$)', 'valor', 'numero', true],
       ['Vida útil (injetadas)', 'vida', 'inteiro', true], ['Injetadas antes do sistema', 'ciclosIniciais', 'inteiro'], ['Data da compra', 'compra', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
-      ['Custo do molde por peça (R$) — só para ver', '_custo', 'ver', false, 'Valor ÷ (vida útil em injetadas × cavidades)']],
+      ['Custo do molde por peça (R$)', '_custo', 'ver', false, 'Valor ÷ (vida útil em injetadas × cavidades)']],
       exemplo: ['EXEMPLO-MD1', 'Molde O-ring 64 cavidades (linha de exemplo: apague)', 'EXEMPLO-S1', '64', '38.000,00', '600000', '0', '10/06/2022', 'ativo', ''] },
     { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, legado: true, colunas: [
       ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
@@ -6748,24 +6748,24 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['NCM', 'ncm', 'ncm', false, '8 dígitos, cadastrada na aba NCM'], ['Molde', 'molde', 'texto', false, 'O código do molde (aba Moldes)'],
       ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna (na empresa) ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Só na limpeza interna (obrigatório)'],
       ['Limpeza no terceiro (R$ por peça)', 'terc', 'numero', false, 'O preço que o terceiro cobra hoje para limpar a peça. Para mudar, escreva o preço novo: vale a partir da data de início da importação (o histórico fica na aba Preços do terceiro)'],
-      ['Custo de fabricação por peça (R$) — só para ver', '_custo', 'ver', false, 'O custo de fazer uma peça hoje (semi-acabado: uma unidade), com a composição, o molde e a limpeza. Fica ao lado dos preços para comparar'],
+      ['Custo de fabricação por peça (R$)', '_custo', 'ver', false, 'O custo de fazer uma peça hoje (semi-acabado: uma unidade), com a composição, o molde e a limpeza. Fica ao lado dos preços para comparar'],
       ['Preço na tabela geral (R$)', 'preco', 'numero', false, 'Só produto acabado. As outras tabelas têm uma coluna cada ("Preço: …")', ['Preço de venda (R$)']],
       ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'], ['Notas', 'notas', 'texto', false, 'Texto livre sobre a peça (não entra no custo)']],
       exemplo: { cod: 'EXEMPLO-P1', desc: 'Anel O-ring NBR (linha de exemplo: apague)', tipo: 'Produto acabado', grupo: '201', un: 'un', situacao: 'ativo', qf: '1', lote: '20000', ncm: '40169300', molde: 'EXEMPLO-MD1', limpezaModo: 'interna', limpezaPph: '8000', preco: '0,12' } },
     { id: 'formula', nome: 'Composição', antigos: ['Fórmulas'], chave: 'cod', agrupada: true, colunas: [
       ['Código da peça', 'cod', 'texto', true, 'A peça desta linha da composição (repita o código em todas as linhas da peça)'],
-      ['Descrição da peça — só para ver', '_descPeca', 'ver', false, 'O nome da peça (vem da aba Peças), na primeira linha'],
+      ['Descrição da peça', '_descPeca', 'ver', false, 'O nome da peça (vem da aba Peças), na primeira linha'],
       ['Passo', 'lPasso', 'inteiro', false, 'A ordem da linha na composição: 1, 2, 3… Para mudar a ordem, mude os números. Em branco = a ordem das linhas'],
       ['Tipo da linha', 'lTipo', 'tipoLinha', true, 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção'],
       ['Item (código)', 'lRef', 'texto', true, 'O código da matéria-prima, do semi-acabado, da peça ou do setor (etapa de produção)', ['Item da linha (código)']],
-      ['Descrição do item — só para ver', '_descItem', 'ver', false, 'O nome do item'],
+      ['Descrição do item', '_descItem', 'ver', false, 'O nome do item'],
       ['Quantidade', 'lQtd', 'numero', false, 'Matéria-prima e componentes: quanto vai na quantidade de formulação da peça, na unidade do item'],
-      ['Unidade do item — só para ver', '_unItem', 'ver', false, 'A unidade da quantidade (a do cadastro do item)'],
+      ['Unidade do item', '_unItem', 'ver', false, 'A unidade da quantidade (a do cadastro do item)'],
       ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção: quantas peças por hora. Ou use uma das colunas de tempo da etapa (no fim da aba)'],
       ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'],
       ['Pessoas', 'lHomens', 'numero', false, 'Etapa: quantas pessoas trabalham nela (em branco = 1)'], ['Máquinas', 'lMaquinas', 'numero', false, 'Etapa: quantas máquinas (em branco = 1)'],
       ['Refugo (%)', 'lRefugo', 'numero', false, 'Etapa: o que se perde nela. Encarece tudo o que veio antes na composição'], ['Fase', 'lFase', 'texto'],
-      ['Custo da linha por peça (R$) — só para ver', '_custoLinha', 'ver', false, 'Quanto esta linha custa em cada peça hoje (com o refugo das etapas seguintes)'],
+      ['Custo da linha por peça (R$)', '_custoLinha', 'ver', false, 'Quanto esta linha custa em cada peça hoje (com o refugo das etapas seguintes)'],
       ['Tempo da etapa (hh:mm)', 'lTempoSex', 'horas', false, 'Só etapa de produção, no lugar das peças por hora: o tempo para a quantidade de formulação, ex.: 1:30'], ['Tempo da etapa (horas centesimais)', 'lTempoCen', 'numero', false, 'Ex.: 1,5 = uma hora e meia'],
       ['Preparação (minutos)', 'lSetupMin', 'numero'], ['Preparação (horas centesimais)', 'lSetupCen', 'numero'],
       ['Reaproveitamento (matéria-prima)', 'lReapMp', 'texto', false, 'O código da matéria-prima que volta para o estoque'], ['Quantidade reaproveitada', 'lReapQtd', 'numero']],
@@ -6910,10 +6910,10 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, folhaLeia(XLSX, {
       titulo: 'Central de Custos — planilha de cadastros',
-      passos: ['Uma aba por tipo de cadastro. Preencha as linhas a partir da linha 2. A linha de exemplo (cinza, código começando com EXEMPLO) é ignorada: apague ou escreva por cima.',
+      passos: ['Uma aba por tipo de cadastro. Preencha a partir da linha 3 (a linha 2, com ⓘ, explica cada coluna). A linha de exemplo (cinza, código começando com EXEMPLO) é ignorada: apague ou escreva por cima.',
         'Código que já existe na Central é atualizado (só o que mudou); código novo é criado. Abas que você não usar podem ficar vazias.',
         'Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da linha 1.',
-        'Passe o mouse no título da coluna para ver o que ela aceita. Nas colunas de opção (Unidade, Situação, Tipo…), clique na célula e escolha na lista.',
+        'O que é cada coluna e como ela entra no cálculo: na linha 2 de cada aba, na nota do título (passe o mouse) e na aba "Explicação das colunas". Nas colunas de opção (Unidade, Situação, Tipo…), clique na célula e escolha na lista.',
         'Para baixar os dados que já estão na Central (para conferir ou mudar em massa), use "Baixar com todos os dados".'],
       fim: ['Impostos: o regime, as alíquotas da venda e o ICMS de cada estado ficam na aba Configuração; os da compra, em cada matéria-prima. Confira as alíquotas com o seu contador.',
         'Linha sem as colunas obrigatórias (uma anotação, uma conta) fica de fora: a tela avisa e importa o resto.']
@@ -6930,7 +6930,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (a.id === 'ncm') ((cfgPadrao && cfgPadrao.ncms) || []).forEach(function (x) { dados.push([x.cod, x.desc || '', x.ipi === undefined ? '' : x.ipi, x.icms === undefined ? '' : x.icms, x.pis === undefined ? '' : x.pis, x.cofins === undefined ? '' : x.cofins]); });
       XLSX.utils.book_append_sheet(wb, a.id === 'cfg' ? folhaCfg(XLSX, dados) : folha(XLSX, a, dados, { exemplo: true }), a.nome);
     });
-    return wb;
+    return comExplicacao(XLSX, wb);
   }
 
   /* ---------------- ler o arquivo ---------------- */
@@ -6947,6 +6947,8 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   // "5" ou "5 da aba Peças" (quando a linha é de outra aba)
   function nLinha(aba, linha) { var v = linhaVista(aba, linha); return v.n + (aba && ABA[aba] && v.nome !== ABA[aba].nome ? ' da aba ' + v.nome : ''); }
   function erro(lista, aba, linha, msg) { var v = linhaVista(aba, linha); lista.push({ aba: v.nome, id: aba || '', linha: linha || 0, ver: v.n, msg: msg }); }
+  // onde começam os dados: depois dos títulos e da linha de explicação (ⓘ) ou da antiga linha de unidades/formatos
+  function inicioDados(m) { if (m.length < 2) return 1; var v = txt(m[1][0]); return /^(unidade|formato)$/.test(semAcento(v)) || v.indexOf('ⓘ') === 0 ? 2 : 1; }
   // → {linhas: {mp: [{_linha, cod, …}], …}, erros, exemplos (linhas de exemplo ignoradas), abas (as que vieram)}
   function ler(XLSX, dados, opts) {
     opts = opts || {};
@@ -7020,7 +7022,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         else if ((mm = RE_BENEF_FUNC.exec(s))) din.push({ i: i, tipo: 'benef', nome: txt(mm[2]), campo: mm[1] ? 'desconto' : 'valor', titulo: s });
       });
       (a.antigas || []).forEach(function (x) { if (tit.indexOf(semAcento(x[0])) >= 0) erro(res.erros, a.id, 1, x[1]); });
-      var r1 = m.length > 1 && /^(unidade|formato)$/.test(semAcento(txt(m[1][0]))) ? 2 : 1;   // a linha de formatos (antes: de unidades)
+      var r1 = inicioDados(m);   // a linha de formatos (antes: de unidades)
       var obrig = a.colunas.filter(function (c) { return c[3] && c[2] !== 'ver' && tem(idx, c[1]); });
       for (var r = r1; r < m.length; r++) {
         var cel = m[r], linha = { _linha: r + 1 + r0 }, algum = false;
@@ -7129,7 +7131,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     if (iCod < 0) { erro(res.erros, a.id, 1, 'Falta a coluna Código da peça. Baixe o modelo e use os mesmos títulos.'); return; }
     var ks = Object.keys(passos).map(Number).sort(function (x, y) { return x - y; }), ns = Object.keys(etapas).map(Number).sort(function (x, y) { return x - y; });
     var nE = ns.length ? ns[ns.length - 1] : 0, vistos = {};
-    var r1 = m.length > 1 && /^(unidade|formato)$/.test(semAcento(txt(m[1][0]))) ? 2 : 1;
+    var r1 = inicioDados(m);
     var le = function (d, v, n) {
       var x = lerCampoL(d.tipo, v);
       if ((typeof x === 'number' && isNaN(x)) || x !== x) { erro(res.erros, a.id, n, d.titulo + ': "' + txt(v) + '" ' + (DICA[d.tipo] || 'não serve') + '.'); return undefined; }
@@ -7178,7 +7180,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     });
     if (iCod < 0) { erro(res.erros, a.id, 1, 'Falta a coluna Código da fórmula. Baixe o modelo e use os mesmos títulos.'); return; }
     var ks = Object.keys(comps).map(Number).sort(function (x, y) { return x - y; }), vistos = {};
-    var r1 = m.length > 1 && /^(unidade|formato)$/.test(semAcento(txt(m[1][0]))) ? 2 : 1;
+    var r1 = inicioDados(m);
     for (var r = r1; r < m.length; r++) {
       var cel = m[r], n = r + 1 + r0, cod = txt(cel[iCod]);
       var temCampo = Object.keys(campos).some(function (f) { return !vazio(cel[campos[f].i]); });
@@ -7226,7 +7228,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     });
     if (iCod < 0) { erro(res.erros, a.id, 1, 'Falta a coluna Código do setor. Baixe o modelo e use os mesmos títulos.'); return; }
     var ks = Object.keys(mps).map(Number).sort(function (x, y) { return x - y; }), vistos = {};
-    var r1 = m.length > 1 && /^(unidade|formato)$/.test(semAcento(txt(m[1][0]))) ? 2 : 1;
+    var r1 = inicioDados(m);
     for (var r = r1; r < m.length; r++) {
       var cel = m[r], n = r + 1 + r0, cod = txt(cel[iCod]);
       var cheio = function (k, f) { return tem(mps[k], f) && !vazio(cel[mps[k][f]]); };
@@ -8373,18 +8375,18 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       }); });
     }
     var cols = [['Código da peça', 'cod', 'texto', true, 'A peça (da aba Peças ou já cadastrada). Uma linha por peça. A peça que não estiver aqui fica com a composição como está'],
-      ['Descrição da peça — só para ver', '_descPeca', 'ver', false, 'O nome da peça (aba Peças)'],
-      ['Custo de fabricação por peça (R$) — só para ver', '_custo', 'ver', false, 'O custo de fazer uma peça hoje, com esta composição, o molde e a limpeza']];
+      ['Descrição da peça', '_descPeca', 'ver', false, 'O nome da peça (aba Peças)'],
+      ['Custo de fabricação por peça (R$)', '_custo', 'ver', false, 'O custo de fazer uma peça hoje, com esta composição, o molde e a limpeza']];
     for (var n = 1; n <= E; n++) {
       // de qual setor é esta etapa nesta peça (o setor do passo, na mesma ordem): só para ver
-      cols.push([tituloEtapa(n, 'setor — só para ver', E === 1), 'e' + n + ':_setor', 'ver', false, 'O setor desta etapa nesta peça: é o setor que aparece nos passos, na mesma ordem (a ' + n + 'ª etapa = o ' + n + 'º setor dos passos). A Central preenche; para mudar o setor, mude o passo', null, false, { etapa: n, primeiro: true }]);
+      cols.push([tituloEtapa(n, 'setor', E === 1), 'e' + n + ':_setor', 'ver', false, 'O setor desta etapa nesta peça: é o setor que aparece nos passos, na mesma ordem (a ' + n + 'ª etapa = o ' + n + 'º setor dos passos). A Central preenche; para mudar o setor, mude o passo', null, false, { etapa: n, primeiro: true }]);
       CAMPOS_ETAPA.forEach(function (c, j) { if (j >= 5 && !tempos) return; cols.push([tituloEtapa(n, c[0], E === 1), 'e' + n + ':' + c[1], c[2], false, (n > 1 ? 'A ' + n + 'ª etapa de produção da peça, na ordem dos passos. ' : '') + c[3], null, false, { etapa: n }]); });
     }
     for (var k = 1; k <= K; k++) CAMPOS_PASSO.forEach(function (c, j) {
       if (j >= 3 && !reap) return;
       cols.push(['Passo ' + k + ': ' + c[0], 'p' + k + ':' + c[1], c[2], false, c[3], null, false, { passo: k, primeiro: j === 0 }]);
       // ao lado do código, o nome do item: só para ver
-      if (j === 0) cols.push(['Passo ' + k + ': descrição — só para ver', 'p' + k + ':_desc', 'ver', false, 'O nome do item deste passo, com o tipo quando não é matéria-prima comprada (Fórmula, Etapa, Semi-acabado, Produto). A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
+      if (j === 0) cols.push(['Passo ' + k + ': nome do item', 'p' + k + ':_desc', 'ver', false, 'O nome do item deste passo, com o tipo quando não é matéria-prima comprada (Fórmula, Etapa, Semi-acabado, Produto). A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
     });
     cols.larga = { K: K, E: E };
     return cols;
@@ -8396,7 +8398,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var cols = b.slice(0, 6).map(function (c) { return c.slice(); });
     for (var k = 1; k <= J; k++) {
       cols.push(['Componente ' + k, 'c' + k + ':mp', 'texto', false, 'O código de uma matéria-prima comprada que entra na receita da fórmula. Passe o mouse no código para ver o nome, a unidade e o custo', null, false, { passo: k, primeiro: true }]);
-      cols.push(['Componente ' + k + ': descrição — só para ver', 'c' + k + ':_desc', 'ver', false, 'O nome do componente. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
+      cols.push(['Componente ' + k + ': nome', 'c' + k + ':_desc', 'ver', false, 'O nome do componente. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
       cols.push(['Quantidade ' + k, 'c' + k + ':qtd', 'numero', false, 'Quanto do componente ' + k + ' vai na receita, na unidade dele (aparece ao lado do número)', null, false, { passo: k }]);
     }
     b.slice(6).forEach(function (c) { cols.push(c.slice()); });
@@ -8410,7 +8412,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var cols = ABA.processo.colunas.map(function (c) { return c.slice(); });
     for (var k = 1; k <= J; k++) {
       cols.push(['Matéria-prima ' + k, 'm' + k + ':mp', 'texto', false, 'O código de uma matéria-prima (ou fórmula) usada neste setor. Na composição das peças, ela aparece neste setor. Passe o mouse no código para ver o nome e o custo. "nenhuma" na primeira = tira todas', null, false, { passo: k, primeiro: true }]);
-      cols.push(['Matéria-prima ' + k + ': descrição — só para ver', 'm' + k + ':_desc', 'ver', false, 'O nome da matéria-prima. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
+      cols.push(['Matéria-prima ' + k + ': nome', 'm' + k + ':_desc', 'ver', false, 'O nome da matéria-prima. A Central preenche; mudar aqui não muda nada', null, false, { passo: k }]);
       cols.push(['Para que serve ' + k, 'm' + k + ':obs', 'texto', false, 'Texto livre (ex.: misturar 1:2 com o prime)', null, false, { passo: k }]);
     }
     cols.larga = { K: J };
@@ -8615,7 +8617,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
      cabeçalho em negrito com borda + linha de unidades; cinza = coluna obrigatória; amarelo-claro = o dado obrigatório preenchido;
      valores em R$ em azul; código em negrito; "Excluir" em vermelho; cabeçalho e código congelados; filtro na linha de unidades;
      a explicação de cada coluna aparece ao passar o mouse no título. A biblioteca sem estilos (SheetJS comum) ignora tudo isso. */
-  var FONTE = 'Aptos Narrow', COR = { cinza: 'D9D9D9', entrada: 'F4FCBA', azul: '0915FF', exc: 'FDE2E2', excTxt: '9C0006', exemplo: '808080', exFundo: 'F2F2F2', nota: '595959', padrao: '8C8C8C', segue: 'A6A6A6', bloco: 'F4F6F8', verCab: 'DDEBF7', verFundo: 'F3F8FC', verTxt: '44546A' };
+  var FONTE = 'Aptos Narrow', COR = { cinza: 'D9D9D9', entrada: 'F4FCBA', azul: '0915FF', exc: 'FDE2E2', excTxt: '9C0006', exemplo: '808080', exFundo: 'F2F2F2', nota: '595959', padrao: '8C8C8C', segue: 'A6A6A6', bloco: 'F4F6F8', verCab: 'DDEBF7', verFundo: 'F3F8FC', verTxt: '44546A', explTxt: '404040', explFundo: 'FFF8E1' };
   // as opções de uma coluna (viram uma lista para escolher na célula)
   function opcoesDaColuna(c) {
     var t = c[2];
@@ -8672,10 +8674,30 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   function formatoDaUnidade(u) { return u === 'R$' || u === 'R$/h' ? '"R$" #,##0.00##' : u === '%' ? '0.00##"%"' : u === 'dd/mm/aaaa' ? 'dd/mm/yyyy' : null; }
   function serialData(dma) { var p = dma.split('/'); return (Date.UTC(+p[2], +p[1] - 1, +p[0]) - Date.UTC(1899, 11, 30)) / 86400000; }
   function estilo(o) {
-    var s = { font: { name: FONTE, sz: 11, bold: !!o.negrito, italic: !!o.italico, color: { rgb: o.cor || '000000' } }, border: BORDA, alignment: { horizontal: o.alinha || 'center', vertical: 'center', wrapText: !!o.quebra } };
+    var s = { font: { name: FONTE, sz: o.tam || 11, bold: !!o.negrito, italic: !!o.italico, color: { rgb: o.cor || '000000' } }, border: BORDA, alignment: { horizontal: o.alinha || 'center', vertical: o.topo ? 'top' : 'center', wrapText: !!o.quebra } };
     if (o.fundo) s.fill = { patternType: 'solid', fgColor: { rgb: o.fundo } };
     if (o.formato) s.numFmt = o.formato;
     return s;
+  }
+  // o que é cada coluna e como entra no cálculo (linha 2 de cada aba, nota do título e aba Explicação das colunas)
+  var EXPLICA = {"grupo": {"cod": "O código do grupo (ex.: BOR). É o que se escreve na coluna Grupo das matérias-primas e das peças. Não entra no custo: só organiza e filtra.", "desc": "O nome do grupo (ex.: Borrachas).", "excluir": "Escreva sim para apagar o grupo (só sai se nenhuma matéria-prima ou peça usa)."}, "mp": {"cod": "O código da matéria-prima (ex.: NBR 50). É o que vai nos passos da Composição, nas Fórmulas e nos Processos. Não pode ser o código de uma peça ou de um setor.", "desc": "O nome da matéria-prima.", "grupo": "O código do grupo (aba Grupos). Só organiza; não entra no custo.", "un": "A unidade em que a matéria-prima é comprada e usada (kg, L, m, un…). O preço é por esta unidade, e a quantidade nos passos da Composição também.", "situacao": "ativo ou inativo. Inativa não aparece para escolher; as peças que já usam continuam com o custo dela.", "fornecedor": "O fornecedor principal. Só informação.", "vc": "O preço da nota por unidade, com ICMS, PIS e COFINS dentro e sem o IPI. É a base do custo líquido: preço + IPI sem crédito − créditos + frete + outros valores.", "icms": "A alíquota de ICMS da nota. Com crédito, sai do custo: − preço × ICMS%. Sem crédito, fica dentro do preço.", "crIcms": "sim = a empresa recupera o ICMS da compra (sai do custo); não = fica no custo. Em cinza = o padrão do regime.", "ipi": "A alíquota de IPI (por fora da nota). Sem crédito, soma no custo: + preço × IPI%. Com crédito, não entra.", "crIpi": "sim = o IPI é recuperado (não entra no custo); não = soma no custo. Em cinza = o padrão do regime.", "pis": "A alíquota de PIS da nota. Com crédito, sai do custo: − preço × PIS%.", "crPis": "sim = recupera o PIS (sai do custo); não = fica no custo. Lucro Presumido: normalmente não.", "cofins": "A alíquota de COFINS da nota. Com crédito, sai do custo: − preço × COFINS%.", "crCofins": "sim = recupera a COFINS (sai do custo); não = fica no custo. Lucro Presumido: normalmente não.", "freteP": "Frete em % do preço de compra. Soma no custo: + preço × frete%.", "v1": "Frete e seguro em R$ por unidade. Soma no custo.", "freteCred": "Crédito sobre o frete (ex.: ICMS do conhecimento de frete). Sai do custo: − frete × crédito%.", "v2": "Outros valores em R$ por unidade (despachante, alfândega). Somam no custo.", "v2Cred": "Crédito sobre os outros valores. Sai do custo: − outros valores × crédito%.", "ajuste": "Acréscimo (+) ou crédito (−) em % do preço, herdado da versão antiga. Normalmente 0. Entra no custo: ± preço × %.", "liquidoManual": "Para fixar o custo na mão, sem a conta dos impostos. Preenchido, é este o custo usado nas peças. Em branco = não muda; calcular = volta a calcular.", "_custo": "Preenchido pela Central (não precisa digitar): o custo líquido por unidade que entra nas peças hoje = preço − créditos + IPI sem crédito + frete + outros valores (ou o custo digitado).", "obs": "Observação livre. Não entra no custo.", "excluir": "Escreva sim para apagar a matéria-prima de vez (some de todas as datas; só sai se nenhuma peça ou fórmula usa)."}, "mistura": {"cod": "O código da fórmula (ex.: FO-001): o que a fábrica prepara misturando matérias-primas compradas (ex.: adesivo pronto). Entra nos passos da Composição como uma matéria-prima.", "desc": "O nome da fórmula. Obrigatório na fórmula nova.", "grupo": "O código do grupo (aba Grupos). Só organiza.", "un": "A unidade da fórmula pronta (ex.: L). A quantidade nos passos da Composição e o rendimento da receita usam esta unidade.", "situacao": "ativo ou inativo.", "setor": "O código do setor onde a fórmula é preparada (ex.: ADESIVO). Organiza o roteiro; não entra no custo. nenhum = tira o setor.", "c:mp": "O código de uma matéria-prima comprada que entra na receita. Custo da fórmula = soma de (quantidade × custo líquido de cada componente) ÷ o que a receita rende.", "c:_desc": "Preenchido pela Central (não precisa digitar): o nome do componente.", "c:qtd": "Quanto deste componente vai na receita, na unidade dele (aparece ao lado do número). Entra na soma do custo da fórmula.", "rende": "Quanto a receita inteira produz, na unidade da fórmula (ex.: 1 L de primer + 1 L de solvente rendem 2 L). A soma dos componentes é dividida por este número.", "_custoMist": "Preenchido pela Central (não precisa digitar): soma de (quantidade × custo líquido de cada componente) ÷ o que a receita rende. É o custo por unidade da fórmula usado nas peças.", "preparo": "O passo a passo do preparo. Não entra no custo: o tempo de preparo entra pelo tempo da peça no setor.", "obs": "Observação livre."}, "func": {"mat": "A matrícula (ou um código para a função). Identifica a pessoa; não entra no custo.", "nome": "O nome da pessoa ou da função (ex.: Operador de injetora).", "cargo": "O cargo. Só informação.", "sb": "O salário base do mês. Base dos encargos, das provisões e das horas extras (salário-hora = salário ÷ horas base).", "horasTrab": "Horas trabalhadas no mês. Com as extras e a eficiência dão as horas produtivas: custo por hora = custo do mês ÷ horas produtivas. Em branco = o padrão da Configuração.", "horasBase": "As horas do salário (normalmente 220). Salário-hora = salário ÷ horas base: é o que paga as horas extras.", "efic": "O % do tempo em que a pessoa produz de fato. Horas produtivas = (horas trabalhadas + extras) × eficiência. Menos eficiência = hora mais cara.", "he0": "Horas extras a 50% no mês. Custo = horas × salário-hora × 1,5. Somam nas horas produtivas.", "he1": "Horas extras a 100% no mês. Custo = horas × salário-hora × 2. Somam nas horas produtivas.", "he2": "Horas extras da 3ª faixa (o % fica na aba Configuração). Mesma conta das outras extras.", "he3": "Horas extras da 4ª faixa (o % fica na aba Configuração). Mesma conta das outras extras.", "he4": "Horas extras da 5ª faixa (o % fica na aba Configuração). Mesma conta das outras extras.", "aloc": "Em quais setores a pessoa trabalha e quanto (ex.: INJETORAS 70; MANUTENÇÃO 30). O custo e as horas dela entram na taxa de mão de obra de cada setor por esse %. O total deve dar 100%.", "admissao": "Data de admissão. Só informação.", "situacao": "ativo ou inativo. Inativo sai das taxas dos setores.", "obs": "Observação livre.", "bVa": "Vale alimentação por mês desta pessoa. Soma no custo dela. Em branco = o padrão da aba Benefícios; não recebe = zero.", "bVaD": "O que a pessoa paga do vale alimentação (R$ por mês ou % do salário). Sai do custo do vale. Em branco = o padrão.", "bVt": "Vale transporte por mês desta pessoa. Soma no custo dela. Em branco = o padrão; não recebe = zero.", "bVtD": "O que a pessoa paga do vale transporte (R$ ou % do salário, ex.: 6%), nunca mais que o vale. Sai do custo do vale.", "qtd": "Pessoas nesta função, quando a linha é uma função sem nome. Custo no setor = pessoas × custo de 1 pessoa. Em branco = 1.", "_custo": "Preenchido pela Central (não precisa digitar): salário + horas extras + encargos + provisões + benefícios no mês (na função: de todas as pessoas).", "_custoHora": "Preenchido pela Central (não precisa digitar): custo do mês ÷ horas produtivas; horas produtivas = (horas trabalhadas + extras) × eficiência.", "excluir": "Escreva sim para apagar o funcionário de vez."}, "setor": {"cod": "O código do setor (ex.: INJETORAS). Vai nos passos da Composição (a etapa de produção) e na alocação dos funcionários. Não pode ser o código de uma matéria-prima ou peça.", "desc": "O nome do setor.", "horasOperacao": "Horas que o setor funciona no mês (ex.: 2 turnos × 8 h × 22 dias = 352). É o padrão das horas das máquinas novas e a base da ocupação do setor.", "postos": "Postos de trabalho do setor (quantas pessoas trabalham ao mesmo tempo). Informativo: hoje não muda o custo.", "eqDesc": "O nome da máquina. Uma linha por máquina, repetindo o código do setor. Setor sem máquina: em branco.", "eqQtd": "Quantas máquinas iguais. Multiplica a depreciação, os gastos e as horas das máquinas.", "eqValor": "O valor de cada máquina. Entra na depreciação: quantidade × (valor − residual) ÷ (vida útil × 12) por mês.", "eqResidual": "Quanto a máquina ainda vale no fim da vida útil, em % do valor. Sai da depreciação.", "eqVida": "Vida útil em anos. Depreciação por mês = quantidade × (valor − residual) ÷ (anos × 12).", "eqHoras": "Horas que cada máquina trabalha no mês. Taxa das máquinas = (depreciação + gastos) ÷ (quantidade × horas), somando as máquinas do setor.", "manualMod": "Para fixar a taxa de mão de obra do setor (R$/h), sem a conta. Em branco = não muda; calcular = volta a calcular.", "manualMaq": "Para fixar a taxa das máquinas do setor (R$/h), sem a conta. Em branco = não muda; calcular = volta a calcular.", "_modCusto": "Preenchido pela Central (não precisa digitar): o custo dos funcionários no setor no mês (cada um pelo % do tempo dele aqui).", "_modHoras": "Preenchido pela Central (não precisa digitar): as horas produtivas das pessoas no setor = (horas trabalhadas + extras) × eficiência × % no setor.", "_modTaxa": "Preenchido pela Central (não precisa digitar): mão de obra por mês ÷ horas-base da mão de obra. É o R$/h de 1 pessoa nas etapas deste setor.", "_maqCusto": "Preenchido pela Central (não precisa digitar): depreciação + gastos mensais das máquinas do setor.", "_maqHoras": "Preenchido pela Central (não precisa digitar): soma de quantidade × horas por mês das máquinas do setor.", "_maqTaxa": "Preenchido pela Central (não precisa digitar): máquinas por mês ÷ horas-base das máquinas. É o R$/h de 1 máquina nas etapas deste setor.", "_eqResidual": "Preenchido pela Central (não precisa digitar): valor da máquina × valor residual %.", "_eqDepr": "Preenchido pela Central (não precisa digitar): quantidade × (valor − residual) ÷ (vida útil × 12).", "excluir": "sim (em qualquer linha do setor) = apaga o setor inteiro. Para tirar só uma máquina, apague a linha."}, "processo": {"cod": "O código do setor (aba Setores e máquinas). Uma linha por setor.", "_descSetor": "Preenchido pela Central (não precisa digitar): o nome do setor.", "ordem": "A posição do setor na fabricação: 1 = o primeiro, 2 = o segundo… Organiza o roteiro das peças; não muda o custo. não = tira do roteiro.", "processo": "Como fazer: o passo a passo do setor. Não entra no custo. Alt+Enter pula linha dentro da célula.", "m:mp": "O código de uma matéria-prima (ou fórmula) usada neste setor. Diz em que setor ela aparece no roteiro das peças; o custo vem da quantidade na Composição. nenhuma na primeira = tira todas.", "m:_desc": "Preenchido pela Central (não precisa digitar): o nome da matéria-prima.", "m:obs": "Para que serve esta matéria-prima no setor (texto livre). Não entra no custo."}, "molde": {"cod": "O código do molde. Vai na coluna Molde da aba Peças.", "desc": "O nome do molde.", "setor": "O setor onde o molde trabalha (ex.: INJETORAS). O refugo dessa etapa em diante também gasta molde.", "cavidades": "Quantas peças saem por injetada. Custo do molde por peça = valor ÷ (vida útil × cavidades).", "valor": "Quanto custou o molde. Custo do molde por peça = valor ÷ (vida útil × cavidades).", "vida": "Quantas injetadas o molde aguenta. Divide o valor do molde (custo por peça) e controla o alerta de vida útil.", "ciclosIniciais": "Injetadas feitas antes de usar a Central. Somam na vida útil já gasta (alerta de molde vencido); não mudam o custo por peça.", "compra": "Data da compra. Só informação.", "situacao": "ativo ou inativo.", "obs": "Observação livre.", "_custo": "Preenchido pela Central (não precisa digitar): valor ÷ (vida útil em injetadas × cavidades), por peça boa (o refugo da etapa do molde soma por cima).", "excluir": "Escreva sim para apagar o molde (só sai se nenhuma peça usa)."}, "peca": {"cod": "O código da peça (ex.: COL-100 (NBR)). A composição dela fica na aba Composição; semi-acabado e kit entram nos passos de outras peças por este código.", "desc": "O nome da peça.", "tipo": "Produto acabado (o que se vende) ou Semi-acabado (entra em outra peça). Só o produto acabado tem preço de venda.", "grupo": "O código do grupo (aba Grupos). Só organiza.", "un": "A unidade da peça (un, kg, mil…). O custo e o preço são por esta unidade.", "situacao": "ativo ou inativo. Inativa sai dos alertas e das listas.", "qf": "Quantidade de formulação: para quantas peças valem as quantidades e os tempos da Composição. Custo por peça = custo da composição ÷ este número. Em branco = 1.", "lote": "Peças feitas a cada preparação da máquina. A preparação é dividida por elas: tempo de preparação × quantidade de formulação ÷ lote.", "ncm": "A NCM da peça (aba NCM). Define o IPI e as exceções de impostos nas tabelas de preço; não muda o custo de fabricação.", "molde": "O código do molde (aba Moldes). Soma o custo do molde por peça.", "limpezaModo": "nenhuma, interna (na empresa) ou terceiro. Interna: hora do setor de limpeza ÷ peças limpas por hora. Terceiro: o preço por peça do terceiro.", "limpezaPph": "Só na limpeza interna: peças limpas por hora. Custo da limpeza = hora do setor de limpeza ÷ este número.", "terc": "O preço que o terceiro cobra hoje para limpar a peça: é o custo da limpeza no terceiro. Outro preço aqui = reajuste a partir da data de início da importação.", "_custo": "Preenchido pela Central (não precisa digitar): o custo de fazer uma peça hoje = composição ÷ quantidade de formulação + molde + limpeza.", "preco": "Preço de venda na tabela geral (só produto acabado). Os impostos da tabela saem dele; sobra = preço sem impostos − custo.", "obs": "Observação livre.", "descComp": "Complemento da descrição. Só informação.", "notas": "Texto livre sobre a peça. Não entra no custo.", "excluir": "Escreva sim para apagar a peça inteira, com a composição e a produção dela."}, "formula": {"cod": "O código da peça (aba Peças). Uma linha por peça; a peça que não estiver aqui fica com a composição como está.", "_descPeca": "Preenchido pela Central (não precisa digitar): o nome da peça.", "_custo": "Preenchido pela Central (não precisa digitar): o custo de fazer uma peça hoje com esta composição, o molde e a limpeza.", "e:_setor": "Preenchido pela Central (não precisa digitar): de qual setor é esta etapa — o setor que aparece nos passos, na mesma ordem (a 1ª etapa é o 1º setor dos passos). Para mudar o setor, mude o passo.", "e:lPph": "Quantas peças a etapa faz por hora (já contando as cavidades). Tempo = 1 ÷ peças por hora; custo da etapa = tempo × (pessoas × taxa de mão de obra + máquinas × taxa das máquinas) do setor.", "e:lSetup": "Tempo de preparação da máquina (troca de molde, regulagem), em h:mm. Por peça: preparação × quantidade de formulação ÷ peças por preparação (lote) × as taxas do setor.", "e:lHomens": "Quantas pessoas trabalham na etapa ao mesmo tempo (em branco = 1). Multiplica a taxa de mão de obra do setor.", "e:lMaquinas": "Quantas máquinas a etapa ocupa (em branco = 1). Multiplica a taxa das máquinas do setor.", "e:lRefugo": "O % perdido nesta etapa. Encarece tudo o que veio antes e a própria etapa: (acumulado + etapa) × refugo ÷ (100 − refugo).", "e:lTempoSex": "No lugar das peças por hora: o tempo da etapa em h:mm para a quantidade de formulação. Custo = tempo × as taxas do setor.", "e:lTempoCen": "O mesmo tempo em horas centesimais (1,5 = 1 h 30 min), no lugar das peças por hora.", "e:lSetupMin": "A preparação em minutos, no lugar de h:mm.", "e:lSetupCen": "A preparação em horas centesimais (1,5 = 1 h 30 min), no lugar de h:mm.", "p:lRef": "O código do item deste passo: matéria-prima, fórmula, semi-acabado, produto (kit) ou setor (etapa de produção). Os passos vão na ordem da fabricação.", "p:_desc": "Preenchido pela Central (não precisa digitar): o nome do item, com o tipo quando não é matéria-prima comprada (Fórmula, Etapa, Semi-acabado, Produto).", "p:lQtd": "Quanto do item vai na peça (na quantidade de formulação), na unidade do item. Custo do passo = quantidade × custo unitário do item. Na etapa de produção fica em branco.", "p:lFase": "O setor em que o item é usado (ex.: ADESIVO). Organiza o roteiro; não muda o custo. Em branco = o setor onde a matéria-prima está (aba Processos).", "p:lReapMp": "Reaproveitamento: o código da matéria-prima que volta para o estoque neste passo (ex.: rebarba moída). Desconta do custo.", "p:lReapQtd": "Quanto volta para o estoque. Desconta do custo: − quantidade × custo da matéria-prima reaproveitada."}, "ncm": {"cod": "O código NCM (8 dígitos). Vai na coluna NCM da aba Peças.", "desc": "A descrição da NCM.", "ipi": "IPI de venda da NCM. Por fora: soma na nota, mas não é receita nem custo.", "icms": "ICMS só desta NCM (exceção). Em branco = o ICMS do estado de cada tabela de preço.", "pis": "PIS só desta NCM (exceção). Em branco = o geral (aba Configuração).", "cofins": "COFINS só desta NCM (exceção). Em branco = o geral (aba Configuração).", "excluir": "Escreva sim para apagar a NCM (só sai se nenhuma peça usa)."}, "tab": {"tabela": "O nome da tabela de preço. \"Tabela geral\" é a do preço da aba Peças.", "uf": "O estado de destino da tabela: define o ICMS que sai do preço. Basta na primeira linha da tabela.", "ativa": "sim ou não. Só as ativas entram no preço médio (lucro bruto) e nos alertas de margem.", "prod": "O código da peça (produto acabado).", "preco": "O preço de venda da peça nesta tabela. Os impostos da tabela saem dele (por dentro).", "excluir": "Escreva sim para tirar a peça da tabela."}, "terceiro": {"prod": "O código da peça que vai para limpeza no terceiro.", "preco": "Quanto o terceiro cobra por peça. É o custo da limpeza no terceiro a partir da data.", "desde": "A partir de quando vale o preço (o reajuste). Em branco = a data de início da importação.", "obs": "Observação livre.", "excluir": "Escreva sim para apagar este preço do terceiro."}, "producao": {"data": "O dia da produção.", "prod": "O código da peça produzida.", "boas": "Peças boas no dia. Receita do dia = boas × (preço médio − impostos).", "refugo": "Peças perdidas no dia. Custam material, mas não dão receita.", "limpInt": "Peças limpas na empresa no dia. Usam as horas do setor de limpeza (custo fixo do mês).", "limpTerc": "Peças que voltaram do terceiro no dia. Custo do dia = quantidade × preço por peça do terceiro.", "excluir": "Escreva sim para apagar este lançamento de produção."}, "enc": {"ref": "O código do encargo (V01 a V50). As fórmulas usam este código. Em branco = item novo.", "desc": "O nome do encargo (ex.: INSS patronal).", "tipo": "% (sobre o salário), R$ (valor fixo) ou inativo.", "variaFunc": "sim: cada funcionário pode ter valor próprio (colunas \"Encargo do funcionário\" na aba Funcionários).", "integraSalario": "sim: entra no salário total, sobre o qual incidem INSS, FGTS, 13º e férias.", "vb": "O valor base (VB) usado na fórmula (ex.: 20 para 20%).", "formula": "A conta do encargo (ex.: ST * VB / 100 = salário total × VB%). O resultado soma no custo de cada funcionário.", "grupo": "Encargos, Provisões ou Outros: só separa no relatório; os três somam no custo do funcionário.", "resumo": "Explicação livre do encargo.", "excluir": "Escreva sim para tirar o item dos encargos (só sai se nenhuma fórmula usa)."}, "benef": {"id": "O código do benefício (va, vt, b1…). Em branco = benefício novo.", "nome": "O nome do benefício (ex.: Vale alimentação).", "valor": "Quanto a empresa paga por mês a cada funcionário (o padrão). Soma no custo de cada funcionário.", "desconto": "O que o funcionário paga (R$ por mês ou % do salário, ex.: 6%). Sai do custo do benefício.", "ativo": "sim ou não. Inativo não entra no custo.", "excluir": "Escreva sim para apagar o benefício (os vales não saem: use Ativo = não)."}};
+  var MARCA_EXPL = 'ⓘ ', PRE_CENTRAL = 'Preenchido pela Central (não precisa digitar): ';
+  function chaveExpl(k) { return String(k || '').replace(/^([a-z])\d+:/, '$1:'); }   // 'p3:lQtd' → 'p:lQtd' (Passo k)
+  // as colunas que a aba cria sozinha: o preço de cada tabela, cada gasto das máquinas, o encargo e o benefício da pessoa
+  function explicaDin(aId, t) {
+    var m;
+    if (aId === 'peca' && (m = /^Preço:\s*(.+)$/i.exec(t))) return 'Preço de venda da peça na tabela ' + m[1] + '. Os impostos da tabela saem dele. "sem preço" tira a peça da tabela.';
+    if (aId === 'setor' && (m = /^Gasto mensal:\s*(.+?)\s*\(R\$\)$/i.exec(t))) return 'Gasto por mês de cada máquina com ' + m[1] + ' (vezes a quantidade). Soma no custo das máquinas: taxa das máquinas = (depreciação + gastos) ÷ horas das máquinas.';
+    if (aId === 'setor' && (m = /^Total do setor por mês:\s*(.+?)\s*\(R\$\)$/i.exec(t))) return 'O gasto do setor inteiro no mês com ' + m[1] + ' (quando a Configuração lança os gastos pelo total do setor). Soma no custo das máquinas do setor.';
+    if (aId === 'func' && (m = /^Encargo do funcionário:\s*(.+)$/i.exec(t))) return 'O valor do encargo ' + m[1] + ' só para esta pessoa. Em cinza = o da aba Encargos. Entra no custo dela pela fórmula do encargo.';
+    if (aId === 'func' && /^Desconto/i.test(t) && /R\$/.test(t)) return 'O que a pessoa paga deste benefício (R$ por mês ou % do salário). Sai do custo do benefício. Em branco = o padrão da aba Benefícios.';
+    if (aId === 'func' && /R\$ por m[eê]s/i.test(t)) return 'O valor deste benefício só para esta pessoa (R$ por mês). Soma no custo dela. Em branco = o padrão da aba Benefícios.';
+    return '';
+  }
+  function explicaColuna(aId, c, titulo) {
+    var t = (EXPLICA[aId] || {})[chaveExpl(c[1])] || explicaDin(aId, txt(titulo)) || txt(c[4]);
+    if (c[2] === 'ver' && t && t.indexOf('Preenchido pela Central') !== 0) t = PRE_CENTRAL + t;
+    return t || '';
   }
   // uma aba de cadastro: dados[0] = títulos, o resto = linhas. opts.exemplo: a linha de exemplo do modelo fica em cinza itálico.
   // Uma linha de títulos só, com o filtro; o que cada coluna aceita fica na nota do título e, nas colunas de opção, numa lista
@@ -8688,7 +8710,10 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (v && typeof v === 'object' && tem(v, 'v')) { if (v.padrao) cinza[i + '|' + j] = true; if (v.nota) notas[i + '|' + j] = v.nota; if (v.fmt) fmts[i + '|' + j] = v.fmt; return v.v; }
       return v; }); });
     var uReal = cols.map(function (c, j) { return unidadeDaColuna([cab[j]].concat(c.slice(1))); });
-    var ws = XLSX.utils.aoa_to_sheet([cab].concat(linhas)), agrupada = a.agrupada && !cols.larga, LINHA_BLOCO = { style: 'medium', color: { rgb: '7F7F7F' } };
+    // a linha 2: o que é cada coluna e como entra no cálculo. Começa por ⓘ: a importação pula
+    var expl = cols.map(function (c, j) { return explicaColuna(a.id, c, cab[j]); });
+    var lExpl = expl.map(function (t, j) { return j === 0 ? MARCA_EXPL + (t || 'Explicação da coluna') : t; });
+    var ws = XLSX.utils.aoa_to_sheet([cab, lExpl].concat(linhas)), agrupada = a.agrupada && !cols.larga, LINHA_BLOCO = { style: 'medium', color: { rgb: '7F7F7F' } };
     var chave = cols.map(function (c) { return c[1]; }).indexOf(a.chave);
     var ehExemplo = function (l) { return /^exemplo/i.test(txt(l[0])) || (chave >= 0 && /^exemplo/i.test(txt(l[chave]))); };
     var longos = { desc: 1, obs: 1, nome: 1, fornecedor: 1, cargo: 1, aloc: 1, descComp: 1, notas: 1, resumo: 1, formula: 1, eqDesc: 1, tabela: 1, mist: 1, _descPeca: 1, _descItem: 1, _descMist: 1, _descComp: 1, processo: 1, _descSetor: 1, preparo: 1 };
@@ -8702,13 +8727,15 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var h = ws[enc({ r: 0, c: j })], bl = c[7] || null, par = bl && bl.passo && bl.passo % 2 === 0;
       h.s = estilo({ negrito: true, fundo: fundoCab, cor: corCab, alinha: j === 0 ? 'left' : 'center', quebra: true });
       if (bl && bl.primeiro) h.s.border = Object.assign({}, h.s.border, { left: LINHA_BLOCO });
-      var nota = ver ? ['Só para ver: a Central calcula com os dados de hoje. A importação não lê esta coluna.', txt(c[4])]
-        : [(obrig ? 'Obrigatória. ' : '') + txt(c[4]), aceitaDaColuna(c, u)];
+      var nota = ver ? [expl[j]] : [(obrig ? 'Obrigatória. ' : '') + expl[j], aceitaDaColuna(c, u)];
+      var ce = ws[enc({ r: 1, c: j })]; if (!ce) ce = ws[enc({ r: 1, c: j })] = { t: 's', v: '' };
+      ce.s = estilo({ italico: true, cor: ver ? COR.verTxt : COR.explTxt, fundo: ver ? COR.verFundo : COR.explFundo, alinha: 'left', quebra: true, tam: 9, topo: true });
+      if (bl && bl.primeiro) ce.s.border = Object.assign({}, ce.s.border, { left: LINHA_BLOCO });
       nota = nota.map(txt).filter(Boolean).join('\n');
       if (nota) { h.c = [{ a: 'Central de Custos', t: nota }]; h.c.hidden = true; }
       var ls = ver ? null : opcoesDaColuna(c); if (ls) listas.push({ c: j, lista: ls });
       linhas.forEach(function (l, i) {
-        var k = enc({ r: i + 1, c: j }), cel = ws[k], ex = opts.exemplo && ehExemplo(l), v = l[j], pd = !!cinza[i + '|' + j], cs = j === chave && segue[i];
+        var k = enc({ r: i + 2, c: j }), cel = ws[k], ex = opts.exemplo && ehExemplo(l), v = l[j], pd = !!cinza[i + '|' + j], cs = j === chave && segue[i];
         if (!cel) cel = ws[k] = { t: 's', v: '' };
         // data em texto (dd/mm/aaaa) vira data do Excel: ordena e filtra como data, e volta igual na importação
         if (u === 'dd/mm/aaaa' && typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) { cel.t = 'n'; cel.v = serialData(v); delete cel.w; }
@@ -8731,6 +8758,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     };
     ws['!cols'] = cab.map(function (t, j) {
       var w = Math.max(9, Math.ceil(tresLinhas(t) * 1.2) + 2), teto = longos[cols[j][1]] ? 55 : 42;
+      var le = String(expl[j] || '').length; if (le) w = Math.max(w, Math.min(40, Math.ceil(le / 7)));   // a explicação em até ~6 linhas
       var moeda = /R\$/.test(String(t)), pct = /%/.test(String(t));
       for (var i = 0; i < Math.min(linhas.length, 400); i++) {
         var v = linhas[i][j]; if (v === '' || v === null || v === undefined) continue;
@@ -8742,13 +8770,16 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       }
       return { wch: Math.round(w) };
     });
-    ws['!rows'] = [{ hpt: 48 }];
+    var nLin = expl.reduce(function (mx, t, j) { var W = ws['!cols'][j].wch; return Math.max(mx, Math.ceil(String(t || '').length / Math.max(1, W * 1.15))); }, 1);
+    ws['!rows'] = [{ hpt: 48 }, { hpt: Math.min(125, Math.max(26, nLin * 11.5 + 6)) }];
     var ult = Math.max(1, linhas.length);
-    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: ult, c: cab.length - 1 } }) };
-    ws['!congelar'] = { x: 1, y: 1 };
+    // o filtro na linha 2: ordenar mexe só nos dados (linha 3 em diante); títulos e explicação congelados
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: ult + 1, c: cab.length - 1 } }) };
+    ws['!congelar'] = { x: 1, y: 2 };
+    ws['!expl'] = cols.map(function (c, j) { return [cab[j], expl[j], c[2] === 'ver', !!c[3]]; });
     // as listas valem também para as linhas que a pessoa acrescentar
     var fimLista = Math.max(ult, 2000);
-    ws['!listas'] = listas.map(function (x) { return { ref: XLSX.utils.encode_range({ s: { r: 1, c: x.c }, e: { r: fimLista, c: x.c } }), lista: x.lista }; });
+    ws['!listas'] = listas.map(function (x) { return { ref: XLSX.utils.encode_range({ s: { r: 2, c: x.c }, e: { r: fimLista + 1, c: x.c } }), lista: x.lista }; });
     return ws;
   }
   // as opções de um item da aba Configuração (regime, sim ou não, estado, as escolhas de Ajustes)
@@ -8780,25 +8811,26 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   var LEGENDA = [
     ['Título cinza', { negrito: true, fundo: COR.cinza, quebra: true }, 'Coluna obrigatória.'],
     ['Título branco', { negrito: true, fundo: 'FFFFFF', quebra: true }, 'Coluna opcional. Célula em branco = não muda.'],
-    ['Título azul-claro', { negrito: true, fundo: COR.verCab, cor: COR.verTxt, quebra: true }, 'Só para ver: a Central calcula com os dados de hoje (custos, taxas, horas-base). A importação não lê.'],
+    ['Título azul-claro', { negrito: true, fundo: COR.verCab, cor: COR.verTxt, quebra: true }, 'Coluna preenchida pela Central com os dados de hoje (nomes, custos, taxas, horas-base). Não precisa digitar: a importação não lê.'],
     ['Excluir', { negrito: true, fundo: COR.exc, cor: COR.excTxt }, 'Escreva sim para apagar o item de vez (só o administrador; o que ainda é usado não sai).'],
     ['COD-001', { negrito: true, fundo: COR.entrada, alinha: 'left' }, 'Fundo amarelo-claro = dado obrigatório preenchido. O código em negrito é o começo de cada item.'],
     ['COD-001', { cor: COR.segue, alinha: 'left' }, 'Código cinza-claro = mais uma linha do mesmo item (Setores e máquinas: uma linha por máquina). A linha forte separa um setor do outro.'],
     ['Passo 2: item', { negrito: true, fundo: COR.bloco }, 'Composição e Fórmulas: cada passo (ou componente) é um bloco de colunas, com uma linha à esquerda; um sim, outro não, em cinza bem claro.'],
     [12.5, { cor: COR.azul, formato: '"R$" #,##0.00##' }, 'Valor em reais.'],
     ['sim', { cor: COR.padrao }, 'Texto cinza = o valor padrão: o item não tem valor próprio e usa o da empresa (o crédito pelo regime, as horas e a eficiência, os vales, os encargos). Deixe como está para continuar no padrão; escreva outro valor para ter um valor próprio.'],
-    [24.61, { italico: true, cor: COR.verTxt, fundo: COR.verFundo }, 'Valor calculado (coluna só para ver).']];
+    [24.61, { italico: true, cor: COR.verTxt, fundo: COR.verFundo }, 'Valor calculado pela Central.'],
+    ['ⓘ O que é a coluna e a conta', { italico: true, cor: COR.explTxt, fundo: COR.explFundo, quebra: true, tam: 9 }, 'Linha 2 de cada aba: o que é cada coluna e como ela entra no cálculo. A importação pula esta linha; os dados começam na linha 3. A aba "Explicação das colunas" junta todas.']];
   // uma linha por aba: [uma linha por…, o que saber]
   var LEIA_ABAS = {
     grupo: ['grupo', 'A coluna Grupo das matérias-primas e das peças aceita o código ou o nome.'],
     mp: ['matéria-prima', 'Tipo: comprada ou mistura. Ao lado de cada imposto da compra, a coluna do crédito (Crédito de ICMS…): sim = sai do custo; não = fica no custo; cinza = o padrão do regime.'],
-    mistura: ['fórmula', 'O que a fábrica prepara misturando matérias-primas compradas (ex.: adesivo pronto = Chem 11/42 + solvente). A fórmula inteira numa linha: código, descrição, unidade, o setor que fabrica, Componente 1 (com a descrição ao lado, só para ver) e Quantidade 1, Componente 2… (a quantidade na unidade do componente), "A receita rende" e como preparar. O custo sai dos componentes, cada um com os impostos dele. Na aba Composição, a fórmula entra num passo pelo código dela. A fórmula que não estiver aqui fica como está.'],
+    mistura: ['fórmula', 'O que a fábrica prepara misturando matérias-primas compradas (ex.: adesivo pronto = Chem 11/42 + solvente). A fórmula inteira numa linha: código, descrição, unidade, o setor que fabrica, Componente 1 (com o nome ao lado) e Quantidade 1, Componente 2… (a quantidade na unidade do componente), "A receita rende" e como preparar. O custo sai dos componentes, cada um com os impostos dele. Na aba Composição, a fórmula entra num passo pelo código dela. A fórmula que não estiver aqui fica como está.'],
     func: ['pessoa ou função', 'Setores: o código e o %, ex.: INJ 70; MAN 30. As últimas colunas são os encargos e os benefícios de cada pessoa (cinza = o padrão da empresa).'],
     setor: ['máquina', 'Repita o código do setor em cada máquina; os dados do setor vão na primeira linha.'],
-    processo: ['setor', 'O roteiro: a ordem do setor na fabricação (1, 2, 3…), como fazer e o que é usado nele (Matéria-prima 1 com a descrição ao lado, Para que serve 1…). Na composição das peças, cada matéria-prima aparece no setor em que está cadastrada.'],
+    processo: ['setor', 'O roteiro: a ordem do setor na fabricação (1, 2, 3…), como fazer e o que é usado nele (Matéria-prima 1 com o nome ao lado, Para que serve 1…). Na composição das peças, cada matéria-prima aparece no setor em que está cadastrada.'],
     molde: ['molde', ''],
     peca: ['peça', 'Os preços de cada tabela (colunas "Preço: …") e o preço da limpeza no terceiro. O custo de fabricação fica ao lado dos preços, para comparar.'],
-    formula: ['peça', 'A composição inteira numa linha: os dados da etapa de produção (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem da fabricação (Passo 1: item, quantidade e setor; Passo 2…). Ao lado de cada código vem a descrição do item (só para ver), e cada bloco de etapa começa pelo setor daquela etapa na peça. O tipo de cada passo sai do código (matéria-prima, fórmula, peça ou setor). A quantidade mostra a unidade do item; passe o mouse no código para ver também o custo. Para pôr um passo no meio, recorte os passos seguintes e cole uma casa à direita. A peça que não estiver aqui fica com a composição como está.'],
+    formula: ['peça', 'A composição inteira numa linha: os dados da etapa de produção (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem da fabricação (Passo 1: item, quantidade e setor; Passo 2…). Ao lado de cada código vem o nome do item (preenchido pela Central), e cada bloco de etapa começa pelo setor daquela etapa na peça. O tipo de cada passo sai do código (matéria-prima, fórmula, peça ou setor). A quantidade mostra a unidade do item; passe o mouse no código para ver também o custo. Para pôr um passo no meio, recorte os passos seguintes e cole uma casa à direita. A peça que não estiver aqui fica com a composição como está.'],
     ncm: ['NCM', 'O IPI (por fora) e as exceções de ICMS, PIS e COFINS.'],
     tab: ['tabela de preço', 'Só cadastra a tabela (nome, estado, ativa). Os preços ficam na aba Peças.'],
     terceiro: ['preço do terceiro', 'O histórico dos preços da limpeza no terceiro, com a data de início de cada um.'],
@@ -8807,6 +8839,38 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     benef: ['benefício', 'Linha sem código = benefício novo. Desconto em R$ ou em % do salário (escreva 6%).'],
     cfg: ['item da configuração', 'Regime, alíquotas da venda, ICMS de cada estado, horas padrão e o resto de Ajustes. Coluna Valor.']
   };
+  // a aba "Explicação das colunas": cada coluna de cada aba (Passo 1, 2, 3… uma vez só), o que é, a conta e quem preenche
+  function folhaExplica(XLSX, wb) {
+    var aoa = [['Aba', 'Coluna', 'O que é e como entra no cálculo', 'Quem preenche']], tipo = [null], enc = XLSX.utils.encode_cell;
+    wb.SheetNames.forEach(function (n) {
+      var ex = wb.Sheets[n] && wb.Sheets[n]['!expl'];
+      if (!ex) { if (n === 'Configuração') { aoa.push([n, 'Item | Valor | O que é', 'Cada linha é um item da configuração (regime, alíquotas, horas padrão…). A explicação de cada item está na coluna "O que é" da própria aba.', 'Você']); tipo.push('aba'); } return; }
+      var vistos = {}, primeira = true;
+      ex.forEach(function (x) {
+        var tit = String(x[0]), mm = /^(Passo|Etapa|Componente|Quantidade|Matéria-prima|Para que serve) (\d+)(.*)$/.exec(tit);
+        var k = mm ? mm[1] + ' #' + mm[3] : tit;
+        if (vistos[k]) return; vistos[k] = true;
+        var mostra = mm ? mm[1] + ' 1, 2, 3…' + mm[3] : tit;
+        aoa.push([primeira ? n : '', mostra, x[1] || '', x[2] ? 'A Central' : x[3] ? 'Você (obrigatória)' : 'Você']);
+        tipo.push(primeira ? 'aba' : x[2] ? 'ver' : null); primeira = false;
+      });
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    aoa.forEach(function (l, i) {
+      l.forEach(function (v, j) {
+        var k = enc({ r: i, c: j }); if (!ws[k]) ws[k] = { t: 's', v: '' };
+        if (!i) { ws[k].s = estilo({ negrito: true, fundo: COR.cinza, alinha: 'left' }); return; }
+        var ver = tipo[i] === 'ver' || l[3] === 'A Central';
+        ws[k].s = estilo({ negrito: j === 0 || (j === 1 && !ver), italico: ver && j > 0, cor: ver && j > 0 ? COR.verTxt : '000000', fundo: ver && j > 0 ? COR.verFundo : null, alinha: 'left', quebra: true, topo: true });
+        if (tipo[i] === 'aba') ws[k].s.border = Object.assign({}, ws[k].s.border, { top: { style: 'medium', color: { rgb: '000000' } } });
+      });
+    });
+    ws['!cols'] = [{ wch: 22 }, { wch: 38 }, { wch: 110 }, { wch: 18 }];
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, aoa.length - 1), c: 3 } }) };
+    ws['!congelar'] = { x: 0, y: 1 };
+    return ws;
+  }
+  function comExplicacao(XLSX, wb) { XLSX.utils.book_append_sheet(wb, folhaExplica(XLSX, wb), 'Explicação das colunas'); wb.SheetNames.splice(1, 0, wb.SheetNames.pop()); return wb; }
   // o Leia-me: o.titulo, o.passos (como usar), a legenda das cores, o que tem em cada aba e o.fim
   function folhaLeia(XLSX, o) {
     var aoa = [], est = [], enc = XLSX.utils.encode_cell;
@@ -8870,8 +8934,8 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       passos: ['Mude o que precisar nas abas ou acrescente linhas. Célula em branco = não muda. Esta planilha tem os cadastros e a configuração como estão hoje.',
         'Na Central: Cadastros › Planilha › Envie a planilha. A tela confere linha por linha e mostra, item por item, o que vai mudar (só o que estiver diferente).',
         'Escolha a data em que as mudanças passam a valer e clique em Importar. Importar a mesma planilha de volta não muda nada.',
-        'Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da linha 1.',
-        'Passe o mouse no título da coluna para ver o que ela aceita. Nas colunas de opção (Unidade, Situação, Tipo…), clique na célula e escolha na lista.'],
+        'Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da linha 1. Os dados começam na linha 3.',
+        'O que é cada coluna e como ela entra no cálculo: na linha 2 de cada aba (ⓘ, em itálico), na nota do título (passe o mouse) e na aba "Explicação das colunas", logo depois deste Leia-me. Nas colunas de opção (Unidade, Situação, Tipo…), clique na célula e escolha na lista.'],
       fim: ['Não vão na planilha: os acessos (usuários e senhas) e o histórico dos valores antigos (a planilha tem os valores de hoje).',
         'Linha sem as colunas obrigatórias (uma anotação, uma conta) fica de fora: a tela avisa e importa o resto.',
         'Valor digitado (custo líquido da matéria-prima, taxa do setor): escreva "calcular" para o sistema voltar a calcular.',
@@ -8883,7 +8947,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var ws = a.id === 'cfg' ? folhaCfg(XLSX, linhasConfig(cfg, emp)) : folha(XLSX, a, linhasDaAba(a, emp, hoje, ctx));
       XLSX.utils.book_append_sheet(wb, ws, a.nome);
     });
-    return wb;
+    return comExplicacao(XLSX, wb);
   }
 
   function setPath(o, path, v) {
@@ -18263,9 +18327,9 @@ var MANUAL = [
   { id: 'importar', rota: 'importar', grupo: 'Cadastros › Planilha', nome: 'Importar e exportar planilha',
     oque: 'Todos os dados numa planilha do Excel, nos dois sentidos: grupos, matérias-primas, fórmulas, funcionários, setores e máquinas, processos, moldes, peças, composição, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e toda a configuração de Ajustes. Todo campo que dá para preencher na tela tem uma coluna (ou uma linha, na aba Configuração). Baixe com os dados de hoje para conferir ou mudar muita coisa de uma vez, e importe de volta.',
     passos: ['Clique em <b>Baixar com todos os dados</b> (ou em <b>Baixar modelo em branco</b> para começar do zero). Cada aba do Excel é um tipo de cadastro.', 'Mude ou acrescente o que quiser. Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da primeira linha.', 'Em <b>Envie a planilha</b>, escolha o arquivo. O sistema confere linha por linha e mostra os problemas.', 'Confira o resumo (novos, alterados, iguais), escolha a data em que as mudanças passam a valer e clique em <b>Importar</b>.'],
-    extra: '<p><b>Visual da planilha:</b> uma linha de títulos, com o filtro. Título cinza = coluna obrigatória; título azul-claro = só para ver; valores em R$ em azul. Passe o mouse no título para ver o que a coluna aceita; nas colunas de opção (Unidade, Situação, Tipo…) clique na célula e escolha na lista. O Leia-me tem a legenda das cores e uma linha por aba. Planilhas antigas (com a 2ª linha de unidades) continuam sendo lidas.</p>' +
+    extra: '<p><b>Visual da planilha:</b> uma linha de títulos, com o filtro. Título cinza = coluna obrigatória; título azul-claro = a Central preenche; valores em R$ em azul. A linha 2 de cada aba (ⓘ) explica cada coluna e como ela entra no cálculo, e a aba "Explicação das colunas" junta todas; a importação pula essa linha; nas colunas de opção (Unidade, Situação, Tipo…) clique na célula e escolha na lista. O Leia-me tem a legenda das cores e uma linha por aba. Planilhas antigas (com a 2ª linha de unidades) continuam sendo lidas.</p>' +
       '<p><b>Texto cinza:</b> o valor padrão — a pessoa ou a matéria-prima não tem valor próprio e usa o da empresa (horas, eficiência, vales, descontos, encargos do funcionário, o crédito dos impostos pelo regime). Importar de volta igual continua no padrão; outro valor vira valor próprio.</p>' +
-      '<p><b>Colunas “— só para ver”</b> (título azul-claro): a Central calcula com os dados de hoje — custo da matéria-prima, da peça e de cada linha da composição, custo do funcionário, horas-base e taxa hora dos setores, depreciação das máquinas. Servem para conferir; a importação não lê.</p>' +
+      '<p><b>Colunas preenchidas pela Central</b> (título azul-claro): a Central calcula com os dados de hoje — custo da matéria-prima, da peça e de cada linha da composição, custo do funcionário, horas-base e taxa hora dos setores, depreciação das máquinas. Servem para conferir; a importação não lê.</p>' +
       '<p><b>Peças e Composição:</b> a aba Peças tem uma linha por peça, com os preços de cada tabela (colunas “Preço: …”), o preço da limpeza no terceiro e o custo de fabricação ao lado. A aba Composição também tem uma linha por peça: os dados da etapa (Etapa: peças por hora, preparação, pessoas, máquinas, refugo) e os passos na ordem (Passo 1: item, quantidade e setor; Passo 2…). O tipo de cada passo sai do código. Planilhas antigas (aba “Peças e fórmulas”, ou “Fórmulas” com a coluna Código da peça) continuam sendo lidas.</p>' +
       '<p><b>Fórmulas</b> (ex.: adesivo pronto = Chem 11/42 + solvente): a aba <b>Fórmulas</b> tem a fórmula inteira numa linha: código, descrição, unidade, setor que fabrica, Componente 1 e Quantidade 1, Componente 2…, “A receita rende” e como preparar. A aba Matérias-primas só tem as compradas. Planilhas antigas (aba “Misturas”) continuam sendo lidas. <b>Créditos da compra:</b> cada imposto tem a coluna do crédito ao lado (Crédito de ICMS, de IPI, de PIS, de COFINS): sim, não ou padrão (em cinza, o padrão do regime). <b>Desconto de benefício</b> em % do salário: escreva 6%.</p>' +
       '<p><b>Backup no modelo antigo:</b> a planilha baixada antes da mudança de modelo (aba “Peças e fórmulas”, uma linha por linha da composição) entra pelo campo <b>Backup no modelo antigo</b>, abaixo dos outros dois. O modelo novo não muda: a Central lê o antigo e passa para Peças e Composição; o que ele não tinha (fórmulas, processos dos setores) fica como está. Nesse campo, o título da coluna A trocado vale como o código, com aviso.</p>' +
