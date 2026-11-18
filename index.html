@@ -1206,6 +1206,19 @@ table.imp-itens tr.imp-fora .imp-erro{display:none}
 .notas-ler{white-space:pre-wrap;line-height:1.55;font-size:14px;color:var(--text)}
 .nota-ic{display:inline-flex;vertical-align:-2px;margin-left:4px;color:var(--text3)}
 .nota-ic svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+/* 37. mistura de matérias-primas: comprada ou mistura, a receita */
+.mp-modo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.mp-modo-rot{font-size:12.5px;color:var(--text2);font-weight:600}
+.mp-modo .seg{flex-wrap:wrap;max-width:100%}
+.mp-modo .seg button{white-space:normal;text-align:left}
+.ver-so .mp-modo button:not(.on){display:none}
+.ver-so .mp-modo button{pointer-events:none}
+#mistTab td{vertical-align:middle}
+.mist-kv span{min-width:0}
+/* 38. desconto do benefício: R$ por mês ou % do salário base */
+.desc-tipo{display:flex;gap:6px;align-items:center}
+.desc-tipo .i.num{flex:1 1 90px;min-width:80px}
+.desc-tipo .desc-tipo-sel{flex:0 0 auto;width:auto;min-width:0;max-width:150px}
 
 /* ===================== visual do Controle de Terceiros 2.0 (base de todos os sistemas) =====================
    Vidro fosco sobre a grade, cor da empresa (Vitalbor azul, Universal Juntas verde), Inter em tudo,
@@ -2199,9 +2212,12 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var p = P[id] || {}, nome = nomeBeneficio(id, d);
       if (p.nao) { itens.push({ id: id, nome: nome, valor: 0, desconto: 0, liquido: 0, nao: true, proprio: true }); return; }
       var proprioV = !vazio(p.valor), proprioD = !vazio(p.desconto);
-      var valor = proprioV ? num(p.valor) : num(d.valor), desconto = proprioD ? num(p.desconto) : num(d.desconto);
+      var valor = proprioV ? num(p.valor) : num(d.valor), dBruto = proprioD ? num(p.desconto) : num(d.desconto);
+      // desconto em % do salário base (ex.: vale transporte, até 6%): nunca mais que o próprio benefício
+      var pct = (proprioD ? p.descontoTipo : d.descontoTipo) === 'pct';
+      var desconto = pct ? Math.min(num(f && f.sb) * dBruto / 100, valor) : dBruto;
       var liquido = Math.max(0, valor - desconto);
-      if (valor || desconto) itens.push({ id: id, nome: nome, valor: valor, desconto: desconto, liquido: liquido, proprio: proprioV || proprioD, proprioValor: proprioV, proprioDesconto: proprioD });
+      if (valor || desconto) itens.push({ id: id, nome: nome, valor: valor, desconto: desconto, liquido: liquido, proprio: proprioV || proprioD, proprioValor: proprioV, proprioDesconto: proprioD, descontoPct: pct ? dBruto : undefined });
       total += liquido;
     });
     return { itens: itens, total: total };
@@ -2455,6 +2471,27 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     return { valor: num(u.valor), desde: u.desde, obs: u.obs || '', anterior: a ? num(a.valor) : null, variacao: a && num(a.valor) ? (num(u.valor) / num(a.valor) - 1) * 100 : null };
   }
 
+  // mistura: matéria-prima feita de outras (ex.: adesivo + solvente). Composição em mist [{mp, qtd}] (cada quantidade na
+  // unidade do componente) e rende (quanto a receita faz, na unidade da mistura). Só matérias-primas compradas entram
+  function ehMistura(m) { return !!(m && Array.isArray(m.mist) && m.mist.some(function (c) { return c && !vazio(c.mp); })); }
+  function valorMistura(m, ctx, emp) {
+    var det = [], soma = 0, rende = num(m.rende), erroM = '';
+    (m.mist || []).forEach(function (c) {
+      if (!c || vazio(c.mp)) return;
+      var comp = ctx.mp[c.mp], v = ctx.mpVal[c.mp];
+      if (c.mp === m.cod) { erroM = erroM || 'a mistura não pode entrar nela mesma'; return; }
+      if (!comp || !v) { erroM = erroM || 'o componente ' + c.mp + ' não existe nesta data'; return; }
+      if (ehMistura(comp)) { erroM = erroM || c.mp + ' também é uma mistura (use só matérias-primas compradas)'; return; }
+      if (!(num(c.qtd) > 0)) { erroM = erroM || 'falta a quantidade de ' + c.mp; return; }
+      var parc = num(c.qtd) * v.valor;
+      soma += parc;
+      det.push({ mp: c.mp, desc: comp.desc, un: comp.un, qtd: num(c.qtd), unit: v.valor, valor: parc });
+    });
+    if (!erroM && !det.length) erroM = 'escolha os componentes';
+    if (!erroM && !(rende > 0)) erroM = 'falta quanto a receita rende';
+    return { valor: erroM ? 0 : precisao(emp, 'valores', soma / rende), origem: 'mistura', erro: erroM || undefined, mistura: { itens: det, soma: soma, rende: rende }, detalhe: [] };
+  }
+
   function contexto(emp, opts) {
     opts = opts || {};
     var cfg = emp.config;
@@ -2474,6 +2511,8 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       r.valor = precisao(emp, 'valores', r.valor);
       ctx.mpVal[m.cod] = r;
     });
+    // as misturas depois de todas as compradas: o custo sai dos componentes, com os valores da mesma data
+    emp.mps.forEach(function (m) { if (ehMistura(m)) ctx.mpVal[m.cod] = valorMistura(m, ctx, emp); });
     emp.prestadores.forEach(function (p) {
       var r = valorLiquidoCompra(p, cfg, null);
       r.valor = precisao(emp, 'valores', r.valor);
@@ -2521,6 +2560,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (it.tipo === 'MP') {
           var mp = ctx.mp[it.ref]; if (!mp) throw erro('Matéria-prima inexistente: ' + (it.ref || '(vazio)'));
           var val = ctx.mpVal[it.ref].valor;
+          if (ctx.mpVal[it.ref].origem === 'mistura' && ctx.mpVal[it.ref].erro) erros.push('Item ' + (idx + 1) + ': a mistura ' + it.ref + ' está incompleta (' + ctx.mpVal[it.ref].erro + ')');
           L.desc = mp.desc; L.un = mp.un; L.unit = val;
           var v = L.qtd * val;
           if (it.reapMp && num(it.reapQtd)) {
@@ -3232,9 +3272,14 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         else if (p.rateioMes && limiteRateio && p.rateioMes < limiteRateio) out.push({ nivel: 'info', area: 'produtos', texto: p.cod + ': o rateio de despesas é de ' + rotuloMes(p.rateioMes) + ' (sem venda com margem desde então).', rota: 'produtos', ref: p.cod });
       }
     });
+    emp.mps.forEach(function (m) {
+      var v = ctx.mpVal[m.cod];
+      if (v && v.origem === 'mistura' && v.erro) out.push({ nivel: 'critico', area: 'mps', texto: 'A mistura ' + m.cod + ' ' + m.desc + ' está incompleta: ' + v.erro + '. O custo dela fica zero até completar a receita.', rota: 'mps', ref: m.cod });
+    });
     var limite = new Date(hoje); limite.setDate(limite.getDate() - num(cfg.diasAlertaPreco || 90));
     var lim = limite.toISOString().slice(0, 10);
     emp.mps.forEach(function (m) {
+      if (ehMistura(m)) return;
       var ult = (m.hist && m.hist.length) ? m.hist[m.hist.length - 1].data : m.atualizado;
       if (ult && ult < lim) out.push({ nivel: 'info', area: 'mps', texto: m.cod + ' ' + m.desc + ': preço sem atualização desde ' + ult.split('-').reverse().join('/') + '.', rota: 'mps', ref: m.cod });
     });
@@ -3285,7 +3330,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     compilar: compilar, avaliar: avaliar, validarFormula: validarFormula,
     sexParaHoras: sexParaHoras, horasParaSex: horasParaSex, tempoHoras: tempoHoras, converterTempo: converterTempo,
     mesesAnteriores: mesesAnteriores, diasDaSemana: diasDaSemana,
-    valorLiquidoCompra: valorLiquidoCompra, compraMP: compraMP, mpLegado: mpLegado, credPadrao: credPadrao, IMP_COMPRA: IMP_COMPRA, NOME_IMP: NOME_IMP,
+    valorLiquidoCompra: valorLiquidoCompra, compraMP: compraMP, ehMistura: ehMistura, valorMistura: valorMistura, mpLegado: mpLegado, credPadrao: credPadrao, IMP_COMPRA: IMP_COMPRA, NOME_IMP: NOME_IMP,
     UFS: UFS, REGIMES: REGIMES, fiscalDe: fiscalDe, impostosVenda: impostosVenda, tabelasDe: tabelasDe, campoPreco: campoPreco, precoNaTabela: precoNaTabela, vendaPeca: vendaPeca, pctBR: pctBR,
     precoTerceiroEm: precoTerceiroEm, custoFuncionario: custoFuncionario, pessoasFunc: pessoasFunc, custoDoGrupo: custoDoGrupo, valoresContas: valoresContas, mesesComDados: mesesComDados,
     lancamentosSalarios: lancamentosSalarios, garantirSalarios: garantirSalarios,
@@ -3853,6 +3898,10 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (!v.ok) add('critico', 'custos', 'Fórmula do encargo ' + x.ref + ' (' + x.desc + ') com erro: ' + v.erro + '.', 'cfg-encargos');
     });
     if (comErro.length) add('critico', 'custos', comErro.length + (comErro.length === 1 ? ' funcionário' : ' funcionários') + ' com erro no cálculo dos encargos (' + comErro[0] + ').', 'cfg-encargos');
+    Object.keys(ctx.mpVal).forEach(function (k) {
+      var v = ctx.mpVal[k], m = ctx.mp[k];
+      if (v.origem === 'mistura' && v.erro) add('critico', 'custos', 'A mistura ' + k + (m ? ' ' + m.desc : '') + ' está incompleta: ' + v.erro + '. O custo dela fica zero até completar a receita.', 'mps', k);
+    });
     var mpErro = Object.keys(ctx.mpVal).filter(function (k) { return ctx.mpVal[k].origem === 'erro'; });
     if (mpErro.length) add('critico', 'custos', 'A fórmula do valor líquido de compra tem erro (' + ctx.mpVal[mpErro[0]].erro + '): ' + mpErro.length + (mpErro.length === 1 ? ' matéria-prima está' : ' matérias-primas estão') + ' usando o valor bruto, sem impostos.', 'cfg-impostos');
   }
@@ -3943,6 +3992,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     // matérias-primas sem atualização de preço (a última mudança do valor de compra até hoje)
     var lim = ctx ? num(est.config.diasAlertaPreco) || 0 : 0;
     if (lim) est.mps.forEach(function (m) {
+      if (M.ehMistura(m)) return;   // a mistura não tem preço de compra: o custo segue os componentes
       var d = f.ultimaMudanca('mp', m.cod, 'vc', hoje);
       if (m.conferido && m.conferido <= hoje && (!d || m.conferido > d)) d = m.conferido;   // dados migrados: o último preço conferido
       if (!d) return;
@@ -3986,9 +4036,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   var COLECAO = { mp: 'mps', setor: 'setores', func: 'funcionarios', molde: 'moldes', prod: 'produtos' };
   var CHAVE = { mp: 'cod', setor: 'cod', func: 'mat', molde: 'cod', prod: 'cod' };
   // listas que mudam linha a linha: caminho da lista → campo que identifica a linha
-  var LISTAS = { prod: { itens: 'id' }, setor: { equipamentos: 'id' }, func: { aloc: 'id' }, cfg: { encargos: 'ref', 'gastosEquip.itens': 'id', ncms: 'cod', tabelas: 'id' } };
+  var LISTAS = { prod: { itens: 'id' }, setor: { equipamentos: 'id' }, func: { aloc: 'id' }, mp: { mist: 'id' }, cfg: { encargos: 'ref', 'gastosEquip.itens': 'id', ncms: 'cod', tabelas: 'id' } };
   // ncms: a linha é a própria NCM (código de 8 dígitos); tabelas de preço: T1, T2… (T1 = a tabela geral, preço em p.preco)
-  var PREFIXO = { itens: 'L', equipamentos: 'E', aloc: 'A', tabelas: 'T' };
+  var PREFIXO = { itens: 'L', equipamentos: 'E', aloc: 'A', tabelas: 'T', mist: 'M' };
   // campos sem data (começo do caminho): o valor vale para todas as datas
   var SEM_DATA = {
     mp: ['cod', 'desc', 'grupo', 'un', 'fornecedor', 'obs', 'conferido'],   // conferido: último preço conferido nos dados antigos (data)
@@ -4464,6 +4514,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         cita(linha('itens', l, i) + '.reapMp', 'mp', l.reapMp);
       });
     } else if (tipo === 'func') listaOuVazia(item.aloc).forEach(function (a, i) { if (ehObjeto(a)) cita(linha('aloc', a, i) + '.setor', 'setor', a.setor); });
+    else if (tipo === 'mp') listaOuVazia(item.mist).forEach(function (a, i) { if (ehObjeto(a)) cita(linha('mist', a, i) + '.mp', 'mp', a.mp); });
     else if (tipo === 'molde') cita('setor', 'setor', item.setor);
     else if (tipo === 'cfg') cita('limpeza.setor', 'setor', ler(item, 'limpeza.setor'));
     return res;
@@ -4753,6 +4804,12 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (!ehObjeto(op)) return;
         if (op.op === 'add' && ehObjeto(op.linha)) cita('setor', op.linha.setor);
         else if (op.op === 'set' && op.campo === 'setor') cita('setor', op.valor);
+      });
+    } else if (ev.tipo === 'mp') {
+      listaOuVazia(ls.mist).forEach(function (op) {
+        if (!ehObjeto(op)) return;
+        if (op.op === 'add' && ehObjeto(op.linha)) cita('mp', op.linha.mp);
+        else if (op.op === 'set' && op.campo === 'mp') cita('mp', op.valor);
       });
     } else if (ev.tipo === 'molde') cita('setor', valorDe(cs, 'setor'));
     else if (ev.tipo === 'cfg') cita('setor', valorDe(cs, 'limpeza.setor'));
@@ -6219,7 +6276,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   var ITEM = { mp: 'da matéria-prima', func: 'do funcionário', setor: 'do setor', molde: 'do molde', prod: 'da peça', terceiro: 'do terceiro para a peça', cfg: 'da configuração' };
   var ITEM_CRIAR = { mp: 'a matéria-prima', func: 'o funcionário', setor: 'o setor', molde: 'o molde', prod: 'a peça', terceiro: 'o preço do terceiro para a peça', cfg: 'a configuração' };
   var CAMPOS = {
-    mp: { vc: 'o preço de compra', v1: 'o frete e seguro', v2: 'outros valores', liquidoManual: 'o custo líquido digitado', situacao: 'a situação', p: 'o imposto de entrada', imp: 'os impostos da compra', cred: 'os créditos da compra', freteP: 'o frete', freteCred: 'os créditos do frete', desc: 'a descrição', un: 'a unidade' },
+    mp: { vc: 'o preço de compra', v1: 'o frete e seguro', v2: 'outros valores', liquidoManual: 'o custo líquido digitado', situacao: 'a situação', p: 'o imposto de entrada', imp: 'os impostos da compra', cred: 'os créditos da compra', freteP: 'o frete', freteCred: 'os créditos do frete', desc: 'a descrição', un: 'a unidade', mist: 'a receita da mistura', rende: 'o que a mistura rende' },
     func: { sb: 'o salário', horasTrab: 'as horas trabalhadas', horasBase: 'as horas base', efic: 'a eficiência', situacao: 'a situação', he: 'as horas extras', vb: 'os valores', aloc: 'os setores', nome: 'o nome', qtd: 'o número de pessoas', modo: 'o tipo de cadastro (pessoa ou função)' },
     setor: { horasOperacao: 'as horas de operação', manual: 'a taxa digitada', equipamentos: 'as máquinas', despTotal: 'os gastos das máquinas', desc: 'o nome' },
     molde: { valor: 'o valor', vida: 'a vida útil', cavidades: 'as cavidades', setor: 'o setor', situacao: 'a situação', ciclosIniciais: 'as injetadas iniciais', desc: 'a descrição' },
@@ -6501,6 +6558,22 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     }
     return res;
   }
+  // "CHEM-1142: 1; SOLV-467: 2" → [{mp, qtd}]; "comprada" = deixa de ser mistura ([])
+  function lerMistura(v) {
+    var s = txt(v), res = [];
+    if (!s) return null;
+    if (/^(comprada|comprado|nenhuma|nao|sem mistura)$/.test(semAcento(s))) return [];
+    var partes = s.split(';').map(txt).filter(Boolean);
+    for (var i = 0; i < partes.length; i++) {
+      var p = partes[i], k = p.lastIndexOf(':'), cod, q, m;
+      if (k > 0) { cod = txt(p.slice(0, k)); q = lerNumero(p.slice(k + 1)); }
+      else if ((m = /^(.+?)\s+(-?[\d.,]+)$/.exec(p))) { cod = txt(m[1]); q = lerNumero(m[2]); }
+      else return NaN;
+      if (!cod || q === null || !isFinite(q) || !(q > 0)) return NaN;
+      res.push({ mp: cod, qtd: q });
+    }
+    return res.length ? res : NaN;
+  }
   function lerUF(v) { var s = txt(v).toUpperCase(); if (!s) return null; return M.UFS.indexOf(s) >= 0 ? s : NaN; }
   function lerNcm(v) { var s = txt(typeof v === 'number' ? String(Math.round(v)) : v).replace(/[.\s-]/g, ''); if (!s) return null; return /^\d{8}$/.test(s) ? s : NaN; }
 
@@ -6511,13 +6584,16 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       exemplo: ['EXEMPLO-G1', 'Elastômeros (linha de exemplo: apague)'] },
     { id: 'mp', nome: 'Matérias-primas', chave: 'cod', colunas: [
       ['Código', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true, 'kg, g, L, mL, m, un (peça), mil, cx, jg'],
-      ['Valor de compra (R$)', 'vc', 'numero', true, 'O preço da nota, com ICMS, PIS e COFINS e sem o IPI'],
+      ['Valor de compra (R$)', 'vc', 'numero', false, 'O preço da nota, com ICMS, PIS e COFINS e sem o IPI. Obrigatório na matéria-prima comprada nova (a mistura não tem)'],
       ['ICMS da compra (%)', 'icms', 'numero'], ['IPI da compra (%)', 'ipi', 'numero', false, 'Por fora da nota'], ['PIS da compra (%)', 'pis', 'numero'], ['COFINS da compra (%)', 'cofins', 'numero'],
       ['Gera crédito (ICMS; IPI; PIS; COFINS)', 'cred', 'creditos', false, 'sim ou não, na ordem. Em branco = o padrão do regime (Real: os quatro; Presumido: ICMS e IPI)'],
       ['Frete (% do preço)', 'freteP', 'numero'], ['Frete e outros valores (R$)', 'v1', 'numero'], ['Créditos sobre o frete (%)', 'freteCred', 'numero', false, 'Ex.: ICMS do conhecimento de frete'],
       ['Fornecedor', 'fornecedor', 'texto'], ['Situação', 'situacao', 'situacao', false, 'ativo ou inativo (em branco = ativo)'], ['Observação', 'obs', 'texto'],
       ['Outros valores (R$)', 'v2', 'numero', false, 'Despachante, alfândega: R$ por unidade'], ['Créditos sobre outros valores (%)', 'v2Cred', 'numero'], ['Custo líquido digitado (R$)', 'liquidoManual', 'numLimpar', false, 'Só para fixar o custo. Em branco = não muda; "calcular" = o sistema volta a calcular'],
-      ['Outros acréscimos (+) ou créditos (−) sobre o preço (%)', 'ajuste', 'numero', false, 'Veio dos impostos de entrada da versão antiga. Normalmente 0']],
+      ['Outros acréscimos (+) ou créditos (−) sobre o preço (%)', 'ajuste', 'numero', false, 'Veio dos impostos de entrada da versão antiga. Normalmente 0'],
+      ['Mistura: componentes (código: quantidade)', 'mist', 'mistura', false, 'Só para a matéria-prima feita de outras (ex.: adesivo Chem + solvente): o código de cada componente e a quantidade na receita, na unidade dele, ex.: CHEM-1142: 1; SOLV-467: 2. O custo sai dos componentes. Em branco = não muda; "comprada" = deixa de ser mistura'],
+      ['Mistura: a receita rende', 'rende', 'numero', false, 'Quanto a receita faz, na unidade desta matéria-prima, ex.: 3 (1 kg de Chem + 2 L de solvente rendem 3 L)'],
+      ['Custo líquido por unidade (R$) — só para ver', '_custo', 'ver', false, 'O custo que entra nas peças hoje: o preço de compra com os créditos dos impostos e o frete. Na mistura, a conta da receita']],
       antigas: [['Impostos da compra (%)', 'A coluna "Impostos da compra (%)" é da versão antiga: os impostos da compra agora têm uma coluna cada (ICMS, IPI, PIS e COFINS da compra). Baixe o modelo novo.'], ['Impostos do frete (%)', 'A coluna "Impostos do frete (%)" é da versão antiga: use "Créditos sobre o frete (%)". Baixe o modelo novo.']],
       exemplo: ['EXEMPLO-MP1', 'Borracha NBR 33% (linha de exemplo: apague)', '001', 'kg', '28,50', '12', '0', '1,65', '7,6', '', '', '0,60', '21,25', 'Distribuidor de elastômeros', 'ativo', '', '', '', ''] },
     { id: 'func', nome: 'Funcionários', chave: 'mat', colunas: [
@@ -6525,10 +6601,11 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Horas trabalhadas por mês', 'horasTrab', 'numero', false, 'Em branco = o padrão da configuração'], ['Horas base por mês', 'horasBase', 'numero'], ['Eficiência (%)', 'efic', 'numero'],
       ['Horas extras 50% por mês', 'he0', 'numero'], ['Horas extras 100% por mês', 'he1', 'numero'],
       ['Setores (código e %)', 'aloc', 'alocacao', false, 'Ex.: S03 70; S04 30. Só o código = 100%. Obrigatório para funcionário novo'], ['Admissão', 'admissao', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
-      ['Vale alimentação (R$ por mês)', 'bVa', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale alimentação (R$ por mês)', 'bVaD', 'numero'],
-      ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês)', 'bVtD', 'numero'],
+      ['Vale alimentação (R$ por mês)', 'bVa', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale alimentação (R$ por mês ou % do salário)', 'bVaD', 'desconto', false, 'Em reais por mês ou em % do salário base, ex.: 6%. Em branco = o padrão da empresa', ['Desconto no vale alimentação (R$ por mês)']],
+      ['Vale transporte (R$ por mês)', 'bVt', 'benef', false, 'Em branco = o padrão da empresa; "não recebe" para quem não recebe'], ['Desconto no vale transporte (R$ por mês ou % do salário)', 'bVtD', 'desconto', false, 'Em reais por mês ou em % do salário base, ex.: 6% (o funcionário paga até 6% do salário base, nunca mais que o vale). Em branco = o padrão da empresa', ['Desconto no vale transporte (R$ por mês)']],
       ['Pessoas nessa função', 'qtd', 'inteiro', false, 'Em branco = uma pessoa (matrícula e nome). Preencha (ex.: 4) quando a linha for uma função, sem nome de operador: o custo no setor fica pessoas × custo de 1'],
-      ['Horas extras: 3ª faixa por mês', 'he2', 'numero', false, 'Só se a configuração tiver a 3ª faixa de horas extras (aba Configuração)'], ['Horas extras: 4ª faixa por mês', 'he3', 'numero'], ['Horas extras: 5ª faixa por mês', 'he4', 'numero']],
+      ['Horas extras: 3ª faixa por mês', 'he2', 'numero', false, 'Só se a configuração tiver a 3ª faixa de horas extras (aba Configuração)'], ['Horas extras: 4ª faixa por mês', 'he3', 'numero'], ['Horas extras: 5ª faixa por mês', 'he4', 'numero'],
+      ['Custo por mês (R$) — só para ver', '_custo', 'ver', false, 'Salário, encargos, provisões e benefícios (função: de todas as pessoas)'], ['Custo por hora produtiva (R$/h) — só para ver', '_custoHora', 'ver', false, 'O custo por mês ÷ as horas produtivas (horas trabalhadas + extras × eficiência)']],
       exemplo: ['EXEMPLO-F1', 'Operador de injetora (linha de exemplo: apague)', 'Operador de injetora', '2.400,00', '188', '220', '85', '12', '', 'EXEMPLO-S1 100', '01/03/2023', 'ativo', '', '', '', '240,00', '144,00', ''] },
     { id: 'setor', nome: 'Setores e máquinas', chave: 'cod', agrupada: true, colunas: [
       ['Código do setor', 'cod', 'texto', true], ['Descrição do setor', 'desc', 'texto', true], ['Horas de operação por mês', 'horasOperacao', 'numero', true], ['Postos de trabalho', 'postos', 'numero'],
@@ -6538,13 +6615,22 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Gasto mensal: energia elétrica (R$)', 'g4', 'numero'], ['Gasto mensal: outros (R$)', 'g5', 'numero'],
       ['Taxa digitada: mão de obra (R$/h)', 'manualMod', 'numLimpar', false, 'Só para fixar a taxa (basta na primeira linha do setor). Em branco = não muda; "calcular" = o sistema calcula'], ['Taxa digitada: máquinas (R$/h)', 'manualMaq', 'numLimpar'],
       ['Total do setor por mês: manutenção de ferramental (R$)', 'dt1', 'numero', false, 'Só quando os gastos dos equipamentos são lançados pelo total do setor (aba Configuração)'], ['Total do setor por mês: lubrificação (R$)', 'dt2', 'numero'],
-      ['Total do setor por mês: manutenção (R$)', 'dt3', 'numero'], ['Total do setor por mês: energia elétrica (R$)', 'dt4', 'numero'], ['Total do setor por mês: outros (R$)', 'dt5', 'numero']],
+      ['Total do setor por mês: manutenção (R$)', 'dt3', 'numero'], ['Total do setor por mês: energia elétrica (R$)', 'dt4', 'numero'], ['Total do setor por mês: outros (R$)', 'dt5', 'numero'],
+      ['Mão de obra por mês (R$) — só para ver', '_modCusto', 'ver', false, 'O custo dos funcionários no setor (cada um pelo % do tempo dele aqui). Na primeira linha do setor'],
+      ['Horas-base da mão de obra por mês — só para ver', '_modHoras', 'ver', false, 'As horas produtivas das pessoas no setor: (horas trabalhadas + extras) × eficiência × % do tempo no setor'],
+      ['Taxa da mão de obra (R$/h) — só para ver', '_modTaxa', 'ver', false, 'Mão de obra por mês ÷ horas-base da mão de obra'],
+      ['Máquinas por mês (R$) — só para ver', '_maqCusto', 'ver', false, 'Depreciação das máquinas + gastos mensais'],
+      ['Horas-base das máquinas por mês — só para ver', '_maqHoras', 'ver', false, 'Quantidade de máquinas × horas da máquina por mês, somando as máquinas do setor'],
+      ['Taxa das máquinas (R$/h) — só para ver', '_maqTaxa', 'ver', false, 'Máquinas por mês ÷ horas-base das máquinas'],
+      ['Valor residual de cada máquina (R$) — só para ver', '_eqResidual', 'ver', false, 'Valor da máquina × valor residual (%): o que ela ainda vale no fim da vida útil'],
+      ['Depreciação por mês (R$) — só para ver', '_eqDepr', 'ver', false, 'Quantidade × (valor − valor residual) ÷ (vida útil em anos × 12)']],
       exemplo: ['EXEMPLO-S1', 'Injeção de borracha (linha de exemplo: apague)', '440', '8', 'Injetora de borracha 300 t', '8', '420.000,00', '10', '12', '440', '450', '180', '1.400', '6.300', ''] },
     { id: 'molde', nome: 'Moldes', chave: 'cod', colunas: [
       ['Código', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Setor', 'setor', 'texto', true], ['Cavidades', 'cavidades', 'inteiro', true], ['Valor (R$)', 'valor', 'numero', true],
-      ['Vida útil (injetadas)', 'vida', 'inteiro', true], ['Injetadas antes do sistema', 'ciclosIniciais', 'inteiro'], ['Data da compra', 'compra', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto']],
+      ['Vida útil (injetadas)', 'vida', 'inteiro', true], ['Injetadas antes do sistema', 'ciclosIniciais', 'inteiro'], ['Data da compra', 'compra', 'data'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'],
+      ['Custo do molde por peça (R$) — só para ver', '_custo', 'ver', false, 'Valor ÷ (vida útil em injetadas × cavidades)']],
       exemplo: ['EXEMPLO-MD1', 'Molde O-ring 64 cavidades (linha de exemplo: apague)', 'EXEMPLO-S1', '64', '38.000,00', '600000', '0', '10/06/2022', 'ativo', ''] },
-    { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, colunas: [
+    { id: 'prod', nome: 'Peças e fórmulas', chave: 'cod', agrupada: true, legado: true, colunas: [
       ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
       ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1'], ['Peças por preparação (lote)', 'lote', 'numero', false, 'Quantas peças são feitas a cada preparação da máquina', ['Lote econômico']], ['Preço na tabela geral (R$)', 'preco', 'numero', false, 'Só produto acabado. As outras tabelas ficam na aba Tabelas de preço', ['Preço de venda (R$)']], ['NCM', 'ncm', 'ncm', false, '8 dígitos, cadastrado na aba NCM'], ['Molde', 'molde', 'texto'],
       ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Só na limpeza interna (obrigatório). Limpeza no terceiro: o preço por peça vai na aba Preços do terceiro'], ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'], ['Notas', 'notas', 'texto', false, 'Texto livre sobre a peça (não entra no custo)'],
@@ -6555,14 +6641,41 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Preparação (minutos)', 'lSetupMin', 'numero'], ['Preparação (horas centesimais)', 'lSetupCen', 'numero'],
       ['Reaproveitamento (matéria-prima)', 'lReapMp', 'texto', false, 'O código da matéria-prima que volta para o estoque'], ['Quantidade reaproveitada', 'lReapQtd', 'numero']],
       exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '0,12', '40169300', 'EXEMPLO-MD1', 'interna', '8000', 'ativo', '', '', '', 'Matéria-prima', 'EXEMPLO-MP1', '0,00042', '', '', '', '', '', 'Injeção', '', '', '', '', '', ''] },
+    { id: 'peca', nome: 'Peças', chave: 'cod', colunas: [
+      ['Código da peça', 'cod', 'texto', true], ['Descrição', 'desc', 'texto', true], ['Tipo', 'tipo', 'tipoPeca', true, 'Produto acabado ou Semi-acabado'], ['Grupo', 'grupo', 'texto'], ['Unidade', 'un', 'unidade', true],
+      ['Quantidade de formulação', 'qf', 'numero', false, 'Em branco = 1. As quantidades da aba Fórmulas são para esta quantidade de peças'], ['Peças por preparação (lote)', 'lote', 'numero', false, 'Quantas peças são feitas a cada preparação da máquina', ['Lote econômico']],
+      ['NCM', 'ncm', 'ncm', false, '8 dígitos, cadastrada na aba NCM'], ['Molde', 'molde', 'texto'],
+      ['Limpeza', 'limpezaModo', 'limpeza', false, 'nenhuma, interna ou terceiro'], ['Peças limpas por hora', 'limpezaPph', 'numero', false, 'Só na limpeza interna (obrigatório)'],
+      ['Limpeza no terceiro (R$ por peça)', 'terc', 'numero', false, 'O preço que o terceiro cobra hoje para limpar a peça. Para mudar, escreva o preço novo: vale a partir da data de início da importação (o histórico fica na aba Preços do terceiro)'],
+      ['Preço na tabela geral (R$)', 'preco', 'numero', false, 'Só produto acabado. As outras tabelas têm uma coluna cada ("Preço: …")', ['Preço de venda (R$)']],
+      ['Situação', 'situacao', 'situacao'], ['Observação', 'obs', 'texto'], ['Descrição complementar', 'descComp', 'texto'], ['Notas', 'notas', 'texto', false, 'Texto livre sobre a peça (não entra no custo)'],
+      ['Custo de fabricação por peça (R$) — só para ver', '_custo', 'ver', false, 'O custo de fazer uma peça hoje (semi-acabado: uma unidade), com a fórmula, o molde e a limpeza']],
+      exemplo: ['EXEMPLO-P1', 'Anel O-ring NBR (linha de exemplo: apague)', 'Produto acabado', '201', 'un', '1', '20000', '40169300', 'EXEMPLO-MD1', 'interna', '8000', '', '0,12', 'ativo', '', '', '', ''] },
+    { id: 'formula', nome: 'Fórmulas', chave: 'cod', agrupada: true, colunas: [
+      ['Código da peça', 'cod', 'texto', true, 'A peça desta linha da fórmula (repita o código em todas as linhas da peça)'],
+      ['Descrição da peça — só para ver', '_descPeca', 'ver', false, 'O nome da peça (vem da aba Peças)'],
+      ['Passo', 'lPasso', 'inteiro', false, 'A ordem da linha na fórmula: 1, 2, 3… Para mudar a ordem, mude os números. Em branco = a ordem das linhas'],
+      ['Tipo da linha', 'lTipo', 'tipoLinha', true, 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção'],
+      ['Item (código)', 'lRef', 'texto', true, 'O código da matéria-prima, do semi-acabado, da peça ou do setor (etapa de produção)', ['Item da linha (código)']],
+      ['Descrição do item — só para ver', '_descItem', 'ver', false, 'O nome do item'],
+      ['Quantidade', 'lQtd', 'numero', false, 'Matéria-prima e componentes: quanto vai na quantidade de formulação da peça, na unidade do item'],
+      ['Unidade do item — só para ver', '_unItem', 'ver', false, 'A unidade da quantidade (a do cadastro do item)'],
+      ['Peças por hora (etapa)', 'lPph', 'numero', false, 'Só etapa de produção: quantas peças por hora. Ou use uma das colunas de tempo da etapa'],
+      ['Tempo da etapa (hh:mm)', 'lTempoSex', 'horas', false, 'Só etapa de produção, no lugar das peças por hora: o tempo para a quantidade de formulação, ex.: 1:30'], ['Tempo da etapa (horas centesimais)', 'lTempoCen', 'numero', false, 'Ex.: 1,5 = uma hora e meia'],
+      ['Preparação (hh:mm)', 'lSetup', 'horas', false, 'Tempo de preparação da máquina, ex.: 1:30'], ['Preparação (minutos)', 'lSetupMin', 'numero'], ['Preparação (horas centesimais)', 'lSetupCen', 'numero'],
+      ['Pessoas', 'lHomens', 'numero', false, 'Etapa: quantas pessoas trabalham nela (em branco = 1)'], ['Máquinas', 'lMaquinas', 'numero', false, 'Etapa: quantas máquinas (em branco = 1)'],
+      ['Refugo (%)', 'lRefugo', 'numero', false, 'Etapa: o que se perde nela. Encarece tudo o que veio antes na fórmula'], ['Fase', 'lFase', 'texto'],
+      ['Reaproveitamento (matéria-prima)', 'lReapMp', 'texto', false, 'O código da matéria-prima que volta para o estoque'], ['Quantidade reaproveitada', 'lReapQtd', 'numero'],
+      ['Custo da linha por peça (R$) — só para ver', '_custoLinha', 'ver', false, 'Quanto esta linha custa em cada peça hoje (com o refugo das etapas seguintes)']],
+      exemplo: ['EXEMPLO-P1', '', '1', 'Matéria-prima', 'EXEMPLO-MP1', '', '0,00042', '', '', '', '', '', '', '', '', '', '', 'Injeção', '', '', ''] },
     { id: 'ncm', nome: 'NCM', chave: 'cod', colunas: [
       ['Código NCM', 'cod', 'ncm', true, '8 dígitos, ex.: 4016.93.00'], ['Descrição', 'desc', 'texto'], ['IPI (%)', 'ipi', 'numero', false, 'Por fora: soma na nota, não é receita'],
       ['ICMS (%) — exceção', 'icms', 'numero', false, 'Em branco = o ICMS do estado de cada tabela'], ['PIS (%) — exceção', 'pis', 'numero', false, 'Em branco = o geral'], ['COFINS (%) — exceção', 'cofins', 'numero', false, 'Em branco = o geral']],
       exemplo: ['EXEMPLO', 'Juntas de borracha vulcanizada (linha de exemplo: apague)', '5', '', '', ''] },
     { id: 'tab', nome: 'Tabelas de preço', chave: 'tabela', colunas: [
       ['Tabela', 'tabela', 'texto', true, 'O nome da tabela. "Tabela geral" é a do preço da aba Peças'], ['Estado de destino (UF)', 'uf', 'uf', false, 'Basta na primeira linha da tabela; em branco = o estado da empresa'],
-      ['Ativa', 'ativa', 'simNao', false, 'sim ou não (em branco = sim)'], ['Peça', 'prod', 'texto'], ['Preço (R$)', 'preco', 'numero']],
-      exemplo: ['EXEMPLO Clientes de São Paulo (linha de exemplo: apague)', 'SP', 'sim', 'EXEMPLO-P1', '0,13'] },
+      ['Ativa', 'ativa', 'simNao', false, 'sim ou não (em branco = sim)'], ['Peça', 'prod', 'texto', false, 'Só nas planilhas antigas: os preços agora ficam na aba Peças, uma coluna "Preço: …" por tabela', null, true], ['Preço (R$)', 'preco', 'numero', false, 'Só nas planilhas antigas (ver Peça)', null, true]],
+      exemplo: ['EXEMPLO Clientes de São Paulo (linha de exemplo: apague)', 'SP', 'sim', '', ''] },
     { id: 'terceiro', nome: 'Preços do terceiro', chave: 'prod', colunas: [
       ['Peça', 'prod', 'texto', true], ['Preço por peça (R$)', 'preco', 'numero', true], ['Vale a partir de', 'desde', 'data', false, 'Em branco = a data de início da importação'], ['Observação', 'obs', 'texto']],
       exemplo: ['EXEMPLO-P1', '0,0036', '', 'Tabela inicial (linha de exemplo: apague)'] },
@@ -6577,7 +6690,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       exemplo: ['EXEMPLO', 'Cesta básica (linha de exemplo: apague)', 'R$', 'não', 'não', '95', 'VB', 'Outros', 'Valor mensal por funcionário'] },
     { id: 'benef', nome: 'Benefícios', chave: 'nome', colunas: [
       ['Código', 'id', 'texto', false, 'va, vt, b1… Em branco = benefício novo'], ['Benefício', 'nome', 'texto', true], ['Valor por mês (R$)', 'valor', 'numero', false, 'Quanto a empresa paga por mês a cada funcionário (o padrão)'],
-      ['Desconto do funcionário por mês (R$)', 'desconto', 'numero', false, 'Parte que o funcionário paga'], ['Ativo', 'ativo', 'simNao', false, 'sim ou não (em branco = sim)']],
+      ['Desconto do funcionário por mês (R$ ou % do salário)', 'desconto', 'desconto', false, 'Parte que o funcionário paga: em reais por mês ou em % do salário base, ex.: 6% no vale transporte (nunca mais que o próprio vale)', ['Desconto do funcionário por mês (R$)']], ['Ativo', 'ativo', 'simNao', false, 'sim ou não (em branco = sim)']],
       exemplo: ['', 'EXEMPLO Plano odontológico (linha de exemplo: apague)', '35', '0', 'sim'] },
     { id: 'cfg', nome: 'Configuração', chave: 'item', colunas: [['Item', 'item', 'texto', true], ['Valor', 'valor', 'bruto']], exemplo: null }
   ];
@@ -6586,10 +6699,12 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     grupo: 'sim = apaga o grupo (só se nenhuma matéria-prima ou peça usa)', mp: 'sim = apaga a matéria-prima de vez (some de todas as datas)', func: 'sim = apaga o funcionário de vez',
     setor: 'sim (em qualquer linha do setor) = apaga o setor inteiro. Para tirar só uma máquina, apague a linha da planilha', molde: 'sim = apaga o molde de vez',
     prod: 'sim (em qualquer linha da peça) = apaga a peça inteira, com a produção dela. Para tirar só uma linha da fórmula, apague a linha da planilha',
+    peca: 'sim = apaga a peça inteira, com a fórmula e a produção dela. Para tirar só uma linha da fórmula, apague a linha na aba Fórmulas',
     ncm: 'sim = apaga a NCM (só se nenhuma peça usa)', tab: 'sim = tira o preço da peça desta tabela', terceiro: 'sim = apaga este preço do terceiro',
     producao: 'sim = apaga este lançamento de produção', enc: 'sim = tira o item dos encargos (só se nenhuma fórmula usa)', benef: 'sim = apaga o benefício (os vales não saem: use Ativo = não)'
   };
-  ABAS.forEach(function (a) { if (DICA_EXCLUIR[a.id]) a.colunas.push(['Excluir', 'excluir', 'excluir', false, DICA_EXCLUIR[a.id]]); });
+  // [título, chave, tipo, obrigatória, ajuda, títulos antigos, só ler (não sai na planilha nova)]
+  ABAS.forEach(function (a) { if (DICA_EXCLUIR[a.id]) a.colunas.push(['Excluir', 'excluir', 'excluir', false, DICA_EXCLUIR[a.id], null, a.id === 'tab']); });
   var ABA = {}; ABAS.forEach(function (a) { ABA[a.id] = a; });
   var ORDEM = ['setor', 'cfg', 'mp', 'func', 'molde', 'prod', 'terceiro'];   // o que é citado vem antes de quem cita (NCM e tabelas vão na configuração)
 
@@ -6693,10 +6808,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var wb = XLSX.utils.book_new();
     var leia = [['Central de Custos — planilha de cadastros'], [''],
       ['Uma aba por tipo de cadastro. Não mude os títulos da primeira linha.'],
-      ['A segunda linha de cada aba mostra a unidade de cada coluna. A terceira é um exemplo (em cinza, código começando com EXEMPLO): ela é ignorada. Apague ou escreva por cima.'],
+      ['A segunda linha de cada aba (Formato) diz o que cada coluna aceita. A terceira é um exemplo (em cinza, código começando com EXEMPLO): ela é ignorada. Apague ou escreva por cima.'],
       ['Números no padrão brasileiro: 1.500,25 (mil e quinhentos e vinte e cinco centavos). Datas: dd/mm/aaaa.'],
       ['Código que já existe na Central é atualizado (só o que mudou); código novo é criado.'],
-      ['Peças e fórmulas: uma linha da planilha por linha da fórmula, repetindo o código da peça. Os dados da peça podem vir só na primeira.'],
       ['Setores e máquinas: uma linha por máquina, repetindo o código do setor.'],
       ['Impostos: o regime, as alíquotas da venda e o ICMS de cada estado ficam na aba Configuração; os da compra, em cada matéria-prima. Confira as alíquotas com o seu contador.'],
       ['NCM: uma linha por NCM, com o IPI (por fora) e as exceções. Tabelas de preço: uma linha por peça em cada tabela; o estado (UF) basta na primeira linha da tabela.'],
@@ -6706,11 +6820,15 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Produção: uma linha por peça em cada dia. Importar troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.'],
       ['Para baixar os dados que já estão na Central (para conferir ou mudar em massa), use “Baixar com todos os dados”.'],
       ['Abas que você não usar podem ficar vazias.'], [''], ['Colunas obrigatórias:']];
-    ABAS.forEach(function (a) { leia.push([a.nome + ': ' + a.colunas.filter(function (c) { return c[3]; }).map(function (c) { return c[0]; }).join(', ')]); });
-    leia = leia.concat([['']], LEIA_CORES);
+    ABAS.forEach(function (a) { if (!a.legado) leia.push([a.nome + ': ' + a.colunas.filter(function (c) { return c[3]; }).map(function (c) { return c[0]; }).join(', ')]); });
+    leia = leia.concat([['']], LEIA_COMO, [['']], LEIA_CORES);
     XLSX.utils.book_append_sheet(wb, folhaLeia(XLSX, leia), 'Leia-me');
     ABAS.forEach(function (a) {
-      var dados = a.id === 'cfg' ? linhasConfig(cfgPadrao) : [cabecalhoAba(a, cfgPadrao, null), a.exemplo];
+      if (a.legado) return;
+      var cols = colunasDaFolha(a, cfgPadrao, null), porK = {};
+      (a.exemplo || []).forEach(function (v, i) { if (a.colunas[i]) porK[a.colunas[i][1]] = v; });
+      var dados = a.id === 'cfg' ? linhasConfig(cfgPadrao) : [cols.map(function (c) { return c[0]; }), cols.map(function (c) { return tem(porK, c[1]) ? porK[c[1]] : ''; })];
+      if (a.id !== 'cfg') dados.cols = cols;
       if (a.id === 'enc' || a.id === 'benef') linhasDaAba(a, { config: cfgPadrao || {}, mudancas: [] }, null).slice(1).forEach(function (l) { dados.push(l); });
       // NCM: as que a empresa já tem vêm preenchidas (para conferir e mudar)
       if (a.id === 'ncm') ((cfgPadrao && cfgPadrao.ncms) || []).forEach(function (x) { dados.push([x.cod, x.desc || '', x.ipi === undefined ? '' : x.ipi, x.icms === undefined ? '' : x.icms, x.pis === undefined ? '' : x.pis, x.cofins === undefined ? '' : x.cofins]); });
@@ -6720,22 +6838,45 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   }
 
   /* ---------------- ler o arquivo ---------------- */
-  function erro(lista, aba, linha, msg) { lista.push({ aba: aba ? ABA[aba].nome : '', id: aba || '', linha: linha || 0, msg: msg }); }
+  // linha 300000+n = a linha n da aba Peças; 100000+n = a da aba Fórmulas; 200000+n = preço de tabela ou do terceiro vindo da aba Peças
+  function linhaVista(aba, linha) {
+    var n = linha || 0;
+    if (aba === 'prod' && n >= 300000) return { nome: ABA.peca.nome, n: n - 300000 };
+    if (aba === 'prod' && n >= 100000 && n < 200000) return { nome: ABA.formula.nome, n: n - 100000 };
+    if ((aba === 'tab' || aba === 'terceiro') && n >= 200000 && n < 300000) return { nome: ABA.peca.nome, n: n - 200000 };
+    return { nome: aba && ABA[aba] ? ABA[aba].nome : '', n: n };
+  }
+  // "5" ou "5 da aba Peças" (quando a linha é de outra aba)
+  function nLinha(aba, linha) { var v = linhaVista(aba, linha); return v.n + (aba && ABA[aba] && v.nome !== ABA[aba].nome ? ' da aba ' + v.nome : ''); }
+  function erro(lista, aba, linha, msg) { var v = linhaVista(aba, linha); lista.push({ aba: v.nome, id: aba || '', linha: linha || 0, ver: v.n, msg: msg }); }
   // → {linhas: {mp: [{_linha, cod, …}], …}, erros, exemplos (linhas de exemplo ignoradas), abas (as que vieram)}
   function ler(XLSX, dados) {
     var wb = dados && dados.SheetNames ? dados : XLSX.read(dados, { type: dados instanceof ArrayBuffer ? 'array' : undefined });
-    var res = { linhas: {}, erros: [], exemplos: 0, abas: [] };
+    var res = { linhas: {}, erros: [], exemplos: 0, abas: [], fora: [] };
     var porNome = {};
     wb.SheetNames.forEach(function (n) { porNome[semAcento(n)] = n; });
     ABAS.forEach(function (a) {
       var nome = porNome[semAcento(a.nome)];
       res.linhas[a.id] = [];
       if (!nome) return;
-      var m = XLSX.utils.sheet_to_json(wb.Sheets[nome], { header: 1, raw: true, defval: '', blankrows: false });
+      var ws0 = wb.Sheets[nome];
+      Object.keys(ws0).forEach(function (ad) {
+        var ce = ws0[ad];
+        if (ad.charAt(0) === '!' || !ce || ce.t !== 'n' || !isFinite(ce.v) || !ce.v || !/%\s*$/.test(String(ce.w || ''))) return;
+        // só o formato de porcentagem de verdade (o texto mostra o valor × 100); o "%" escrito no formato (0,00"%") não muda nada
+        var xw = parseFloat(String(ce.w).replace(/[%\s,]/g, ''));
+        if (!isFinite(xw) || Math.abs(xw - ce.v * 100) >= Math.abs(xw - ce.v)) return;
+        var tp = String(+(ce.v * 100).toPrecision(12)).replace('.', ',') + '%'; ws0[ad] = { t: 's', v: tp, w: tp };
+      });
+      // com as linhas em branco: o número de cada linha é o da planilha
+      var m = XLSX.utils.sheet_to_json(ws0, { header: 1, raw: true, defval: '', blankrows: true });
+      var r0 = ws0['!ref'] ? XLSX.utils.decode_range(ws0['!ref']).s.r : 0;
+      while (m.length && !m[m.length - 1].some(function (v) { return !vazio(v); })) m.pop();
       if (!m.length) return;
       res.abas.push(a.id);
       var tit = m[0].map(semAcento), idx = {}, faltam = [];
       a.colunas.forEach(function (c) {
+        if (c[2] === 'ver') return;   // "só para ver": a Central calcula, não se lê
         var i = tit.indexOf(semAcento(c[0]));
         (c[5] || []).forEach(function (t) { if (i < 0) i = tit.indexOf(semAcento(t)); });   // títulos antigos ("Lote econômico")
         if (i >= 0) idx[c[1]] = i; else if (c[3]) faltam.push(c[0]);
@@ -6748,35 +6889,84 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if ((mm = RE_GASTO_EQ.exec(s))) din.push({ i: i, tipo: 'gasto', desc: txt(mm[1]), titulo: s });
         else if ((mm = RE_GASTO_TOT.exec(s))) din.push({ i: i, tipo: 'gastoTotal', desc: txt(mm[1]), titulo: s });
       });
+      if (a.id === 'peca') m[0].forEach(function (t, i) {
+        if (usadas[i]) return;
+        var s = txt(t), mm;
+        if ((mm = RE_PRECO_TAB.exec(s))) din.push({ i: i, tipo: 'tabPreco', tabela: txt(mm[1]), titulo: s });
+      });
       if (a.id === 'func') m[0].forEach(function (t, i) {
         var s = txt(t), mm;
         if ((mm = RE_ENC_FUNC.exec(s))) din.push({ i: i, tipo: 'vb', ref: 'V' + String(+mm[2]).padStart(2, '0'), titulo: s });
         else if ((mm = RE_BENEF_FUNC.exec(s))) din.push({ i: i, tipo: 'benef', nome: txt(mm[2]), campo: mm[1] ? 'desconto' : 'valor', titulo: s });
       });
       (a.antigas || []).forEach(function (x) { if (tit.indexOf(semAcento(x[0])) >= 0) erro(res.erros, a.id, 1, x[1]); });
-      var r1 = m.length > 1 && semAcento(txt(m[1][0])) === 'unidade' ? 2 : 1;   // a linha de unidades das planilhas novas
+      var r1 = m.length > 1 && /^(unidade|formato)$/.test(semAcento(txt(m[1][0]))) ? 2 : 1;   // a linha de formatos (antes: de unidades)
+      var obrig = a.colunas.filter(function (c) { return c[3] && c[2] !== 'ver' && tem(idx, c[1]); });
       for (var r = r1; r < m.length; r++) {
-        var cel = m[r], linha = { _linha: r + 1 }, algum = false;
+        var cel = m[r], linha = { _linha: r + 1 + r0 }, algum = false;
         a.colunas.forEach(function (c) { var v = tem(idx, c[1]) ? cel[idx[c[1]]] : ''; if (!vazio(v)) algum = true; linha[c[1]] = v; });
         var dv = din.map(function (d) { return { d: d, v: cel[d.i] }; }).filter(function (x) { return !vazio(x.v); });
         if (dv.length) { algum = true; linha._din = dv; }
         if (!algum) continue;
         if (/^exemplo/i.test(txt(linha[a.chave]))) { res.exemplos++; continue; }
+        // linha sem nenhuma coluna obrigatória (uma anotação, uma conta solta): fica de fora, com aviso
+        if (obrig.length && !obrig.some(function (c) { return !vazio(linha[c[1]]); })) {
+          var tem2 = []; cel.forEach(function (v, j) { if (!vazio(v) && tem2.length < 2) tem2.push(XLSX.utils.encode_col(j) + linha._linha + ': ' + txt(v).slice(0, 50)); });
+          res.fora.push({ aba: a.nome, id: a.id, linha: linha._linha, ver: linha._linha, msg: 'sem ' + obrig.slice(0, 2).map(function (c) { return c[0].toLowerCase(); }).join(' nem ') + ' (' + tem2.join('; ') + ')' });
+          continue;
+        }
         linha._bruto = true;
         res.linhas[a.id].push(converter(a, linha, res.erros, XLSX));
       }
     });
     if (!res.abas.length) erro(res.erros, null, 0, 'Nenhuma aba do modelo foi encontrada no arquivo. Baixe o modelo e preencha nele.');
+    juntarPecas(res);
     return res;
+  }
+  // abas Peças e Fórmulas → as linhas da peça (os dados na aba Peças; uma linha por linha da fórmula, na ordem do Passo).
+  // O preço do terceiro e os das tabelas na aba Peças viram linhas das abas Preços do terceiro e Tabelas de preço
+  function juntarPecas(res) {
+    var novo = res.abas.indexOf('peca') >= 0 || res.abas.indexOf('formula') >= 0;
+    if (!novo) return;
+    if (res.abas.indexOf('prod') >= 0) { erro(res.erros, 'peca', 1, 'A planilha tem a aba antiga "Peças e fórmulas" junto com as novas "Peças" e "Fórmulas". Apague a antiga: os dados dela agora ficam nas novas.'); return; }
+    res.layoutNovo = true;
+    var P = [], vazias = function (l) { ABA.prod.colunas.forEach(function (c) { if (!tem(l, c[1])) l[c[1]] = null; }); return l; };
+    (res.linhas.peca || []).forEach(function (l) {
+      var n = l._linha;
+      l._linha = 300000 + n;
+      if (l.terc !== null && l.terc !== undefined && !vazio(l.cod)) (res.linhas.terceiro = res.linhas.terceiro || []).push({ _linha: 200000 + n, prod: l.cod, preco: l.terc, desde: null, obs: null, excluir: null, _dePeca: true });
+      (l._din || []).forEach(function (z) {
+        if (z.tipo !== 'tabPreco' || vazio(l.cod)) return;
+        (res.linhas.tab = res.linhas.tab || []).push({ _linha: 200000 + n, tabela: z.tabela, uf: null, ativa: null, prod: l.cod, preco: z.v === 'sem' ? null : z.v, excluir: z.v === 'sem' ? true : null, _dePeca: true });
+      });
+      delete l.terc; delete l._din;
+      P.push(vazias(l));
+    });
+    var ordem = [], por = {};
+    (res.linhas.formula || []).forEach(function (l, i) { l._linha = 100000 + l._linha; l._i = i; var k = '#' + txt(l.cod); if (!por[k]) { por[k] = []; ordem.push(k); } por[k].push(l); });
+    ordem.forEach(function (k) {
+      var g = por[k], num = function (x) { return typeof x.lPasso === 'number' ? x.lPasso : Infinity; };
+      if (g.some(function (l) { return typeof l.lPasso === 'number'; })) g.sort(function (x, y) { return (num(x) - num(y)) || (x._i - y._i); });
+      g.forEach(function (l) { delete l._i; delete l.lPasso; P.push(vazias(l)); });
+    });
+    res.linhas.prod = P; res.linhas.peca = []; res.linhas.formula = [];
+    res.erros.forEach(function (e) {
+      if ((e.id === 'peca' || e.id === 'formula') && e.linha > 1) { e.linha = (e.id === 'peca' ? 300000 : 100000) + e.linha; e.id = 'prod'; }
+    });
+    res.abas.push('prod');
   }
   // "Encargo do funcionário: Adicional de insalubridade (V16)"; "Benefício: Plano de saúde (R$ por mês)"; "Benefício: desconto no plano de saúde (R$ por mês)"
   var RE_GASTO_EQ = /^gasto mensal:\s*(.+?)\s*\(R\$\)\s*$/i, RE_GASTO_TOT = /^total do setor por m[eê]s:\s*(.+?)\s*\(R\$\)\s*$/i;
   var RE_GASTO_CFG = /^gastos dos equipamentos: (nome|explicacao) do gasto (\d+)$/;
   var RE_ENC_FUNC = /^encargo do funcion[aá]rio:\s*(.*?)\s*\(V(\d{1,2})\)\s*$/i;
-  var RE_BENEF_FUNC = /^benef[ií]cio:\s*(desconto (?:no|na|do|da|de) )?(.+?)\s*\(R\$ por m[eê]s\)\s*$/i;
+  var RE_PRECO_TAB = /^pre[cç]o:\s*(.+?)\s*\(R\$\)\s*$/i;
+  var RE_BENEF_FUNC = /^benef[ií]cio:\s*(desconto (?:no|na|do|da|de) )?(.+?)\s*\(R\$ por m[eê]s(?: ou % do sal[aá]rio)?\)\s*$/i;
   var LEITOR = {
     numero: lerNumero, inteiro: function (v) { var x = lerNumero(v); return x === null || isNaN(x) ? x : (Math.round(x) === x ? x : NaN); },
     benef: function (v) { var t = semAcento(v); if (/^nao( recebe)?$/.test(t)) return 'nao'; return lerNumero(v); },
+    desconto: function (v) { if (/%\s*$/.test(txt(v))) { var x = lerNumero(v); return x === null ? null : isNaN(x) ? NaN : { pct: x }; } return lerNumero(v); },
+    mistura: lerMistura,
+    tabPreco: function (v) { if (/^(sem preco|sem|tirar|nao vende)$/.test(semAcento(v))) return 'sem'; return lerNumero(v); },
     lista5: lerLista5, horas: lerHoras, unidade: lerUnidade, situacao: lerSituacao, tipoPeca: lerTipoPeca, tipoLinha: lerTipoLinha, limpeza: lerLimpeza,
     creditos: lerCreditos, uf: lerUF, ncm: lerNcm, simNao: lerSimNao, regime: lerRegime,
     excluir: opcao({ sim: true, s: true, x: true, excluir: true, apagar: true, nao: false, n: false }),
@@ -6802,7 +6992,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   // impostos da venda e ICMS por estado: sem valor gravado vale 0 (é o que a conta usa)
   function cfgNumEfetivo(path) { return /^(fiscal\.|icmsUF\.|impostosVendaPct$)/.test(path) && !/^fiscal\.(regime|uf)$/.test(path); }
   var DICA = {
-    numero: 'não é um número', benef: 'use um valor em reais ou "não recebe"', inteiro: 'precisa ser um número inteiro', data: 'não é uma data (use dd/mm/aaaa)', lista5: 'use até 5 percentuais separados por ponto e vírgula',
+    numero: 'não é um número', mistura: 'use o código de cada componente e a quantidade, ex.: CHEM-1142: 1; SOLV-467: 2 (ou "comprada")', tabPreco: 'use o preço em reais (ou "sem preço" para tirar a peça da tabela)', benef: 'use um valor em reais ou "não recebe"', desconto: 'use um valor em reais (ex.: 160) ou o % do salário base (ex.: 6%)', inteiro: 'precisa ser um número inteiro', data: 'não é uma data (use dd/mm/aaaa)', lista5: 'use até 5 percentuais separados por ponto e vírgula',
     horas: 'use horas e minutos, ex.: 1:30', unidade: 'unidade desconhecida (use kg, g, L, mL, m, cm, mm, m2, un, mil, cx ou jg)', situacao: 'use ativo ou inativo',
     tipoPeca: 'use Produto acabado ou Semi-acabado', tipoLinha: 'use Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção', limpeza: 'use nenhuma, interna ou terceiro',
     alocacao: 'use o código do setor e o percentual, ex.: S03 70; S04 30',
@@ -6830,6 +7020,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var v = linha[c[1]], x;
       // abas com uma linha por máquina ou por linha da fórmula: os dados do setor e da peça bastam na primeira (conferido ao agrupar)
       if (vazio(v)) { if (c[3] && (!a.agrupada || c[1] === a.chave)) erro(erros, a.id, linha._linha, 'Falta ' + c[0] + '.'); o[c[1]] = null; return; }
+      if (c[2] === 'ver') return;
       if (c[2] === 'texto') x = txt(v);
       else if (c[2] === 'bruto') { x = v; if (typeof v === 'number' && XLSX) o._serial = lerData(v, XLSX); }
       else if (c[2] === 'data') x = lerData(v, XLSX);
@@ -6839,8 +7030,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       o[c[1]] = x;
     });
     if (linha._din) o._din = linha._din.map(function (z) {
-      var y = z.d.tipo === 'benef' && z.d.campo === 'valor' ? LEITOR.benef(z.v) : lerNumero(z.v);
-      if (y !== 'nao' && (typeof y !== 'number' || isNaN(y))) { erro(erros, a.id, linha._linha, z.d.titulo + ': "' + txt(z.v) + '" ' + (z.d.tipo === 'benef' && z.d.campo === 'valor' ? DICA.benef : DICA.numero) + '.'); return null; }
+      var desc = z.d.tipo === 'benef' && z.d.campo === 'desconto', tp = z.d.tipo === 'tabPreco';
+      var y = z.d.tipo === 'benef' && z.d.campo === 'valor' ? LEITOR.benef(z.v) : desc ? LEITOR.desconto(z.v) : tp ? LEITOR.tabPreco(z.v) : lerNumero(z.v);
+      if (y !== 'nao' && !(tp && y === 'sem') && !(desc && y && typeof y === 'object' && !isNaN(y.pct)) && (typeof y !== 'number' || isNaN(y))) { erro(erros, a.id, linha._linha, z.d.titulo + ': "' + txt(z.v) + '" ' + (z.d.tipo === 'benef' && z.d.campo === 'valor' ? DICA.benef : desc ? DICA.desconto : tp ? DICA.tabPreco : DICA.numero) + '.'); return null; }
       return Object.assign({}, z.d, { v: y });
     }).filter(Boolean);
     return o;
@@ -6848,6 +7040,12 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
 
   /* ---------------- conferir e virar mudanças ---------------- */
   function itemDe(emp, tipo, ref, D) { return R.existeEm(emp, tipo, ref, D) ? R.itemEm(emp, tipo, ref, D) : null; }
+  // o desconto lido da planilha: {pct: 6} = 6% do salário base; número = R$ por mês
+  function poeDesconto(o, v) {
+    if (v && typeof v === 'object') { o.desconto = v.pct; o.descontoTipo = 'pct'; }
+    else { o.desconto = v; if (o.descontoTipo) delete o.descontoTipo; }
+  }
+  function txtDesconto(o) { return o && o.descontoTipo === 'pct' && !vazio(o.desconto) ? brTxtNum(+o.desconto || 0) + '%' : brNum(o ? o.desconto : ''); }
   function criadoDepois(emp, tipo, ref, D) { var c = R.criacao(emp, tipo, ref); return c && c.desde > D ? c.desde : null; }
   function setNum(o, k, v) { if (v !== null && v !== undefined) o[k] = v; }
   function setTxt(o, k, v) { if (v !== null && v !== undefined) o[k] = v; }
@@ -6954,7 +7152,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   function camposMudados(aba, d) {
     var out = [];
     Object.keys((d && d.campos) || {}).forEach(function (p) { var r = rotuloCampo(aba, p); if (out.indexOf(r) < 0) out.push(r); });
-    Object.keys((d && d.linhas) || {}).forEach(function (c) { var r = { itens: 'Fórmula', equipamentos: 'Máquinas', aloc: 'Setores (alocação)' }[c] || c; if (out.indexOf(r) < 0) out.push(r); });
+    Object.keys((d && d.linhas) || {}).forEach(function (c) { var r = { itens: 'Fórmula', equipamentos: 'Máquinas', aloc: 'Setores (alocação)', mist: 'Mistura' }[c] || c; if (out.indexOf(r) < 0) out.push(r); });
     return out;
   }
   // emp: a empresa (com o registro); lido: o que ler() devolveu; opts {desde, hoje, configPadrao}.
@@ -6972,13 +7170,13 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     ['grupo', 'mp', 'func', 'molde', 'ncm', 'tab', 'terceiro', 'producao', 'enc', 'benef', 'cfg'].forEach(function (t) {
       if (!L[t]) return;
       var por = {}, ordem = [], fora = {};
-      L[t].forEach(function (l) { var k = chaveLinha(t, l, D); if (!k || (t === 'tab' && vazio(l.prod))) return; if (!por[k]) { por[k] = []; ordem.push(k); } por[k].push(l); });
+      L[t].forEach(function (l) { var k = chaveLinha(t, l, D); if (!k || l._dePeca || (t === 'tab' && vazio(l.prod))) return; if (!por[k]) { por[k] = []; ordem.push(k); } por[k].push(l); });
       ordem.forEach(function (k) {
         var g = por[k]; if (g.length < 2) return;
         var dif = colunasDiferentes(t, g), ult = g[g.length - 1]._linha;
         var esc = !dif.length ? ult : (g.some(function (l) { return l._linha === escolha[k]; }) ? escolha[k] : ult);
         repetidos.push({ k: k, aba: t, ref: refDaChave(k), iguais: !dif.length, escolhida: esc, colunas: dif.map(function (c) { return c[0]; }),
-          linhas: g.map(function (l) { return { linha: l._linha, valores: dif.map(function (c) { return mostraValor(c[1] === '_din' ? (l._din || []).map(function (z) { return z.titulo.replace(/^[^:]*:\s*/, '') + ' ' + mostraValor(z.v); }).join('; ') : l[c[1]]); }) }; }) });
+          linhas: g.map(function (l) { return { linha: l._linha, ver: linhaVista(t, l._linha).n, valores: dif.map(function (c) { return mostraValor(c[1] === '_din' ? (l._din || []).map(function (z) { return z.titulo.replace(/^[^:]*:\s*/, '') + ' ' + mostraValor(z.v); }).join('; ') : l[c[1]]); }) }; }) });
         g.forEach(function (l) { if (l._linha !== esc) fora[l._linha] = true; });
       });
       if (Object.keys(fora).length) { Object.keys(fora).forEach(function (n) { linhaFora[t + '|' + n] = true; }); L[t] = L[t].filter(function (l) { return !fora[l._linha]; }); }
@@ -7012,7 +7210,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         g.nums.push(l._linha);
         campos.forEach(function (k) {
           if (l[k] === null || l[k] === undefined) return;
-          if (tem(g.dados, k) && JSON.stringify(g.dados[k]) !== JSON.stringify(l[k])) erro(erros, t, l._linha, 'O ' + ABA[t].colunas.filter(function (c) { return c[1] === k; })[0][0].toLowerCase() + ' de ' + l.cod + ' está diferente do que veio na linha ' + g._linha + '.');
+          if (tem(g.dados, k) && JSON.stringify(g.dados[k]) !== JSON.stringify(l[k])) erro(erros, t, l._linha, 'O ' + ABA[t].colunas.filter(function (c) { return c[1] === k; })[0][0].toLowerCase() + ' de ' + l.cod + ' está diferente do que veio na linha ' + nLinha(t, g._linha) + '.');
           else g.dados[k] = l[k];
         });
         g.linhas.push(l);
@@ -7171,6 +7369,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     (L.tab || []).forEach(function (l) {
       if (vazio(l.tabela)) return;
       var id = acharTabela(l.tabela);
+      if (!id && l._dePeca) { erro(erros, 'tab', l._linha, 'Coluna "Preço: ' + txt(l.tabela) + '": não há a tabela ' + txt(l.tabela) + '. Cadastre na aba Tabelas de preço (nome, estado e ativa).'); return; }
       if (!id) {
         if (semTabelas) { tabsCfg.push({ id: 'T1', nome: 'Tabela geral', uf: ufEmp, ativa: true }); semTabelas = false; }
         var max = 0; tabsCfg.forEach(function (t) { var m = /(\d+)$/.exec(t.id || ''); if (m) max = Math.max(max, +m[1]); });
@@ -7181,7 +7380,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (semTabelas) { tabsCfg.push({ id: 'T1', nome: 'Tabela geral', uf: ufEmp, ativa: true }); semTabelas = false; }
         var tb = tabsCfg.filter(function (t) { return t.id === id; })[0];
         if (l.uf) {
-          if (tabLinha[id + '|uf'] && tabLinha[id + '|uf'].v !== l.uf) erro(erros, 'tab', l._linha, 'O estado da tabela ' + txt(l.tabela) + ' está diferente do que veio na linha ' + tabLinha[id + '|uf'].linha + '.');
+          if (tabLinha[id + '|uf'] && tabLinha[id + '|uf'].v !== l.uf) erro(erros, 'tab', l._linha, 'O estado da tabela ' + txt(l.tabela) + ' está diferente do que veio na linha ' + nLinha('tab', tabLinha[id + '|uf'].linha) + '.');
           tabLinha[id + '|uf'] = tabLinha[id + '|uf'] || { v: l.uf, linha: l._linha }; tb.uf = l.uf;
         }
         if (l.ativa === true || l.ativa === false) tb.ativa = l.ativa;
@@ -7265,14 +7464,15 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var id = vazio(l.id) ? idBenef(l.nome) : semAcento(l.id);
       if (!vazio(l.id) && !BEN[id] && id !== 'va' && id !== 'vt') { erro(erros, 'benef', l._linha, 'Não há benefício com o código ' + txt(l.id) + '. Para um benefício novo, deixe o código em branco.'); return; }
       if (id && vistosB[id]) { erro(erros, 'benef', l._linha, 'O benefício ' + txt(l.nome) + ' já apareceu na linha ' + vistosB[id] + '.'); return; }
-      if ([l.valor, l.desconto].some(function (v) { return typeof v === 'number' && v < 0; })) { erro(erros, 'benef', l._linha, 'Valor e desconto não podem ser negativos.'); return; }
+      if ([l.valor, l.desconto].some(function (v) { return typeof v === 'number' && v < 0; }) || (l.desconto && typeof l.desconto === 'object' && l.desconto.pct < 0)) { erro(erros, 'benef', l._linha, 'Valor e desconto não podem ser negativos.'); return; }
+      if (l.desconto && typeof l.desconto === 'object' && l.desconto.pct > 100) { erro(erros, 'benef', l._linha, 'O desconto não pode passar de 100% do salário.'); return; }
       var novoB = !id; if (novoB) id = 'b' + (++maiorB);
       vistosB[id] = l._linha;
       var padrao = { nome: novoB ? txt(l.nome) : M.BENEF_PADRAO[id] || txt(l.nome), valor: 0, desconto: 0, ativo: true };
       var b = BEN[id] ? copia(BEN[id]) : copia(padrao), antes = JSON.stringify(BEN[id] || padrao);
       if (semAcento(l.nome) !== semAcento(M.nomeBeneficio(id, b))) b.nome = txt(l.nome);
       if (l.valor !== null && l.valor !== undefined) b.valor = l.valor;
-      if (l.desconto !== null && l.desconto !== undefined) b.desconto = l.desconto;
+      if (l.desconto !== null && l.desconto !== undefined) poeDesconto(b, l.desconto);
       if ((l.ativo === true || l.ativo === false) && (b.ativo !== false) !== l.ativo) b.ativo = l.ativo;
       if (BEN[id] || novoB || JSON.stringify(b) !== antes) BEN[id] = b;
       var acB = novoB ? 'novos' : JSON.stringify(b) !== antes ? 'alterados' : 'iguais';
@@ -7350,9 +7550,29 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     else if ((L.cfg || []).length) resumo.cfg.iguais++;
 
     /* ---- matérias-primas ---- */
-    (L.mp || []).forEach(function (l) {
-      if (vazio(l.cod) || vazio(l.desc) || l.un === null || l.vc === null) return;
-      if (l.vc < 0) { erro(erros, 'mp', l._linha, 'O valor de compra não pode ser negativo.'); return; }
+    // as misturas por último: os componentes (compradas) já existem quando elas são gravadas
+    var ehMixL = function (l) { return Array.isArray(l.mist) && l.mist.length > 0; };
+    var mixNaPl = {}; (L.mp || []).forEach(function (l) { if (!vazio(l.cod) && Array.isArray(l.mist)) mixNaPl['#' + l.cod] = l.mist.length > 0; });
+    var mixDe = function (cod) { if (tem(mixNaPl, '#' + cod)) return mixNaPl['#' + cod]; var x = itemDe(emp, 'mp', cod, D); return !!(x && M.ehMistura(x)); };
+    (L.mp || []).filter(function (l) { return !ehMixL(l); }).concat((L.mp || []).filter(ehMixL)).forEach(function (l) {
+      if (vazio(l.cod) || vazio(l.desc) || l.un === null) return;
+      var base0 = itemDe(emp, 'mp', l.cod, D), seraMix = ehMixL(l) || (!Array.isArray(l.mist) && !!base0 && M.ehMistura(base0));
+      if (l.vc === null && !seraMix && (!base0 || vazio(base0.vc) || (M.ehMistura(base0) && !(+base0.vc > 0)))) { erro(erros, 'mp', l._linha, 'Falta Valor de compra (a matéria-prima comprada precisa do preço da nota).'); return; }
+      if (l.vc !== null && l.vc < 0) { erro(erros, 'mp', l._linha, 'O valor de compra não pode ser negativo.'); return; }
+      if (ehMixL(l)) {
+        var vistosM = {}, ruimM = null;
+        l.mist.forEach(function (c) {
+          if (ruimM) return;
+          if (c.mp === l.cod) ruimM = 'a mistura não pode entrar nela mesma';
+          else if (vistosM['#' + c.mp]) ruimM = c.mp + ' aparece duas vezes (some as quantidades)';
+          else if (!existe('mp', c.mp)) ruimM = 'a matéria-prima ' + c.mp + ' não existe';
+          else if (mixDe(c.mp)) ruimM = c.mp + ' também é uma mistura (use só matérias-primas compradas)';
+          vistosM['#' + c.mp] = true;
+        });
+        if (ruimM) { erro(erros, 'mp', l._linha, 'Mistura: ' + ruimM + '.'); return; }
+        var rendeF = l.rende !== null && l.rende !== undefined ? l.rende : (base0 ? +base0.rende || 0 : 0);
+        if (!(rendeF > 0)) { erro(erros, 'mp', l._linha, 'Mistura: informe quanto a receita rende (coluna "Mistura: a receita rende", maior que zero).'); return; }
+      }
       var cols = ['icms', 'ipi', 'pis', 'cofins', 'freteP', 'freteCred'];
       if (cols.some(function (k) { return typeof l[k] === 'number' && (l[k] < 0 || l[k] > 100); })) { erro(erros, 'mp', l._linha, 'Os impostos vão de 0 a 100%.'); return; }
       var algum = cols.concat(['v2Cred', 'ajuste']).some(function (k) { return l[k] !== null && l[k] !== undefined; }) || !!l.cred;
@@ -7363,14 +7583,23 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       pedido('mp', 'mp', l.cod, l._linha, function (it) {
         var novo = !it;
         it = it || { cod: l.cod, v1: 0, v2: 0, imp: { icms: 0, ipi: 0, pis: 0, cofins: 0 }, cred: { icms: '', ipi: '', pis: '', cofins: '' }, freteP: 0, freteCred: 0, liquidoManual: '', situacao: 'ativo', fornecedor: '', obs: '' };
-        it.desc = l.desc; it.un = l.un; it.vc = l.vc;
+        it.desc = l.desc; it.un = l.un; setNum(it, 'vc', l.vc); if (it.vc === undefined || it.vc === null) it.vc = 0;
         setTxt(it, 'grupo', grupoMp); setNum(it, 'v1', l.v1); setNum(it, 'v2', l.v2);
+        // a receita da mistura: as linhas novas pegam o número da antiga do mesmo componente; "comprada" tira a receita
+        if (Array.isArray(l.mist)) {
+          if (l.mist.length) { var mist = l.mist.map(function (c) { return { mp: c.mp, qtd: c.qtd }; }); reaproveitarIds(it.mist, mist, function (c) { return c.mp; }); it.mist = juntarAntigas(it.mist, mist); }
+          else { it.mist = []; delete it.rende; }
+        }
+        if (l.rende !== null && l.rende !== undefined && Array.isArray(it.mist) && it.mist.length) it.rende = l.rende;
+        // o crédito que a planilha mostrou em cinza (o padrão do regime): igual ao padrão = continua no padrão
+        var credNorm = function (cr, proprio, efetivo) { if (!cr) return cr; var r = copia(cr); M.IMP_COMPRA.forEach(function (k) { if (!proprio(k) && r[k] !== '' && r[k] === efetivo(k)) r[k] = ''; }); return r; };
         if (l.liquidoManual !== null && l.liquidoManual !== undefined && !(l.liquidoManual === '' && vazio(it.liquidoManual))) it.liquidoManual = l.liquidoManual;
         // matéria-prima no formato antigo: a planilha traz os valores equivalentes do formato novo; só passa para o novo se algum deles mudou
         if (!novo && M.mpLegado(it) && algum) {
           var o = M.compraMP(it, cfg), mesmo = function (a, b) { return a === null || a === undefined || Math.abs(a - b) < 1e-9; };
           var credDe = function (k) { return o.credProprio[k] ? o.cred[k] : ''; };
-          var igual = ['icms', 'ipi', 'pis', 'cofins'].every(function (k) { return mesmo(l[k], o.imp[k]); }) && (!l.cred || M.IMP_COMPRA.every(function (k) { return l.cred[k] === credDe(k); })) &&
+          var lc = credNorm(l.cred, function (k) { return o.credProprio[k]; }, function (k) { return o.cred[k]; });
+          var igual = ['icms', 'ipi', 'pis', 'cofins'].every(function (k) { return mesmo(l[k], o.imp[k]); }) && (!lc || M.IMP_COMPRA.every(function (k) { return lc[k] === credDe(k); })) &&
             mesmo(l.freteP, 0) && mesmo(l.freteCred, o.freteCred) && mesmo(l.v2Cred, o.v2Cred) && mesmo(l.ajuste, o.ajuste);
           if (!igual) {
             it.imp = copia(o.imp); it.cred = {}; M.IMP_COMPRA.forEach(function (k) { it.cred[k] = credDe(k); });
@@ -7381,7 +7610,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (!M.mpLegado(it)) {
           it.imp = copia(it.imp);
           ['icms', 'ipi', 'pis', 'cofins'].forEach(function (k) { if (l[k] !== null && l[k] !== undefined) it.imp[k] = l[k]; });
-          if (l.cred) it.cred = copia(l.cred);
+          if (l.cred) { var reg = M.fiscalDe(cfg).regime, cr0 = it.cred || {}; it.cred = credNorm(l.cred, function (k) { return cr0[k] === true || cr0[k] === false; }, function (k) { return M.credPadrao(reg, k); }); }
           setNum(it, 'freteP', l.freteP); setNum(it, 'freteCred', l.freteCred); setNum(it, 'v2Cred', l.v2Cred); setNum(it, 'ajuste', l.ajuste);
         }
         setTxt(it, 'fornecedor', l.fornecedor); setTxt(it, 'situacao', l.situacao); setTxt(it, 'obs', l.obs);
@@ -7395,7 +7624,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (vazio(l.mat) || vazio(l.nome) || l.sb === null) return;
       if (!l.aloc && !R.existeEm(emp, 'func', l.mat, D)) { erro(erros, 'func', l._linha, 'Falta Setores (código e %): funcionário novo precisa de pelo menos um setor.'); return; }
       if (!(l.sb > 0)) { erro(erros, 'func', l._linha, 'O salário precisa ser maior que zero.'); return; }
-      if ([l.bVa, l.bVaD, l.bVt, l.bVtD].some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos.'); return; }
+      if ([l.bVa, l.bVaD, l.bVt, l.bVtD].some(function (x) { return (typeof x === 'number' && x < 0) || (x && typeof x === 'object' && (x.pct < 0 || x.pct > 100)); })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos (e o desconto em % vai até 100% do salário).'); return; }
       if (typeof l.qtd === 'number' && !(l.qtd >= 1)) { erro(erros, 'func', l._linha, 'Pessoas nessa função: informe 1 ou mais (ou deixe em branco para uma pessoa).'); return; }
       var ruim = (l.aloc || []).filter(function (a) { return !existe('setor', a.setor); });
       if (ruim.length) { erro(erros, 'func', l._linha, 'Setor ' + ruim.map(function (a) { return a.setor; }).join(', ') + ' não existe (cadastre na aba Setores e máquinas).'); return; }
@@ -7405,16 +7634,22 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (heL.some(function (x) { return typeof x === 'number' && x < 0; })) { erro(erros, 'func', l._linha, 'Horas extras não podem ser negativas.'); return; }
       if ((l._din || []).some(function (z) { return typeof z.v === 'number' && z.v < 0 && z.tipo === 'benef'; })) { erro(erros, 'func', l._linha, 'Benefícios e descontos não podem ser negativos.'); return; }
       if (tx.limite240 && horas + he.reduce(function (t, x) { return t + x; }, 0) > 240) { erro(erros, 'func', l._linha, 'Horas trabalhadas + horas extras passam de 240 por mês.'); return; }
+      var baseF = itemDe(emp, 'func', l.mat, D), igualP = function (v, p) { return typeof v === 'number' && Math.abs(v - (+p || 0)) < 1e-9; };
+      var hTrab = baseF && vazio(baseF.horasTrab) && igualP(l.horasTrab, tx.padraoHorasTrab) ? null : l.horasTrab;
+      var hBase = baseF && vazio(baseF.horasBase) && igualP(l.horasBase, tx.padraoHorasBase || 220) ? null : l.horasBase;
+      var eFic = baseF && vazio(baseF.efic) && igualP(l.efic, tx.padraoEfic) ? null : l.efic;
       pedido('func', 'func', l.mat, l._linha, function (it) {
         it = it || { mat: l.mat, cargo: '', tipo: 'MOD', horasTrab: tx.padraoHorasTrab || 188, horasBase: tx.padraoHorasBase || 220, efic: tx.padraoEfic || 85, he: [0, 0, 0, 0, 0], vb: {}, aloc: [], admissao: '' };
         it.nome = l.nome; it.sb = l.sb; setTxt(it, 'cargo', l.cargo);
         if (typeof l.qtd === 'number' && l.qtd >= 1) { it.modo = 'funcao'; it.qtd = l.qtd; }
-        setNum(it, 'horasTrab', l.horasTrab); setNum(it, 'horasBase', l.horasBase); setNum(it, 'efic', l.efic);
+        setNum(it, 'horasTrab', hTrab); setNum(it, 'horasBase', hBase); setNum(it, 'efic', eFic);
         if (heL.some(function (x) { return x !== null && x !== undefined; })) { it.he = (it.he || [0, 0, 0, 0, 0]).slice(); while (it.he.length < 5) it.he.push(0); heL.forEach(function (x, i) { if (x !== null && x !== undefined) it.he[i] = x; }); }
         // encargos que variam por pessoa (colunas "Encargo do funcionário: … (V16)")
         (l._din || []).forEach(function (z) {
           if (z.tipo !== 'vb') return;
           if (!(cfg.encargos || []).some(function (e) { return e.ref === z.ref; })) { erro(erros, 'func', l._linha, 'Coluna "' + z.titulo + '": não há encargo ' + z.ref + ' (aba Encargos).'); return; }
+          var eP = (cfg.encargos || []).filter(function (e) { return e.ref === z.ref; })[0];
+          if (vazio((it.vb || {})[z.ref]) && typeof z.v === 'number' && Math.abs(z.v - (+eP.vb || 0)) < 1e-9) return;   // o padrão em cinza
           if (!it.vb || it.vb[z.ref] !== z.v) { it.vb = it.vb ? copia(it.vb) : {}; it.vb[z.ref] = z.v; }
         });
         if (l.aloc) { var aloc = l.aloc.map(function (a) { return { setor: a.setor, pct: a.pct }; }); reaproveitarIds(it.aloc, aloc, function (a) { return a.setor; }); it.aloc = juntarAntigas(it.aloc, aloc); }
@@ -7428,14 +7663,19 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
           var o = outros[id] = outros[id] || [id, null, null]; o[z.campo === 'valor' ? 1 : 2] = z.v;
         });
         Object.keys(outros).forEach(function (k) { bens.push(outros[k]); });
+        var mesmoDesc = function (v, d) { return v && typeof v === 'object' ? d.descontoTipo === 'pct' && Math.abs(v.pct - (+d.desconto || 0)) < 1e-9 : typeof v === 'number' && d.descontoTipo !== 'pct' && Math.abs(v - (+d.desconto || 0)) < 1e-9; };
         bens.forEach(function (b) {
+          // o valor e o desconto que a planilha mostrou em cinza (o padrão da empresa): iguais ao padrão = continua no padrão
+          var dB = (cfg.beneficios || {})[b[0]] || {}, pB = (it.benef || {})[b[0]] || {};
+          if (typeof b[1] === 'number' && vazio(pB.valor) && !pB.nao && Math.abs(b[1] - (+dB.valor || 0)) < 1e-9) b = [b[0], null, b[2]];
+          if (b[2] !== null && b[2] !== undefined && vazio(pB.desconto) && !pB.nao && mesmoDesc(b[2], dB)) b = [b[0], b[1], null];
           if ((b[1] === null || b[1] === undefined) && (b[2] === null || b[2] === undefined)) return;
           it.benef = it.benef ? copia(it.benef) : {};
           var x = it.benef[b[0]] = it.benef[b[0]] ? copia(it.benef[b[0]]) : {};
           if (b[1] === 'nao') { x.nao = true; delete x.valor; delete x.desconto; return; }
           delete x.nao;
           if (b[1] !== null && b[1] !== undefined) x.valor = b[1];
-          if (b[2] !== null && b[2] !== undefined) x.desconto = b[2];
+          if (b[2] !== null && b[2] !== undefined) poeDesconto(x, b[2]);
         });
         return it;
       });
@@ -7465,7 +7705,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       if (tipo !== 'PA') { erro(erros, 'tab', pp._linha, it.cod + ' é semi-acabado: não tem preço de venda.'); return false; }
       Object.keys(pp.tabs).forEach(function (id) {
         if (id === 'T1') {
-          if (precoPeca !== undefined && precoPeca !== null && precoPeca !== pp.tabs[id]) erro(erros, 'tab', pp._linha, 'O preço de ' + it.cod + ' na tabela geral está diferente do da aba Peças e fórmulas (linha ' + linha + ').');
+          if (precoPeca !== undefined && precoPeca !== null && precoPeca !== pp.tabs[id]) erro(erros, 'tab', pp._linha, 'O preço de ' + it.cod + ' na tabela geral está diferente do da aba ' + linhaVista('prod', linha).nome + ' (linha ' + linhaVista('prod', linha).n + ').');
           it.preco = pp.tabs[id];
         } else { it.precos = it.precos ? copia(it.precos) : {}; it.precos[id] = pp.tabs[id]; }
       });
@@ -7489,7 +7729,9 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         if (!(l.lQtd > 0)) { erro(erros, 'prod', l._linha, 'Informe a quantidade da linha (maior que zero).'); ok = false; return null; }
         return comReap(l, { tipo: l.lTipo, ref: l.lRef, qtd: l.lQtd, fase: l.lFase || '' });
       });
-      var faltam = [], jaDito = function (col) { return erros.some(function (e) { return e.aba === ABA.prod.nome && g.nums.indexOf(e.linha) >= 0 && e.msg.indexOf(col + ':') === 0; }); };
+      var faltam = [], jaDito = function (col) { return erros.some(function (e) { return e.id === 'prod' && g.nums.indexOf(e.linha) >= 0 && e.msg.indexOf(col + ':') === 0; }); };
+      // só linhas na aba Fórmulas (a peça não veio na aba Peças): os dados da peça ficam como estão
+      if (vazio(d.desc) && !d.tipo && !d.un) { var ja = itemDe(emp, 'prod', g.cod, D); if (ja) { d.desc = ja.desc; d.tipo = ja.tipo; d.un = ja.un; } }
       if (g.linhas.some(function (x) { return x === false; })) ok = false;
       g.linhas = g.linhas.filter(function (x) { return x !== false; });
       if (d.grupo !== undefined) { var gp = acharGrupo(d.grupo, 'prod', g._linha); if (gp === undefined) ok = false; else d.grupo = gp; }
@@ -7536,11 +7778,22 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     soPrecoTab = false;
 
     /* ---- preços do terceiro ---- */
-    var precos = (emp.limpezaTerceiro && emp.limpezaTerceiro.precos) || [];
+    var precos = (emp.limpezaTerceiro && emp.limpezaTerceiro.precos) || [], ultPl = {};
+    (L.terceiro || []).forEach(function (l) { if (l._dePeca || vazio(l.prod) || l.preco === null) return; var d = l.desde || D, u = ultPl['#' + l.prod]; if (!u || d >= u.desde) ultPl['#' + l.prod] = { desde: d, valor: l.preco }; });
+    var ultimoPreco = function (prod) {
+      var u = null; precos.forEach(function (x) { if (x.prod === prod && (!u || x.desde >= u.desde)) u = { desde: x.desde, valor: +x.valor }; });
+      var q = ultPl['#' + prod]; if (q && (!u || q.desde >= u.desde)) u = q;
+      return u;
+    };
     (L.terceiro || []).forEach(function (l) {
       if (vazio(l.prod) || l.preco === null) return;
       if (!existe('prod', l.prod)) { erro(erros, 'terceiro', l._linha, 'Peça ' + l.prod + ' não existe.'); return; }
       if (l.preco < 0) { erro(erros, 'terceiro', l._linha, 'O preço não pode ser negativo.'); return; }
+      if (l._dePeca) {
+        var ult = ultimoPreco(l.prod);
+        if (ult && Math.abs(ult.valor - l.preco) < 1e-12) { resumo.terceiro.iguais++; return; }
+        if (ult && ult.desde > D) { erro(erros, 'terceiro', l._linha, 'Limpeza no terceiro de ' + l.prod + ': já há um preço a partir de ' + dataBR(ult.desde) + ', depois da data de início. Mude na aba Preços do terceiro (com a data) ou importe com a data de início a partir de ' + dataBR(ult.desde) + '.'); return; }
+      }
       var desde = l.desde || D, atual = null;
       precos.forEach(function (x) { if (x.prod === l.prod && x.desde <= desde && (!atual || x.desde >= atual.desde)) atual = x; });
       if (atual && +atual.valor === l.preco) { resumo.terceiro.iguais++; return; }
@@ -7638,7 +7891,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     var semAba = function (q) { var c = {}; Object.keys(q).forEach(function (k) { if (k !== '_aba') c[k] = q[k]; }); return c; };
     return { ok: !erros.length, erros: erros, pedidos: erros.length ? [] : pedidos.map(semAba).concat(pedidosExcluir), resumo: resumo,
       grupos: !erros.length && JSON.stringify(gruposNovos) !== gruposAntes ? gruposNovos : null, producao: erros.length ? [] : producao, prestador: erros.length ? null : prestadorNovo,
-      producaoTirar: erros.length ? [] : producaoTirar, itens: itens, repetidos: repetidos, avisos: avisos };
+      producaoTirar: erros.length ? [] : producaoTirar, itens: itens.map(function (x) { x.ver = linhaVista(x.aba, x.linha).n; return x; }), repetidos: repetidos, avisos: avisos, fora: lido.fora || [], layoutNovo: !!lido.layoutNovo };
   }
   /* ---------------- exportar: a planilha com todos os dados de hoje (o mesmo formato do modelo; importar de volta não muda nada) ---------------- */
   function brNum(v) { return v === undefined || v === null || v === '' ? '' : (typeof v === 'number' ? v : (isFinite(+v) ? +v : txt(v))); }
@@ -7665,7 +7918,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     M.idsBeneficios(B).forEach(function (k) {
       if (k === 'va' || k === 'vt') return;
       var nome = M.nomeBeneficio(k, B[k]);
-      cols.push({ titulo: 'Benefício: ' + nome + ' (R$ por mês)', tipo: 'benef', id: k, campo: 'valor' }, { titulo: 'Benefício: desconto no ' + nome.toLowerCase() + ' (R$ por mês)', tipo: 'benef', id: k, campo: 'desconto' });
+      cols.push({ titulo: 'Benefício: ' + nome + ' (R$ por mês)', tipo: 'benef', id: k, campo: 'valor' }, { titulo: 'Benefício: desconto no ' + nome.toLowerCase() + ' (R$ por mês ou % do salário)', tipo: 'benef', id: k, campo: 'desconto' });
     });
     return cols;
   }
@@ -7685,55 +7938,105 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     });
     return { ren: ren, extras: extras };
   }
-  function cabecalhoAba(a, cfg, emp) {
-    if (a.id === 'setor') { var ds = colunasDinSetor(cfg); return a.colunas.map(function (c) { return ds.ren[c[1]] || c[0]; }).concat(ds.extras.map(function (d) { return d.titulo; })); }
-    return a.colunas.map(function (c) { return c[0]; }).concat(a.id === 'func' ? colunasDinFunc(cfg, emp).map(function (d) { return d.titulo; }) : []);
+  // os preços das outras tabelas (a geral é a coluna "Preço na tabela geral"): uma coluna cada na aba Peças
+  function colunasPrecoTab(cfg) { return cfg && cfg.tabelas && cfg.tabelas.length ? M.tabelasDe(cfg).filter(function (t) { return t.id !== 'T1'; }).map(function (t) { return { titulo: 'Preço: ' + txt(t.nome || t.id) + ' (R$)', id: t.id, nome: txt(t.nome || t.id) }; }) : []; }
+  // as colunas da aba na planilha, na ordem: [título, chave, tipo, obrigatória, ajuda]. As que dependem da configuração têm
+  // chave própria: vb:V16, bv:b1:valor, gasto:g6, gastoTotal:g6, tab:T2
+  function colunasDaFolha(a, cfg, emp) {
+    var cols = a.colunas.filter(function (c) { return !c[6]; }).map(function (c) { return c.slice(); });
+    if (a.id === 'setor') {
+      var ds = colunasDinSetor(cfg);
+      cols.forEach(function (c) { if (ds.ren[c[1]]) c[0] = ds.ren[c[1]]; });
+      ds.extras.forEach(function (d) { cols.push([d.titulo, d.tipo + ':' + d.id, 'numero', false, d.tipo === 'gasto' ? 'Gasto mensal desta máquina' : 'Total do setor por mês (basta na primeira linha do setor)']); });
+    }
+    if (a.id === 'func') colunasDinFunc(cfg, emp).forEach(function (d) {
+      cols.push(d.tipo === 'vb' ? [d.titulo, 'vb:' + d.ref, 'numero', false, 'O valor desta pessoa. Em cinza = o da aba Encargos (o padrão)'] : [d.titulo, 'bv:' + d.id + ':' + d.campo, d.campo === 'desconto' ? 'desconto' : 'benef', false, d.campo === 'desconto' ? 'Em reais ou em % do salário base. Em cinza = o padrão da empresa' : 'Em cinza = o padrão da empresa; "não recebe" para quem não recebe']);
+    });
+    if (a.id === 'peca') {
+      var ip = cols.map(function (c) { return c[1]; }).indexOf('preco') + 1;
+      colunasPrecoTab(cfg).forEach(function (d, j) { cols.splice(ip + j, 0, [d.titulo, 'tab:' + d.id, 'tabPreco', false, 'O preço da peça na tabela ' + d.nome + ' (cadastrada na aba Tabelas de preço). Em branco = não muda; "sem preço" = tira a peça da tabela']); });
+    }
+    return cols;
   }
+  function cabecalhoAba(a, cfg, emp) { return colunasDaFolha(a, cfg, emp).map(function (c) { return c[0]; }); }
+  // a empresa como está hoje, com as contas (para as colunas "só para ver")
+  function contextoHoje(emp, hoje) {
+    try {
+      var est = emp.mudancas && emp.mudancas.length ? R.estadoEm(emp, hoje) : emp;
+      return est && est.config ? M.contexto(est, { hoje: hoje }) : null;
+    } catch (e) { return null; }
+  }
+  // o valor padrão (a pessoa ou a matéria-prima não tem valor próprio): sai em cinza na planilha
+  function padrao(v) { return v === '' || v === null || v === undefined ? '' : { v: v, padrao: true }; }
   var NOME_TIPO_ENC = { '%': '%', '$': 'R$', '#': 'inativo' };
-  function linhasDaAba(a, emp, hoje) {
+  function linhasDaAba(a, emp, hoje, ctx) {
     var cfg = (hoje && emp.mudancas && emp.mudancas.length ? itemDe(emp, 'cfg', 'config', hoje) : null) || emp.config || {};
     var din = a.id === 'func' ? colunasDinFunc(cfg, emp) : a.id === 'setor' ? colunasDinSetor(cfg).extras : [];
-    var cab = cabecalhoAba(a, cfg, emp), out = [cab];
-    var idx = {}; a.colunas.forEach(function (c, i) { idx[c[1]] = i; });
+    var cols = colunasDaFolha(a, cfg, emp), cab = cols.map(function (c) { return c[0]; }), out = [cab];
+    out.cols = cols;
+    var idx = {}; cols.forEach(function (c, i) { idx[c[1]] = i; });
+    var tx = cfg.taxas || {}, Bcfg = cfg.beneficios || {};
     var nova = function (o) { var l = cab.map(function () { return ''; }); Object.keys(o).forEach(function (k) { if (tem(idx, k)) l[idx[k]] = o[k] === undefined || o[k] === null ? '' : o[k]; }); out.push(l); return l; };
     var hojeDe = function (tipo, x, chave) { return itemDe(emp, tipo, x[chave], hoje) || x; };
     if (a.id === 'mp') (emp.mps || []).forEach(function (x0) {
       // formato antigo dos impostos de entrada: sai com os valores equivalentes do formato novo (o mesmo custo líquido)
       var x = hojeDe('mp', x0, 'cod'), leg = M.mpLegado(x), o = M.compraMP(x, cfg), imp = x.imp || {}, cr = x.cred || {};
-      var cred = M.IMP_COMPRA.map(function (k) { return leg ? (o.credProprio[k] ? simNaoTxt(o.cred[k]) : '') : simNaoTxt(cr[k]); });
-      nova({ cod: x.cod, desc: x.desc, grupo: x.grupo || '', un: x.un, vc: brNum(x.vc),
+      var credEf = M.IMP_COMPRA.map(function (k) { return simNaoTxt(!!o.cred[k]); }).join('; ');
+      var credProp = M.IMP_COMPRA.some(function (k) { return leg ? o.credProprio[k] : (cr[k] === true || cr[k] === false); });
+      var credV = credProp ? credEf : padrao(credEf);
+      var mix = M.ehMistura(x);
+      if (mix) { nova({ cod: x.cod, desc: x.desc, grupo: x.grupo || '', un: x.un, fornecedor: x.fornecedor || '', situacao: x.situacao || '', obs: x.obs || '',
+        mist: x.mist.filter(function (c) { return c && !vazio(c.mp); }).map(function (c) { return c.mp + ': ' + brTxtNum(+c.qtd || 0); }).join('; '), rende: brNum(x.rende), _custo: ctx && ctx.mpVal[x.cod] ? ctx.mpVal[x.cod].valor : '' }); return; }
+      nova({ cod: x.cod, desc: x.desc, grupo: x.grupo || '', un: x.un, vc: brNum(x.vc), _custo: ctx && ctx.mpVal[x.cod] ? ctx.mpVal[x.cod].valor : '',
         icms: leg ? o.imp.icms : brNum(imp.icms), ipi: leg ? o.imp.ipi : brNum(imp.ipi), pis: leg ? o.imp.pis : brNum(imp.pis), cofins: leg ? o.imp.cofins : brNum(imp.cofins),
-        cred: cred.some(Boolean) ? cred.join('; ') : '', freteP: leg ? '' : brNum(x.freteP), v1: brNum(x.v1), freteCred: leg ? o.freteCred : brNum(x.freteCred),
+        cred: credV, freteP: leg ? '' : brNum(x.freteP), v1: brNum(x.v1), freteCred: leg ? o.freteCred : brNum(x.freteCred),
         fornecedor: x.fornecedor || '', situacao: x.situacao || '', obs: x.obs || '', v2: brNum(x.v2), v2Cred: leg ? o.v2Cred : brNum(x.v2Cred), liquidoManual: brNum(x.liquidoManual),
         ajuste: leg ? o.ajuste : brNum(x.ajuste) });
     });
     if (a.id === 'func') (emp.funcionarios || []).forEach(function (x0) {
       var x = hojeDe('func', x0, 'mat'), he = x.he || [], b = x.benef || {}, vb = x.vb || {};
-      var bv = function (k, campo) { var o = b[k]; if (!o) return ''; if (o.nao) return campo === 'valor' ? 'não recebe' : ''; return brNum(o[campo]); };
-      var l = nova({ mat: x.mat, nome: x.nome, cargo: x.cargo || '', sb: brNum(x.sb), horasTrab: brNum(x.horasTrab), horasBase: brNum(x.horasBase), efic: brNum(x.efic),
+      var bv = function (k, campo) {
+        var o = b[k] || {}, d = Bcfg[k];
+        if (o.nao) return campo === 'valor' ? 'não recebe' : '';
+        if (!d || d.ativo === false) return '';   // benefício desligado na empresa: não entra
+        if (campo === 'desconto') return vazio(o.desconto) ? padrao(txtDesconto(d) === '' ? 0 : txtDesconto(d)) : txtDesconto(o);
+        return vazio(o.valor) ? padrao(+d.valor || 0) : brNum(o.valor);
+      };
+      var ef = function (own, pad) { return vazio(own) ? padrao(brNum(pad)) : brNum(own); };
+      var cF = ctx && x.situacao !== 'inativo' ? ctx.funcs[x.mat] : null;
+      var l = nova({ mat: x.mat, nome: x.nome, cargo: x.cargo || '', sb: brNum(x.sb), horasTrab: ef(x.horasTrab, tx.padraoHorasTrab), horasBase: ef(x.horasBase, tx.padraoHorasBase || 220), efic: ef(x.efic, tx.padraoEfic),
+        _custo: cF ? cF.total : '', _custoHora: cF ? cF.custoHora : '',
         he0: brNum(he[0]), he1: brNum(he[1]), he2: brNum(he[2]), he3: brNum(he[3]), he4: brNum(he[4]),
         aloc: (x.aloc || []).filter(function (l) { return l && l.setor; }).map(function (l) { return l.setor + ' ' + brTxtNum(+l.pct || 0); }).join('; '),
         admissao: brData(x.admissao), situacao: x.situacao || '', obs: x.obs || '',
         bVa: bv('va', 'valor'), bVaD: bv('va', 'desconto'), bVt: bv('vt', 'valor'), bVtD: bv('vt', 'desconto'), qtd: x.modo === 'funcao' ? brNum(x.qtd) : '' });
-      din.forEach(function (d, j) { l[a.colunas.length + j] = d.tipo === 'vb' ? brNum(vb[d.ref]) : bv(d.id, d.campo); });
+      din.forEach(function (d) {
+        var e = d.tipo === 'vb' ? (cfg.encargos || []).filter(function (y) { return y.ref === d.ref; })[0] : null;
+        l[idx[d.tipo === 'vb' ? 'vb:' + d.ref : 'bv:' + d.id + ':' + d.campo]] = d.tipo === 'vb' ? (vazio(vb[d.ref]) ? padrao(e ? +e.vb || 0 : '') : brNum(vb[d.ref])) : bv(d.id, d.campo);
+      });
     });
     if (a.id === 'setor') (emp.setores || []).forEach(function (x0) {
       var x = hojeDe('setor', x0, 'cod'), eqs = x.equipamentos || [], man = x.manual || {}, dt = x.despTotal || {};
       var base = { cod: x.cod, desc: x.desc, horasOperacao: brNum(x.horasOperacao), postos: brNum(x.postos), manualMod: brNum(man.mod), manualMaq: brNum(man.maq),
         dt1: brNum(dt.g1), dt2: brNum(dt.g2), dt3: brNum(dt.g3), dt4: brNum(dt.g4), dt5: brNum(dt.g5) };
       // os gastos criados além dos 5: o da máquina em cada linha; o total do setor na primeira
-      var poeDin = function (l, q, primeira) { din.forEach(function (dd, j) { l[a.colunas.length + j] = dd.tipo === 'gasto' ? (q ? brNum((q.desp || {})[dd.id]) : '') : (primeira ? brNum(dt[dd.id]) : ''); }); };
+      var poeDin = function (l, q, primeira) { din.forEach(function (dd) { l[idx[dd.tipo + ':' + dd.id]] = dd.tipo === 'gasto' ? (q ? brNum((q.desp || {})[dd.id]) : '') : (primeira ? brNum(dt[dd.id]) : ''); }); };
+      var T = ctx && ctx.taxas ? ctx.taxas[x.cod] : null;
+      if (T) Object.assign(base, { _modCusto: T.mod.custo, _modHoras: T.mod.horas, _modTaxa: T.mod.taxa, _maqCusto: T.maq.custo, _maqHoras: T.maq.horas, _maqTaxa: T.maq.taxa });
       if (!eqs.length) { poeDin(nova(base), null, true); return; }
       eqs.forEach(function (q, i) {
-        var d = q.desp || {}, o = i ? { cod: x.cod } : Object.assign({}, base);
+        var d = q.desp || {}, o = i ? { cod: x.cod } : Object.assign({}, base), it = T && T.maq.itens[i];
         Object.assign(o, { eqDesc: q.desc || ('Máquina ' + (i + 1)), eqQtd: brNum(q.qtd), eqValor: brNum(q.valor), eqResidual: brNum(q.residual), eqVida: brNum(q.vidaAnos), eqHoras: brNum(q.horasMes),
-          g1: brNum(d.g1), g2: brNum(d.g2), g3: brNum(d.g3), g4: brNum(d.g4), g5: brNum(d.g5) });
+          g1: brNum(d.g1), g2: brNum(d.g2), g3: brNum(d.g3), g4: brNum(d.g4), g5: brNum(d.g5),
+          _eqResidual: ctx ? (+q.valor || 0) * (+q.residual || 0) / 100 : '', _eqDepr: it ? it.depr : '' });
         poeDin(nova(o), q, !i);
       });
     });
     if (a.id === 'molde') (emp.moldes || []).forEach(function (x0) {
       var x = hojeDe('molde', x0, 'cod');
-      nova({ cod: x.cod, desc: x.desc, setor: x.setor || '', cavidades: brNum(x.cavidades), valor: brNum(x.valor), vida: brNum(x.vida), ciclosIniciais: brNum(x.ciclosIniciais), compra: brData(x.compra), situacao: x.situacao || '', obs: x.obs || '' });
+      var vidaM = +x.vida || 0, cavM = +x.cavidades || 0;
+      nova({ cod: x.cod, desc: x.desc, setor: x.setor || '', cavidades: brNum(x.cavidades), valor: brNum(x.valor), vida: brNum(x.vida), ciclosIniciais: brNum(x.ciclosIniciais), compra: brData(x.compra), situacao: x.situacao || '', obs: x.obs || '',
+        _custo: ctx && vidaM > 0 && cavM > 0 ? (+x.valor || 0) / (vidaM * cavM) : '' });
     });
     if (a.id === 'prod') (emp.produtos || []).forEach(function (x0) {
       var x = hojeDe('prod', x0, 'cod'), lim = x.limpeza || {}, itens = x.itens || [];
@@ -7753,15 +8056,39 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
         nova(o);
       });
     });
+    if (a.id === 'peca') (emp.produtos || []).forEach(function (x0) {
+      var x = hojeDe('prod', x0, 'cod'), lim = x.limpeza || {}, pt = M.precoTerceiroEm(emp, x.cod, hoje), c = ctx && ctx.prod[x.cod] ? M.custoProduto(ctx, x.cod) : null;
+      var o = { cod: x.cod, desc: x.desc, tipo: NOME_TIPO_PECA[x.tipo] || x.tipo, grupo: x.grupo || '', un: x.un, qf: brNum(x.qf), lote: brNum(x.lote), ncm: x.ncm || '', molde: x.molde || '',
+        limpezaModo: lim.modo || '', limpezaPph: brNum(lim.pph), terc: pt ? brNum(pt.valor) : '', preco: x.tipo === 'PA' ? brNum(x.preco) : '',
+        situacao: x.situacao || '', obs: x.obs || '', descComp: x.descComp || '', notas: x.notas || '', _custo: c ? c.total : '' };
+      colunasPrecoTab(cfg).forEach(function (t) { o['tab:' + t.id] = x.tipo === 'PA' && x.precos && !vazio(x.precos[t.id]) ? brNum(x.precos[t.id]) : ''; });
+      nova(o);
+    });
+    if (a.id === 'formula') (emp.produtos || []).forEach(function (x0) {
+      var x = hojeDe('prod', x0, 'cod'), itens = x.itens || [], c = ctx && ctx.prod[x.cod] ? M.custoProduto(ctx, x.cod) : null, qf = c ? (c.qf || 1) : 1;
+      itens.forEach(function (it, i) {
+        var o = { cod: x.cod, _descPeca: i ? '' : x.desc || '', lPasso: i + 1, lTipo: NOME_TIPO_LINHA[it.tipo] || it.tipo, lRef: it.ref, lFase: it.fase || '' };
+        if (ctx) {
+          var ref = it.tipo === 'MP' ? ctx.mp[it.ref] : it.tipo === 'SP' ? ctx.setor[it.ref] : ctx.prod[it.ref];
+          o._descItem = ref ? ref.desc || '' : '';
+          o._unItem = ref && it.tipo !== 'SP' ? U.sigla(ref.un) : '';
+          var L = c && c.linhas[i];
+          o._custoLinha = L ? L.total / qf : '';
+        }
+        if (it.tipo === 'SP') {
+          var t = it.tempo || {}, s = it.setup || {};
+          if (t.modo === 'pph') o.lPph = brNum(t.valor); else if (t.modo === 'sex') o.lTempoSex = sexTexto(t.valor); else o.lTempoCen = brNum(t.valor);
+          if (!vazio(s.valor)) { if (s.modo === 'min') o.lSetupMin = brNum(s.valor); else if (s.modo === 'cen') o.lSetupCen = brNum(s.valor); else o.lSetup = sexTexto(s.valor); }
+          o.lHomens = brNum(it.homens); o.lMaquinas = brNum(it.maquinas); o.lRefugo = brNum(it.refugo);
+        } else o.lQtd = brNum(it.qtd);
+        if (!vazio(it.reapMp)) { o.lReapMp = it.reapMp; o.lReapQtd = brNum(it.reapQtd); }
+        nova(o);
+      });
+    });
     if (a.id === 'ncm') (cfg.ncms || []).forEach(function (x) { nova({ cod: x.cod, desc: x.desc || '', ipi: brNum(x.ipi), icms: brNum(x.icms), pis: brNum(x.pis), cofins: brNum(x.cofins) }); });
     if (a.id === 'tab') {
       var tabs = cfg.tabelas && cfg.tabelas.length ? M.tabelasDe(cfg) : [];   // sem tabelas gravadas: só a geral (preço na aba Peças)
-      tabs.forEach(function (t, ti) {
-        var cab0 = { tabela: t.nome || t.id, uf: t.uf || '', ativa: t.ativa === false ? 'não' : 'sim' }, l = [];
-        if (ti > 0) (emp.produtos || []).forEach(function (p0) { var p = hojeDe('prod', p0, 'cod'); if (p.tipo === 'PA' && p.precos && !vazio(p.precos[t.id])) l.push({ prod: p.cod, preco: brNum(p.precos[t.id]) }); });
-        if (!l.length) { nova(cab0); return; }
-        l.forEach(function (x, i) { nova(Object.assign(i ? { tabela: cab0.tabela } : Object.assign({}, cab0), x)); });
-      });
+      tabs.forEach(function (t) { nova({ tabela: t.nome || t.id, uf: t.uf || '', ativa: t.ativa === false ? 'não' : 'sim' }); });
     }
     if (a.id === 'terceiro') ((emp.limpezaTerceiro && emp.limpezaTerceiro.precos) || []).slice().sort(function (p, q) { return p.prod < q.prod ? -1 : p.prod > q.prod ? 1 : (p.desde < q.desde ? -1 : 1); })
       .forEach(function (x) { nova({ prod: x.prod, preco: brNum(x.valor), desde: brData(x.desde), obs: x.obs || '' }); });
@@ -7776,7 +8103,7 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       var B = cfg.beneficios || {}, ids = M.idsBeneficios(Object.assign({ va: {}, vt: {} }, B));   // os vales sempre, primeiro
       ids.forEach(function (k) {
         var b = B[k] || { valor: 0, desconto: 0, ativo: true };
-        nova({ id: k, nome: M.nomeBeneficio(k, b), valor: brNum(b.valor), desconto: brNum(b.desconto), ativo: b.ativo === false ? 'não' : 'sim' });
+        nova({ id: k, nome: M.nomeBeneficio(k, b), valor: brNum(b.valor), desconto: txtDesconto(b), ativo: b.ativo === false ? 'não' : 'sim' });
       });
     }
     return out;
@@ -7785,7 +8112,25 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
      cabeçalho em negrito com borda + linha de unidades; cinza = coluna obrigatória; amarelo-claro = o dado obrigatório preenchido;
      valores em R$ em azul; código em negrito; "Excluir" em vermelho; cabeçalho e código congelados; filtro na linha de unidades;
      a explicação de cada coluna aparece ao passar o mouse no título. A biblioteca sem estilos (SheetJS comum) ignora tudo isso. */
-  var FONTE = 'Aptos Narrow', COR = { cinza: 'D9D9D9', entrada: 'F4FCBA', azul: '0915FF', exc: 'FDE2E2', excTxt: '9C0006', exemplo: '808080', exFundo: 'F2F2F2', nota: '595959' };
+  var FONTE = 'Aptos Narrow', COR = { cinza: 'D9D9D9', entrada: 'F4FCBA', azul: '0915FF', exc: 'FDE2E2', excTxt: '9C0006', exemplo: '808080', exFundo: 'F2F2F2', nota: '595959', padrao: '8C8C8C', verCab: 'DDEBF7', verFundo: 'F3F8FC', verTxt: '44546A' };
+  // a linha 2 de cada aba: o que a coluna aceita, em palavras (no lugar de "lista")
+  var FORMATO_LISTA = { unidade: 'kg, g, L, mL, m, un, mil, cx, jg', situacao: 'ativo ou inativo', tipoPeca: 'Produto acabado ou Semi-acabado', tipoLinha: 'Matéria-prima, Semi-acabado, Produto acabado ou Etapa de produção',
+    limpeza: 'nenhuma, interna ou terceiro', uf: 'UF, ex.: PR', ncm: '8 dígitos', tipoEnc: '%, R$ ou inativo', grupoEnc: 'Encargos, Provisões ou Outros' };
+  function formatoDaColuna(c, u) {
+    var t = c[2];
+    if (t === 'ver') return 'só para ver';
+    if (t === 'creditos') return 'sim; sim; não; não';
+    if (t === 'benef') return 'R$ ou não recebe';
+    if (t === 'desconto') return 'R$ ou % (ex.: 6%)';
+    if (t === 'tabPreco') return 'R$ ou sem preço';
+    if (t === 'mistura') return 'código: qtd; código: qtd';
+    if (t === 'alocacao') return 'setor e %; setor e %';
+    if (t === 'numLimpar') return (u === 'R$/h' ? 'R$/h' : 'R$') + ' ou calcular';
+    if (t === 'excluir') return 'sim';
+    if (u === 'lista') return FORMATO_LISTA[t] || 'opção';
+    if (u === 'nº') return t === 'inteiro' ? 'nº inteiro' : 'nº';
+    return u;
+  }
   var LINHA_FINA = { style: 'thin', color: { rgb: '000000' } }, BORDA = { top: LINHA_FINA, bottom: LINHA_FINA, left: LINHA_FINA, right: LINHA_FINA };
   function unidadeDaColuna(c) {
     var t = c[0], m;
@@ -7814,37 +8159,50 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
   // uma aba de cadastro: dados[0] = títulos, o resto = linhas. opts.exemplo: a linha de exemplo do modelo fica em cinza itálico
   function folha(XLSX, a, dados, opts) {
     opts = opts || {};
-    var cab = dados[0], linhas = dados.slice(1), enc = XLSX.utils.encode_cell;
-    var cols = cab.map(function (t, j) { return (a.colunas[j] && j < a.colunas.length) ? a.colunas[j] : [t, '_din', 'numero', false, '']; });
+    var cab = dados[0], enc = XLSX.utils.encode_cell;
+    var cols = dados.cols || cab.map(function (t, j) { return (a.colunas[j] && j < a.colunas.length) ? a.colunas[j] : [t, '_din', 'numero', false, '']; });
+    // o valor padrão vem como {v, padrao}: sai o número (ou o texto), em cinza
+    var cinza = {}, linhas = dados.slice(1).map(function (l, i) { return l.map(function (v, j) { if (v && typeof v === 'object' && tem(v, 'v')) { if (v.padrao) cinza[i + '|' + j] = true; return v.v; } return v; }); });
     var uReal = cols.map(function (c, j) { return unidadeDaColuna([cab[j]].concat(c.slice(1))); });
-    var un = uReal.map(function (u, j) { return j === 0 ? 'Unidade' : u; });   // a 1ª célula da linha de unidades é o rótulo
+    var un = cols.map(function (c, j) { return j === 0 ? 'Formato' : formatoDaColuna(c, uReal[j]); });   // a 1ª célula da linha 2 é o rótulo
     var ws = XLSX.utils.aoa_to_sheet([cab, un].concat(linhas));
-    var chave = a.colunas.map(function (c) { return c[1]; }).indexOf(a.chave);
+    var chave = cols.map(function (c) { return c[1]; }).indexOf(a.chave);
     var ehExemplo = function (l) { return /^exemplo/i.test(txt(l[0])) || (chave >= 0 && /^exemplo/i.test(txt(l[chave]))); };
-    var longos = { desc: 1, obs: 1, nome: 1, fornecedor: 1, cargo: 1, aloc: 1, descComp: 1, notas: 1, resumo: 1, formula: 1, eqDesc: 1, tabela: 1 };
+    var longos = { desc: 1, obs: 1, nome: 1, fornecedor: 1, cargo: 1, aloc: 1, descComp: 1, notas: 1, resumo: 1, formula: 1, eqDesc: 1, tabela: 1, mist: 1, _descPeca: 1, _descItem: 1 };
+    // aba agrupada (Fórmulas, Setores): uma linha mais forte onde começa outra peça (ou outro setor)
+    var comeca = linhas.map(function (l, i) { return a.agrupada && i > 0 && chave >= 0 && txt(l[chave]) !== txt(linhas[i - 1][chave]); });
+    var LINHA_GROSSA = { style: 'medium', color: { rgb: '000000' } };
     cols.forEach(function (c, j) {
-      var obrig = !!c[3], exc = c[1] === 'excluir', u = uReal[j], fmt = formatoDaUnidade(u), fundoCab = exc ? COR.exc : obrig ? COR.cinza : 'FFFFFF', corCab = exc ? COR.excTxt : '000000';
+      var obrig = !!c[3], exc = c[1] === 'excluir', ver = c[2] === 'ver', u = uReal[j], fmt = formatoDaUnidade(u);
+      var fundoCab = exc ? COR.exc : ver ? COR.verCab : obrig ? COR.cinza : 'FFFFFF', corCab = exc ? COR.excTxt : ver ? COR.verTxt : '000000';
       var h = ws[enc({ r: 0, c: j })];
       h.s = estilo({ negrito: true, fundo: fundoCab, cor: corCab, alinha: j === 0 ? 'left' : 'center', quebra: true });
-      var dica = (obrig ? 'Obrigatória. ' : '') + txt(c[4]);
+      var dica = (ver ? 'Só para ver: a Central calcula com os dados de hoje. A importação não lê esta coluna. ' : obrig ? 'Obrigatória. ' : '') + txt(c[4]);
       if (dica.trim()) { h.c = [{ a: 'Central de Custos', t: dica.trim() }]; h.c.hidden = true; }
-      ws[enc({ r: 1, c: j })].s = estilo({ negrito: true, fundo: fundoCab, cor: corCab, alinha: j === 0 ? 'left' : 'center' });
+      ws[enc({ r: 1, c: j })].s = estilo({ negrito: j === 0, italico: j > 0, fundo: fundoCab, cor: j === 0 ? corCab : COR.nota, alinha: j === 0 ? 'left' : 'center', quebra: true });
       linhas.forEach(function (l, i) {
-        var k = enc({ r: i + 2, c: j }), cel = ws[k], ex = opts.exemplo && ehExemplo(l), v = l[j];
+        var k = enc({ r: i + 2, c: j }), cel = ws[k], ex = opts.exemplo && ehExemplo(l), v = l[j], pd = !!cinza[i + '|' + j];
         if (!cel) cel = ws[k] = { t: 's', v: '' };
         // data em texto (dd/mm/aaaa) vira data do Excel: ordena e filtra como data, e volta igual na importação
         if (u === 'dd/mm/aaaa' && typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) { cel.t = 'n'; cel.v = serialData(v); delete cel.w; }
-        cel.s = estilo({ negrito: j === 0 && !ex, italico: ex, cor: ex ? COR.exemplo : (fmt && fmt.charAt(1) === 'R' ? COR.azul : '000000'),
-          fundo: ex ? COR.exFundo : (obrig && !vazio(v) ? COR.entrada : null), formato: fmt, alinha: j === 0 || longos[c[1]] ? 'left' : 'center' });
+        var primeira = j === 0 && (!a.agrupada || i === 0 || comeca[i]);
+        cel.s = estilo({ negrito: primeira && !ex && !ver, italico: ex || ver, cor: ex ? COR.exemplo : ver ? COR.verTxt : pd ? COR.padrao : (fmt && fmt.charAt(1) === 'R' ? COR.azul : '000000'),
+          fundo: ex ? COR.exFundo : ver ? COR.verFundo : (obrig && !vazio(v) ? COR.entrada : null), formato: fmt, alinha: j === 0 || longos[c[1]] ? 'left' : 'center' });
+        if (comeca[i]) cel.s.border = Object.assign({}, cel.s.border, { top: LINHA_GROSSA });
       });
     });
     // larguras: o conteúdo (até 40) ou a maior palavra do título; o título quebra em até 3 linhas
     ws['!cols'] = cab.map(function (t, j) {
       var w = Math.max(9, String(t).split(/\s+/).reduce(function (m, p) { return Math.max(m, p.length + 2); }, 0), Math.min(String(t).length / 2.6 + 2, 22));
-      for (var i = 0; i < Math.min(linhas.length, 400); i++) { var v = linhas[i][j]; if (v !== '' && v !== null && v !== undefined) w = Math.max(w, Math.min(String(v).length + 3, 42)); }
+      var moeda = /R\$/.test(String(t)), pct = /%/.test(String(t));
+      for (var i = 0; i < Math.min(linhas.length, 400); i++) {
+        var v = linhas[i][j]; if (v === '' || v === null || v === undefined) continue;
+        if (typeof v === 'number') { var nd = String(Math.floor(Math.abs(v))).length; w = Math.max(w, Math.min(nd + Math.floor((nd - 1) / 3) + (moeda ? 9 : pct ? 7 : 5), 42)); }
+        else w = Math.max(w, Math.min(String(v).length + 3, 42));
+      }
       return { wch: Math.round(w) };
     });
-    ws['!rows'] = [{ hpt: 46 }, { hpt: 18 }];
+    ws['!rows'] = [{ hpt: 46 }, { hpt: 30 }];
     ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: Math.max(1, linhas.length + 1), c: cab.length - 1 } }) };
     ws['!congelar'] = { x: 1, y: 2 };
     return ws;
@@ -7873,8 +8231,18 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
     ws['!cols'] = [{ wch: 130 }];
     return ws;
   }
-  var LEIA_CORES = [['Cores: título cinza = coluna obrigatória · fundo amarelo-claro = dado obrigatório · valores em R$ em azul · "Excluir" em vermelho = apaga de vez.'],
-    ['A segunda linha de cada aba mostra a unidade de cada coluna (R$, %, nº, dd/mm/aaaa…). Passe o mouse no título da coluna para ver a explicação.']];
+  var LEIA_CORES = [['Cores: título cinza = coluna obrigatória · fundo amarelo-claro = dado obrigatório · texto cinza = o valor padrão (sem valor próprio) · título azul-claro e texto em itálico = só para ver · valores em R$ em azul · "Excluir" em vermelho = apaga de vez.'],
+    ['A segunda linha de cada aba (Formato) diz o que cada coluna aceita: R$, %, nº, dd/mm/aaaa ou as opções da lista. Passe o mouse no título da coluna para ver a explicação.']];
+  // o que vale para as duas planilhas (a de todos os dados e o modelo em branco)
+  var LEIA_COMO = [
+    ['Texto cinza = o valor padrão: a pessoa ou a matéria-prima não tem valor próprio e usa o da empresa (as horas e a eficiência, os vales e os descontos, os encargos do funcionário, o crédito dos impostos pelo regime). Deixe como está para continuar no padrão; escreva outro valor para ter um valor próprio.'],
+    ['Colunas "— só para ver" (título azul-claro): a Central calcula com os dados de hoje (custo da matéria-prima, da peça e de cada linha da fórmula, custo do funcionário, horas-base e taxa hora dos setores, depreciação das máquinas). Servem para conferir; a importação não lê.'],
+    ['Peças: uma linha por peça, com os preços de cada tabela (colunas "Preço: …") e o preço da limpeza no terceiro de hoje. Mudar o preço do terceiro aqui = preço novo a partir da data de início da importação.'],
+    ['Fórmulas: uma linha por linha da fórmula, com o código da peça em todas. Passo = a ordem (1, 2, 3…): para mudar a ordem, mude os números. A peça que não tiver linhas aqui fica com a fórmula como está.'],
+    ['Matéria-prima feita de outras (ex.: adesivo Chem + solvente): em "Mistura: componentes" escreva o código e a quantidade de cada componente (CHEM-1142: 1; SOLV-467: 2) e em "Mistura: a receita rende" quanto a receita faz. O custo sai dos componentes, cada um com os impostos dele.'],
+    ['Desconto de benefício: em R$ por mês ou em % do salário base (escreva 6%). No vale transporte o desconto nunca passa do valor do vale.'],
+    ['Tabelas de preço: a aba só cadastra as tabelas (nome, estado, ativa). Os preços de cada peça ficam na aba Peças.'],
+    ['Linha sem as colunas obrigatórias (uma anotação, uma conta) fica de fora: a tela avisa e importa o resto.']];
   // o painel congelado (título e código sempre à vista): a biblioteca não grava; entra no arquivo pronto, aba por aba
   function congelar(XLSX, dados, wb) {
     if (!XLSX.CFB) return dados;
@@ -7898,18 +8266,19 @@ html[data-theme="light"] .tg .tg-det{background:var(--surf)}
       ['Esta planilha tem todos os cadastros e a configuração como estão hoje, no mesmo formato do modelo de importação.'],
       ['Para mudar muitos itens de uma vez: mude aqui e importe de volta em Cadastros › Planilha. Só o que estiver diferente vira mudança; o resto fica igual.'],
       ['Célula em branco = não muda. Números no padrão brasileiro (1.500,25). Datas: dd/mm/aaaa. Não mude os títulos da primeira linha.'],
-      ['Peças e fórmulas: uma linha por linha da fórmula, repetindo o código da peça; os dados da peça vêm na primeira.'],
       ['Setores e máquinas: uma linha por máquina, repetindo o código do setor; os dados do setor vêm na primeira.'],
-      ['Funcionários: as últimas colunas ("Encargo do funcionário: …" e "Benefício: …") são os valores próprios de cada pessoa. Em branco = o padrão da empresa.'],
+      ['Funcionários: as últimas colunas ("Encargo do funcionário: …" e "Benefício: …") são os valores de cada pessoa; em cinza, o padrão da empresa.'],
       ['Encargos e Benefícios: uma linha por item. Linha nova sem código = item novo. Para tirar um item, use a tela (Ajustes › Encargos e provisões).'],
       ['Valor digitado (custo líquido da matéria-prima, taxa do setor): escreva "calcular" para o sistema voltar a calcular.'],
       ['Produção: uma linha por peça em cada dia. Importar uma linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.'],
       ['Excluir: escreva sim na coluna Excluir (no fim de cada aba) para apagar o item de vez. Só o administrador; o que ainda é usado não sai.'],
       ['Ao importar, a tela mostra item por item: dá para escolher a linha que vale quando um código aparece duas vezes e desmarcar o que não quer.'],
-      [''], ['Não vão na planilha: os acessos (usuários e senhas) e o histórico dos valores antigos (a planilha tem os valores de hoje).'], ['']].concat(LEIA_CORES);
+      [''], ['Não vão na planilha: os acessos (usuários e senhas) e o histórico dos valores antigos (a planilha tem os valores de hoje).'], ['']].concat(LEIA_COMO, [['']], LEIA_CORES);
     XLSX.utils.book_append_sheet(wb, folhaLeia(XLSX, leia), 'Leia-me');
+    var ctx = contextoHoje(emp, hoje);
     ABAS.forEach(function (a) {
-      var ws = a.id === 'cfg' ? folhaCfg(XLSX, linhasConfig(cfg, emp)) : folha(XLSX, a, linhasDaAba(a, emp, hoje));
+      if (a.legado) return;
+      var ws = a.id === 'cfg' ? folhaCfg(XLSX, linhasConfig(cfg, emp)) : folha(XLSX, a, linhasDaAba(a, emp, hoje, ctx));
       XLSX.utils.book_append_sheet(wb, ws, a.nome);
     });
     return wb;
@@ -8311,7 +8680,7 @@ function kpi(lbl, val, sub, tom, attrs, extra) {
   return '<div class="kpi' + t + (attrs ? ' click' : '') + '" ' + (attrs || '') + '><div class="kpi-lbl">' + (t ? ic(tom === 'ok' ? 'check' : 'alert') : '') + esc(lbl) + '</div><div class="kpi-val' + longo + '">' + val + '</div>' + (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + (extra || '') + '</div>';
 }
 // caixas de valores (preço, impostos, custo, salário) ficam no sub-item "Valores" do cadastro; o resto no sub-item "Cadastro"
-var SEC_VALORES = { 'Impostos da compra': 1, 'Custo e vida útil': 1, 'Vida útil': 1, 'Gastos mensais de todos os equipamentos do setor': 1, 'Taxa digitada (opcional)': 1, 'A conta da taxa hora': 1, 'Salário e horas': 1, 'Benefícios': 1, 'Valores deste funcionário': 1, 'Preços e impostos': 1 };
+var SEC_VALORES = { 'Impostos da compra': 1, 'Mistura': 1, 'Custo e vida útil': 1, 'Vida útil': 1, 'Gastos mensais de todos os equipamentos do setor': 1, 'Taxa digitada (opcional)': 1, 'A conta da taxa hora': 1, 'Salário e horas': 1, 'Benefícios': 1, 'Valores deste funcionário': 1, 'Preços e impostos': 1 };
 function secaoDaCaixa(t) { return SEC_VALORES[t] ? 'valores' : 'cadastro'; }
 function caixa(titulo, conteudo, dir, cls) { return '<div class="fbox ' + (cls || '') + '" data-sec="' + secaoDaCaixa(titulo) + '"><h2>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h2>' + conteudo + '</div>'; }
 function tabelaBox(titulo, conteudo, dir) { return '<div class="tbl-box" data-sec="' + secaoDaCaixa(titulo) + '">' + (titulo ? '<h3>' + esc(titulo) + (dir ? '<span class="dir">' + dir + '</span>' : '') + '</h3>' : '') + '<div class="tbl-scroll">' + conteudo + '</div></div>'; }
@@ -9255,7 +9624,7 @@ function primeiraRota(emp) {
 // ação → operação exigida no módulo da tela atual
 var ACAO_OP = { cadDesligar: 'alterar', novoProd: 'incluir', cfgGravar: 'alterar', diaLimpar: 'excluir', limpReajGravar: 'alterar', limpPrecoDesfazer: 'alterar', limpTerceiroGravar: 'alterar', limpSetorGravar: 'alterar' };
 // ações que mexem no registro aberto (exigem incluir, se é novo, ou alterar)
-var ACAO_EDICAO = { fxSetupV: 1, fxSetupU: 1, fxQtdV: 1, fxQtdU: 1, benAdd: 1, benDel: 1, fxAdd: 1, fxDel: 1, fxMover: 1, fxOrdem: 1, fxTipo: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
+var ACAO_EDICAO = { fxSetupV: 1, fxSetupU: 1, fxQtdV: 1, fxQtdU: 1, benAdd: 1, benDel: 1, fxAdd: 1, fxDel: 1, fxMover: 1, fxOrdem: 1, fxTipo: 1, mpModo: 1, mistAdd: 1, mistDel: 1, fxModo: 1, alocAdd: 1, alocDel: 1, eqAdd: 1, eqDel: 1, gastoAdd: 1, gastoDel: 1, encAdd: 1, encDel: 1, encPadrao: 1, formulaManual: 1, diaCopiar: 1 };
 var ACAO_ADMIN = { restaurarTudo: 1, restaurarEmpresa: 1, dadosCopiar: 1, dadosImportar: 1, dadosColar: 1, usrNovo: 1, usrEditar: 1, usrCancelar: 1, usrPerfil: 1, usrCopiarEmp: 1, usrCopiarDe: 1, usrDir: 1, usrGravar: 1, usrExcluir: 1 };
 var ACAO_ROTA = { detalharTaxa: 'setores' };
 var ACAO_SEM_LOGIN = { lgDemo: 1, lgAlterarSenha: 1, modalFechar: 1, restaurarTudo: 1 };
@@ -9848,13 +10217,31 @@ cadastroAcoes({
   novoCodigo: function () { return proximoCodigo(S.emp.mps, 'cod', S.emp.id === 'juntas' ? 'MP-1' : 'MP-0', 2); },
   validar: function (d) {
     if (!String(d.desc || '').trim()) return 'Informe a descrição.'; if (n(d.vc) < 0) return 'O valor de compra não pode ser negativo.';
+    if (mpEhMisturaDraft(d)) {
+      var cs = (d.mist || []).filter(function (c) { return c && !vazio(c.mp); }), vistos = {};
+      if (!cs.length) return 'Mistura: escolha pelo menos um componente.';
+      for (var i = 0; i < cs.length; i++) {
+        var comp = porCod(S.emp.mps, cs[i].mp, 'cod');
+        if (cs[i].mp === d.cod) return 'Mistura: ' + d.cod + ' não pode entrar nela mesma.';
+        if (!comp) return 'Mistura: a matéria-prima ' + cs[i].mp + ' não existe.';
+        if (M.ehMistura(comp)) return 'Mistura: ' + cs[i].mp + ' também é uma mistura. Use só matérias-primas compradas.';
+        if (vistos[cs[i].mp]) return 'Mistura: ' + cs[i].mp + ' aparece duas vezes. Some as quantidades numa linha só.';
+        vistos[cs[i].mp] = true;
+        if (!(n(cs[i].qtd) > 0)) return 'Mistura: informe a quantidade de ' + cs[i].mp + '.';
+      }
+      if (!(n(d.rende) > 0)) return 'Mistura: informe quanto a receita rende.';
+    }
     var pcts = M.IMP_COMPRA.map(function (k) { return d.imp && d.imp[k]; }).concat([d.freteP, d.freteCred]);
     var ruim = pcts.filter(function (v) { return !vazio(v) && (n(v) < 0 || n(v) > 100); });
     if (ruim.length) return 'Os impostos e o frete vão de 0 a 100%.';
   },
   antesGravar: function (d) { antesGravarMP(d); },
   aposDuplicar: function (d) { delete d.hist; d.desc = d.desc + ' (cópia)'; if (S.draftInfo) S.draftInfo.legado = null; },
-  emUso: function (cod) { return usoEmFormulas('MP', cod); }
+  emUso: function (cod) {
+    var u = usoEmFormulas('MP', cod); if (u) return u;
+    var mi = misturasCom(cod);
+    return mi.length ? 'É componente da mistura ' + mi.slice(0, 4).join(', ') + (mi.length > 4 ? ' e mais ' + (mi.length - 4) : '') + '. Tire da receita antes de excluir.' : null;
+  }
 });
 TELAS.mps = {
   render: function () { return S.params.id ? telaMpEditor(S.params.id) : telaMpLista(); },
@@ -9870,6 +10257,10 @@ function telaMpLista() {
   // "preço desde": a última mudança do valor de compra até hoje (o registro lido uma vez para a lista toda)
   var desdeVc = {}, hoje = hojeRef();
   R.efetivos(e).forEach(function (ev) { if (ev.tipo === 'mp' && ev.desde <= hoje && ev.campos && Object.prototype.hasOwnProperty.call(ev.campos, 'vc')) desdeVc[ev.ref] = ev.desde; });
+  // mistura: o custo muda com a receita e com o preço de cada componente
+  var desdeMix = {};
+  R.efetivos(e).forEach(function (ev) { if (ev.tipo === 'mp' && ev.desde <= hoje && ((ev.linhas && ev.linhas.mist) || (ev.campos && Object.prototype.hasOwnProperty.call(ev.campos, 'rende')))) desdeMix[ev.ref] = ev.desde; });
+  var desdeDaMistura = function (m) { var d = desdeMix[m.cod] || ''; m.mist.forEach(function (c) { if (c && desdeVc[c.mp] && desdeVc[c.mp] > d) d = desdeVc[c.mp]; }); return d; };
   var h = ph('Matérias-primas', 'Preço de compra, impostos da compra (com ou sem crédito) e o custo líquido usado nas peças (manual PR-03/04).', btn('Incluir matéria-prima', 'ir', 'data-rota="mps" data-id="__novo"', 'btn-accent', 'plus'));
   h += '<div class="tbl-tools">' + filtroTexto('mpBusca', 'Código, descrição ou fornecedor') + filtroSelect('mpGrupo', 'Grupo', e.grupos.map(function (g) { return [g.cod, g.cod + ' — ' + g.desc]; })) + '</div>';
   var pcComp = function (o, k) { var v = o.imp[k]; if (!v) return '<span class="muted">—</span>'; return fmtP(v) + (o.cred[k] ? ' <span class="muted" title="gera crédito">c</span>' : ''); };
@@ -9878,16 +10269,18 @@ function telaMpLista() {
     '<th class="r">Frete</th><th class="r">Valor líquido</th><th>Preço desde</th><th class="r">Usada em</th></tr></thead><tbody>' +
     (lista.length ? lista.map(function (m) {
       var v = S.ctx.mpVal[m.cod] || { valor: 0 };
-      var ult = desdeVc[m.cod] || '';
-      var nUso = uso[m.cod] ? Object.keys(uso[m.cod]).length : 0, oc = M.compraMP(m, cfg);
-      return '<tr class="click" data-a="ir" data-rota="mps" data-id="' + esc(m.cod) + '" tabindex="0"><td class="cod">' + esc(m.cod) + '</td><td class="pri">' + esc(m.desc) + '</td><td>' + esc(nomeGrupo(m.grupo)) + '</td><td>' + esc(unidadeExt(m.un, 1)) + '</td><td class="r">' + fmtR(n(m.vc)) + '</td>' +
-        M.IMP_COMPRA.map(function (k) { return '<td class="r nw">' + pcComp(oc, k) + '</td>'; }).join('') +
-        '<td class="r">' + (n(m.v1) || oc.freteP ? (oc.freteP ? fmtP(oc.freteP) + (n(m.v1) ? ' + ' : '') : '') + (n(m.v1) ? fmtR(n(m.v1)) : '') : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR(v.valor), od('mp', m.cod, hojeRef())) + '</b>' + (v.origem === 'erro' ? ' ' + badge('fórmula com erro', 'b-crit') : v.origem === 'manual' ? ' ' + badge('manual', 'b-info') : '') + '</td><td>' + fmtData(ult) + '</td><td class="r">' + (nUso ? nUso + ' produto' + (nUso > 1 ? 's' : '') : '<span class="muted">nenhum</span>') + '</td></tr>';
+      var mix = M.ehMistura(m), ult = (mix ? desdeDaMistura(m) : desdeVc[m.cod]) || '';
+      var nUso = uso[m.cod] ? Object.keys(uso[m.cod]).length : 0, oc = M.compraMP(m, cfg), nMix = misturasCom(m.cod).length;
+      return '<tr class="click" data-a="ir" data-rota="mps" data-id="' + esc(m.cod) + '" tabindex="0"><td class="cod">' + esc(m.cod) + '</td><td class="pri">' + esc(m.desc) + '</td><td>' + esc(nomeGrupo(m.grupo)) + '</td><td>' + esc(unidadeExt(m.un, 1)) + '</td><td class="r">' + (mix ? badge('mistura', 'b-info') : fmtR(n(m.vc))) + '</td>' +
+        M.IMP_COMPRA.map(function (k) { return '<td class="r nw">' + (mix ? '<span class="muted">—</span>' : pcComp(oc, k)) + '</td>'; }).join('') +
+        '<td class="r">' + (mix ? '<span class="muted">—</span>' : n(m.v1) || oc.freteP ? (oc.freteP ? fmtP(oc.freteP) + (n(m.v1) ? ' + ' : '') : '') + (n(m.v1) ? fmtR(n(m.v1)) : '') : '<span class="muted">—</span>') + '</td><td class="r"><b>' + orig(fmtR(v.valor), od('mp', m.cod, hojeRef())) + '</b>' + (v.origem === 'erro' ? ' ' + badge('fórmula com erro', 'b-crit') : v.origem === 'manual' ? ' ' + badge('manual', 'b-info') : v.origem === 'mistura' && v.erro ? ' ' + badge('receita incompleta', 'b-crit') : '') + '</td><td>' + fmtData(ult) + '</td><td class="r">' + (nUso || nMix ? [nUso ? nUso + ' produto' + (nUso > 1 ? 's' : '') : '', nMix ? nMix + (nMix > 1 ? ' misturas' : ' mistura') : ''].filter(Boolean).join(' · ') : '<span class="muted">nenhum</span>') + '</td></tr>';
     }).join('') : linhaVazia(e.mps.length, 13, 'Nenhuma matéria-prima ainda. Clique em Incluir matéria-prima.', 'Nenhuma matéria-prima encontrada.')) + '</tbody></table>', lista.length + ' de ' + e.mps.length);
+  if (e.mps.some(M.ehMistura)) h += '<div class="hint">“mistura”: o custo sai da receita (os componentes com o custo líquido de cada um ÷ o que a receita rende). Abra a matéria-prima para ver a conta.</div>';
   h += '<div class="hint">“c”: o imposto gera crédito (sai do custo). O IPI é por fora: sem crédito, vira custo. Regime da empresa: ' + esc(M.REGIMES[M.fiscalDe(cfg).regime]) + ' (Ajustes › Impostos).</div>';
   return h;
 }
 function htmlLiquido(d, formulaCfg, comTitulo) {
+  if (mpEhMisturaDraft(d)) return htmlLiquidoMistura(d);
   var r = M.valorLiquidoCompra(d, S.emp.config, formulaCfg);
   var v = M.precisao(S.emp, 'valores', r.valor);
   var h = '<div class="kpi-lbl">Valor líquido de compra</div><div class="big">' + fmtR(v) + '<small>por ' + esc(unidadeExt(d.un || 'un', 1)) + '</small></div>';
@@ -9902,6 +10295,31 @@ function htmlLiquido(d, formulaCfg, comTitulo) {
   }
   return h;
 }
+// o custo da mistura no cartão do lado: cada componente × quantidade, a soma ÷ o que a receita rende
+function htmlLiquidoMistura(d) {
+  var v = M.valorMistura(d, S.ctx, S.emp), un = unidadeExt(d.un || 'un', 1);
+  var h = '<div class="kpi-lbl">Custo da mistura</div><div class="big">' + fmtR(v.valor) + '<small>por ' + esc(un) + '</small></div>';
+  if (v.erro) return h + alerta('warn', 'Falta completar a receita: ' + esc(v.erro) + '. Enquanto isso, o custo da mistura fica zero.');
+  return h + '<div class="lista-kv mist-kv" style="margin-top:12px">' + v.mistura.itens.map(function (x) {
+    return '<span>' + fmtQ(x.qtd) + ' ' + esc(unidadeExt(x.un, x.qtd)) + ' de ' + esc(x.mp) + ' × ' + fmtPreciso(x.unit) + '</span><b>' + fmtR(x.valor) + '</b>';
+  }).join('') + '<div class="sep"></div><span><b style="text-align:left">Custo da receita</b></span><b>' + fmtR(v.mistura.soma) + '</b><span>÷ a receita rende ' + fmtQ(v.mistura.rende) + ' ' + esc(unidadeExt(d.un || 'un', v.mistura.rende)) + '</span><b>' + fmtPreciso(v.valor) + '</b></div>';
+}
+ACOES.mpModo = function (el) {
+  var d = S.draft; if (!d || (typeof edBloqueado === 'function' && edBloqueado())) return;
+  var para = el.dataset.v;
+  if (para === (mpEhMisturaDraft(d) ? 'mistura' : 'compra')) return;
+  if (para === 'mistura') {
+    d._modo = 'mistura';
+    if (!M.ehMistura(d)) d.mist = [{ mp: '', qtd: '' }, { mp: '', qtd: '' }];
+    S.sujo = true; renderPainel(); var e1 = document.getElementById('mist-mp-0'); if (e1) e1.focus();
+    return;
+  }
+  var volta = function () { d._modo = 'compra'; d.mist = []; delete d.rende; S.sujo = true; renderPainel(); };
+  if (!M.ehMistura(d)) { volta(); return; }
+  confirmar({ titulo: 'Voltar a ser comprada?', texto: 'A receita desta mistura sai e o custo volta a ser o do preço de compra e dos impostos da nota. Só vale quando você gravar.', ok: 'Voltar a ser comprada' }, volta);
+};
+ACOES.mistAdd = function () { var d = S.draft; if (!d) return; d.mist = d.mist || []; d.mist.push({ mp: '', qtd: '' }); S.sujo = true; renderPainel(); var el = document.getElementById('mist-mp-' + (d.mist.length - 1)); if (el) el.focus(); };
+ACOES.mistDel = function (el) { var d = S.draft, i = +el.dataset.i; if (!d || !d.mist || !d.mist[i]) return; d.mist.splice(i, 1); S.sujo = true; renderPainel(); };
 function telaMpEditor(id) {
   var e = S.emp, cfg = e.config;
   var d = garantirRascunho('mp', e.mps, 'cod', id, function () {
@@ -9926,6 +10344,15 @@ function telaMpEditor(id) {
   return h;
 }
 function htmlOndeUsado(tipo, cod) {
+  var mi = tipo === 'MP' ? misturasCom(cod) : [];
+  if (!mi.length) return htmlOndeUsadoBase(tipo, cod);
+  return htmlOndeUsadoBase(tipo, cod) + tabelaBox('Nas misturas', '<table id="ondeMist"><thead><tr><th>Mistura</th><th>Descrição</th><th class="r">Na receita</th></tr></thead><tbody>' +
+    mi.map(function (m) {
+      var x = porCod(S.emp.mps, m, 'cod'), c = x.mist.filter(function (y) { return y && y.mp === cod; })[0], u = (porCod(S.emp.mps, cod, 'cod') || {}).un;
+      return '<tr class="click" data-a="ir" data-rota="mps" data-id="' + esc(m) + '"><td class="cod">' + esc(m) + '</td><td>' + esc(x.desc) + '</td><td class="r">' + fmtQ(n(c.qtd)) + ' ' + esc(unidadeExt(u || '', n(c.qtd))) + ' para ' + fmtQ(n(x.rende)) + ' ' + esc(unidadeExt(x.un, n(x.rende))) + '</td></tr>';
+    }).join('') + '</tbody></table>');
+}
+function htmlOndeUsadoBase(tipo, cod) {
   var r = M.localizar(S.ctx, tipo, cod);
   if (!r.diretos.length && !r.indiretos.length) return tabelaBox('Onde é usado', '<div class="vazio">Não está em nenhuma fórmula.</div>');
   var linhas = r.diretos.map(function (x) { var it = x.item; return '<tr class="click" data-a="ir" data-rota="produtos" data-id="' + esc(x.prod) + '"><td class="cod">' + esc(x.prod) + '</td><td>' + esc(nomeProd(x.prod)) + '</td><td class="r">' + (it.tipo === 'SP' ? fmtH(M.tempoHoras(it.tempo, false)) : fmtQ(n(it.qtd))) + '</td><td>direto</td></tr>'; }).join('') +
@@ -10131,7 +10558,7 @@ function htmlCustoFunc(d) {
       '<div class="kpi-lbl fc-um">Custo de 1 pessoa</div><div class="big fc-um-v">' : '<div class="kpi-lbl">Custo mensal</div><div class="big">') + fmtR2(c.total) + '</div>' +
     '<div class="lista-kv" style="margin-top:12px"><span>Salário base</span><b>' + fmtR2(c.SB) + '</b>' + (c.VH ? '<span>Horas extras (' + fmt(c.QE, 1) + ' h)</span><b>' + fmtR2(c.VH) + '</b>' : '') + (c.VA ? '<span>Adicionais que integram o salário</span><b>' + fmtR2(c.VA) + '</b>' : '') +
     '<span>Salário total</span><b>' + fmtR2(c.ST) + '</b><span>Encargos</span><b>' + fmtR2(c.encargos) + '</b><span>Provisões</span><b>' + fmtR2(c.provisoes) + '</b>' + (Math.abs(c.outros) > 1e-9 ? '<span>Outros da tabela de encargos</span><b>' + fmtR2(c.outros) + '</b>' : '') +
-    '<span>Benefícios</span><b id="fcBenef">' + fmtR2(c.beneficios || 0) + '</b>' + (c.benefItens || []).map(function (b) { return '<span class="kv-sub">' + esc(b.nome) + (b.nao ? ' · não recebe' : (b.desconto ? ' (' + fmtR2(b.valor) + ' − ' + fmtR2(b.desconto) + ' de desconto)' : '') + (b.proprio ? '' : ' · padrão')) + '</span><b class="kv-sub">' + fmtR2(b.liquido) + '</b>'; }).join('') + '<div class="sep"></div>' +
+    '<span>Benefícios</span><b id="fcBenef">' + fmtR2(c.beneficios || 0) + '</b>' + (c.benefItens || []).map(function (b) { return '<span class="kv-sub">' + esc(b.nome) + (b.nao ? ' · não recebe' : (b.desconto ? ' (' + fmtR2(b.valor) + ' − ' + txtDescontoBenef(b) + ' de desconto)' : '') + (b.proprio ? '' : ' · padrão')) + '</span><b class="kv-sub">' + fmtR2(b.liquido) + '</b>'; }).join('') + '<div class="sep"></div>' +
     '<span>Horas trabalhadas + extras</span><b>' + fmt(c.horas, 1) + ' h</b><span>Eficiência</span><b>' + fmtP(c.efic, 0) + '</b><span>Horas produtivas</span><b>' + fmt(c.horasProdutivas, 1) + ' h</b><span>Custo por hora produtiva</span><b>' + fmtR2(c.custoHora) + '</b></div>';
   if (c.erros.length) h += alerta('err', c.erros.map(function (x) { return esc(x.ref + ': ' + x.msg); }).join('<br>'));
   if (c.linhas.length) h += '<details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-size:12px">Ver cada encargo e provisão</summary><div class="tbl-scroll" style="margin-top:8px"><table><thead><tr><th>Ref</th><th>Item</th><th>Grupo</th><th class="r">Valor</th></tr></thead><tbody>' +
@@ -10150,6 +10577,17 @@ function atualizarContasHoras(c) {
   var x = contasHorasFunc(c), a = $('#fhBase'), b = $('#fhEfic');
   if (a) a.innerHTML = x.base; if (b) b.innerHTML = x.efic;
 }
+// o desconto do funcionário no benefício: o número e como ler (R$ por mês ou % do salário base)
+function fDesconto(pre, obj, o) {
+  o = o || {};
+  var pct = !!(obj && obj.descontoTipo === 'pct');
+  return '<div class="desc-tipo">' + fNum(pre + 'desconto', obj ? obj.desconto : '', { ph: o.ph, id: o.id, ro: o.ro }) +
+    fSelect(pre + 'descontoTipo', pct ? 'pct' : '', [['', 'R$ por mês'], ['pct', '% do salário base']], { rr: true, ro: o.ro, cls: 'desc-tipo-sel', id: o.id ? o.id + '-t' : undefined }) + '</div>';
+}
+// o desconto padrão em palavras: "R$ 160,00" ou "6% do salário"
+function txtDescontoPadrao(b) { return b && b.descontoTipo === 'pct' ? fmtP(n(b.desconto), 2) + ' do salário' : fmtR2(n(b && b.desconto)); }
+// o desconto já calculado de um benefício (itens de beneficiosFunc)
+function txtDescontoBenef(b) { return fmtR2(b.desconto) + (b.descontoPct !== undefined ? ' (' + fmtP(b.descontoPct, 2) + ' do salário base' + (b.desconto >= b.valor - 1e-9 && b.valor > 0 ? ', limitado ao valor do benefício' : '') + ')' : ''); }
 // os benefícios da empresa (Ajustes) com o valor e o desconto desta pessoa; em branco = o padrão
 function htmlBenefFunc(d) {
   var B = S.emp.config.beneficios || {}, ids = M.idsBeneficios(B).filter(function (k) { return B[k].ativo !== false; });
@@ -10158,7 +10596,7 @@ function htmlBenefFunc(d) {
   return '<p class="desc">Em branco, vale o padrão da empresa (Ajustes › Encargos e provisões › Benefícios padrão). O desconto do funcionário sai do custo.</p><div class="tbl-scroll"><table class="tbl-benef"><thead><tr><th>Benefício</th><th>Valor por mês</th><th>Desconto do funcionário por mês</th><th>Não recebe</th></tr></thead><tbody>' +
     ids.map(function (k) {
       var p = d.benef[k] || {}, dft = B[k], nao = !!p.nao;
-      return '<tr><td class="pri">' + esc(M.nomeBeneficio(k, dft)) + '</td><td style="min-width:140px">' + fNum('benef.' + k + '.valor', p.valor, { suf: 'R$', ph: 'padrão ' + fmt(n(dft.valor), 2), ro: nao }) + '</td><td style="min-width:140px">' + fNum('benef.' + k + '.desconto', p.desconto, { suf: 'R$', ph: 'padrão ' + fmt(n(dft.desconto), 2), ro: nao }) + '</td><td class="c">' + fCheck('benef.' + k + '.nao', nao, 'não recebe', { rr: true }) + '</td></tr>';
+      return '<tr><td class="pri">' + esc(M.nomeBeneficio(k, dft)) + '</td><td style="min-width:140px">' + fNum('benef.' + k + '.valor', p.valor, { suf: 'R$', ph: 'padrão ' + fmt(n(dft.valor), 2), ro: nao }) + '</td><td style="min-width:240px">' + fDesconto('benef.' + k + '.', p, { ph: 'padrão ' + txtDescontoPadrao(dft), ro: nao }) + '</td><td class="c">' + fCheck('benef.' + k + '.nao', nao, 'não recebe', { rr: true }) + '</td></tr>';
     }).join('') + '</tbody></table></div>';
 }
 function telaFuncEditor(id) {
@@ -10295,7 +10733,11 @@ function usoDaMp(cod) {
       else if (it.reapMp === cod && !r[p.cod]) r[p.cod] = 'reaproveitamento';
     });
   });
-  Object.keys(r).forEach(function (k) { if (r[k] === 'na fórmula') fila.push(k); });
+  // pela mistura: a peça que usa uma mistura que leva a matéria-prima
+  misturasCom(cod).forEach(function (mix) {
+    prods.forEach(function (p) { (p.itens || []).forEach(function (it) { if (it.tipo === 'MP' && it.ref === mix && (!r[p.cod] || r[p.cod] === 'reaproveitamento')) r[p.cod] = 'na mistura ' + mix; }); });
+  });
+  Object.keys(r).forEach(function (k) { if (r[k] === 'na fórmula' || r[k].indexOf('na mistura ') === 0) fila.push(k); });
   while (fila.length) {
     c = fila.shift(); if (vistos[c]) continue; vistos[c] = true;
     prods.forEach(function (p) {
@@ -11598,7 +12040,7 @@ TELAS['cfg-encargos'] = {
   },
   preview: function () {
     var el = $('#prevEnc'); if (el && S.draft) el.innerHTML = htmlTesteEnc(S.aba.encFunc || (S.emp.funcionarios[0] || {}).mat);
-    if (S.draft && S.draft.beneficios) Object.keys(S.draft.beneficios).forEach(function (k) { var b = S.draft.beneficios[k], c = document.getElementById('bn-l-' + k); if (c) c.textContent = fmtR2(b.ativo === false ? 0 : Math.max(0, n(b.valor) - n(b.desconto))); });
+    if (S.draft && S.draft.beneficios) Object.keys(S.draft.beneficios).forEach(function (k) { var b = S.draft.beneficios[k], c = document.getElementById('bn-l-' + k); if (c) c.textContent = liqBenefPadrao(b); });
   }
 };
 /* ---------------- Benefícios padrão: lista aberta (vale alimentação e vale transporte já vêm criados) ---------------- */
@@ -11611,10 +12053,16 @@ function htmlBenefPadrao(d) {
     (dup.length ? alerta('warn', 'A tabela abaixo ainda tem ' + dup.map(function (e) { return esc(e.ref + ' ' + e.desc); }).join(', ') + ' ativo. Se for o mesmo benefício, desative lá (tipo “inativo”) para não contar duas vezes.') : '') +
     '<div class="tbl-scroll"><table class="tbl-benef" id="benefPadrao"><thead><tr><th>Benefício</th><th>Valor por mês (padrão)</th><th>Desconto do funcionário por mês</th><th>Entra no custo</th><th class="c">Ativo</th><th></th></tr></thead><tbody>' +
     ids.map(function (k) {
-      var b = B[k], p = 'beneficios.' + k + '.', liq = Math.max(0, n(b.valor) - n(b.desconto));
-      return '<tr' + (b.ativo === false ? ' class="muted"' : '') + '><td style="min-width:200px">' + fTexto(p + 'nome', b.nome || '', { ph: M.nomeBeneficio(k, b), id: 'bn-n-' + k }) + '</td><td style="min-width:130px">' + fNum(p + 'valor', b.valor, { suf: 'R$', ph: '0,00', id: 'bn-v-' + k }) + '</td><td style="min-width:130px">' + fNum(p + 'desconto', b.desconto, { suf: 'R$', ph: '0,00', id: 'bn-d-' + k }) + '</td>' +
-        '<td class="r nw" id="bn-l-' + k + '">' + fmtR2(b.ativo === false ? 0 : liq) + '</td><td class="c">' + fCheck(p + 'ativo', b.ativo !== false, 'ativo', { rr: true, id: 'bn-a-' + k }) + '</td><td>' + (gravados[k] ? '' : '<button class="ico-btn del" data-a="benDel" data-k="' + esc(k) + '" aria-label="Tirar este benefício">' + ic('trash') + '</button>') + '</td></tr>';
+      var b = B[k], p = 'beneficios.' + k + '.';
+      return '<tr' + (b.ativo === false ? ' class="muted"' : '') + '><td style="min-width:200px">' + fTexto(p + 'nome', b.nome || '', { ph: M.nomeBeneficio(k, b), id: 'bn-n-' + k }) + '</td><td style="min-width:130px">' + fNum(p + 'valor', b.valor, { suf: 'R$', ph: '0,00', id: 'bn-v-' + k }) + '</td><td style="min-width:240px">' + fDesconto(p, b, { ph: '0,00', id: 'bn-d-' + k }) + '</td>' +
+        '<td class="r nw" id="bn-l-' + k + '">' + liqBenefPadrao(b) + '</td><td class="c">' + fCheck(p + 'ativo', b.ativo !== false, 'ativo', { rr: true, id: 'bn-a-' + k }) + '</td><td>' + (gravados[k] ? '' : '<button class="ico-btn del" data-a="benDel" data-k="' + esc(k) + '" aria-label="Tirar este benefício">' + ic('trash') + '</button>') + '</td></tr>';
     }).join('') + '</tbody></table></div><div class="fx-add">' + btn('Adicionar benefício', 'benAdd', '', 'btn-ghost btn-sm', 'plus') + '</div><div class="hint">Um benefício já gravado não sai da lista: desmarque “ativo” para ele deixar de entrar no custo (a partir da data da gravação; o histórico guarda).</div>');
+}
+// o que entra no custo por pessoa, pelo padrão: com o desconto em %, depende do salário de cada um
+function liqBenefPadrao(b) {
+  if (b.ativo === false) return fmtR2(0);
+  if (b.descontoTipo === 'pct' && n(b.desconto)) return fmtR2(n(b.valor)) + ' − ' + fmtP(n(b.desconto), 2) + ' do salário';
+  return fmtR2(Math.max(0, n(b.valor) - n(b.desconto)));
 }
 ACOES.benAdd = function () {
   var B = S.draft.beneficios = S.draft.beneficios || {}, max = 0;
@@ -12068,7 +12516,7 @@ function montarResumoMes() {
 
 /* ---------------- uma mudança em português ---------------- */
 var CAMPOS_TXT = {
-  mp: { vc: 'preço de compra', v1: 'frete e seguro', v2: 'outros valores', liquidoManual: 'custo líquido digitado', situacao: 'situação', p: 'imposto de entrada', a: 'imposto do frete', b: 'imposto de outros valores', imp: 'impostos da compra', cred: 'crédito na compra', freteP: 'frete (% do preço)', freteCred: 'créditos sobre o frete', v2Cred: 'créditos sobre outros valores', ajuste: 'outros acréscimos sobre o preço', desc: 'descrição', fornecedor: 'fornecedor', un: 'unidade' },
+  mp: { mist: 'receita da mistura', rende: 'quanto a mistura rende', vc: 'preço de compra', v1: 'frete e seguro', v2: 'outros valores', liquidoManual: 'custo líquido digitado', situacao: 'situação', p: 'imposto de entrada', a: 'imposto do frete', b: 'imposto de outros valores', imp: 'impostos da compra', cred: 'crédito na compra', freteP: 'frete (% do preço)', freteCred: 'créditos sobre o frete', v2Cred: 'créditos sobre outros valores', ajuste: 'outros acréscimos sobre o preço', desc: 'descrição', fornecedor: 'fornecedor', un: 'unidade' },
   func: { sb: 'salário', horasTrab: 'horas trabalhadas', horasBase: 'horas base', efic: 'eficiência', situacao: 'situação', he: 'horas extras', vb: 'valores do funcionário', aloc: 'setores em que trabalha', nome: 'nome', cargo: 'cargo', benef: 'benefícios desta pessoa', qtd: 'pessoas nessa função', modo: 'tipo de cadastro' },
   setor: { horasOperacao: 'horas de operação no mês', manual: 'taxa digitada', equipamentos: 'máquinas', despTotal: 'gastos das máquinas', desc: 'nome' },
   molde: { valor: 'valor do molde', vida: 'vida útil', cavidades: 'cavidades', setor: 'setor', situacao: 'situação', desc: 'descrição' },
@@ -12086,16 +12534,26 @@ function nomeItem(tipo, ref) {
   return TIPO_TXT[tipo] + ' ' + ref + (x && (x.desc || x.nome) ? ' — ' + (x.desc || x.nome) : '');
 }
 // chaves de benefício: beneficios.<id>.<campo> (padrão da empresa) e benef.<id>.<campo> (a pessoa)
-var RE_BENEF = /^(beneficios|benef)\.([^.]+)\.(valor|desconto|nome|ativo|nao)$/;
-function campoBenef(k) {
+var RE_BENEF = /^(beneficios|benef)\.([^.]+)\.(valor|desconto|descontoTipo|nome|ativo|nao)$/;
+// o desconto da chave é em % do salário? (o tipo gravado na mesma mudança; senão o de hoje)
+function benefPct(m, ev) {
+  var kt = m[1] + '.' + m[2] + '.descontoTipo', cs = (ev && ev.campos) || {};
+  if (Object.prototype.hasOwnProperty.call(cs, kt)) return cs[kt] === 'pct';
+  if (m[1] === 'beneficios') return ((((S.emp && S.emp.config) || {}).beneficios || {})[m[2]] || {}).descontoTipo === 'pct';
+  var f = ev && ev.tipo === 'func' ? porCod((S.emp && S.emp.funcionarios) || [], ev.ref, 'mat') : null;
+  return !!(f && f.benef && f.benef[m[2]] && f.benef[m[2]].descontoTipo === 'pct');
+}
+function campoBenef(k, ev) {
   var m = RE_BENEF.exec(k || ''); if (!m) return null;
   var nome = M.nomeBeneficio(m[2], ((S.emp && S.emp.config && S.emp.config.beneficios) || {})[m[2]]);
   var dono = m[1] === 'beneficios' ? ' (padrão da empresa)' : ' desta pessoa';
-  var oque = { valor: nome + dono + ', R$ por mês', desconto: 'desconto do funcionário no ' + nome.toLowerCase() + dono, nome: 'nome do benefício ' + nome, ativo: nome + ' ativo', nao: nome + ': não recebe' }[m[3]];
-  return { nome: oque, campo: m[3] };
+  var oque = { valor: nome + dono + ', R$ por mês', desconto: 'desconto do funcionário no ' + nome.toLowerCase() + dono, descontoTipo: 'como é o desconto no ' + nome.toLowerCase() + dono, nome: 'nome do benefício ' + nome, ativo: nome + ' ativo', nao: nome + ': não recebe' }[m[3]];
+  return { nome: oque, campo: m[3], pct: m[3] === 'desconto' && benefPct(m, ev) };
 }
 function valorBenef(cb, v) {
   if (v === null || v === undefined || v === '') return 'vazio';
+  if (cb.campo === 'desconto' && cb.pct) return fmtP(n(v), 2) + ' do salário';
+  if (cb.campo === 'descontoTipo') return v === 'pct' ? '% do salário base' : 'R$ por mês';
   if (cb.campo === 'valor' || cb.campo === 'desconto') return fmtR2(n(v));
   if (cb.campo === 'ativo') return v === false ? 'não' : 'sim';
   if (cb.campo === 'nao') return v ? 'sim' : 'não';
@@ -12124,7 +12582,7 @@ function descMudanca(ev) {
   var listas = Object.keys(ev.linhas || {}).filter(function (c) { return (ev.linhas[c] || []).length; });
   var cbx = null; ks.forEach(function (k) { if (!cbx && campoBenef(k)) cbx = k; });
   if (cbx && (!escolhido || escolhido.split('.')[0] === cbx.split('.')[0])) {
-    var cb = campoBenef(cbx), a0 = (ev.antes || {})[cbx], b0 = cs[cbx];
+    var cb = campoBenef(cbx, ev), a0 = (ev.antes || {})[cbx], b0 = cs[cbx];
     r.campo = cb.nome; r.de = valorBenef(cb, a0); r.para = valorBenef(cb, b0);
     if (typeof a0 === 'number' && typeof b0 === 'number' && Math.abs(a0) > 1e-12) r.pct = (b0 - a0) / a0 * 100;
     r.mais = ks.length - 1 + listas.length;
@@ -12970,13 +13428,13 @@ function blocoHistorico(tipo, refs, id, opts) {
   var X = modeloHist(tipo, refs), hoje = X.hoje, f = fonteTela();
   X.marcaData = opts.marca || null;
   S._hb = S._hb || {}; S._hb[id] = X;
-  var mudar = opts.mudar && podeMudarH(tipo) ? btn('Mudar valor', 'hiMudar', 'data-tipo="' + tipo + '" data-ref="' + esc(refs[0]) + '"', 'btn-accent btn-sm', 'edit') : '';
+  var mudar = opts.mudar && podeMudarH(tipo) && !(tipo === 'mp' && refs.length === 1 && mpMistura(refs[0])) ? btn('Mudar valor', 'hiMudar', 'data-tipo="' + tipo + '" data-ref="' + esc(refs[0]) + '"', 'btn-accent btn-sm', 'edit') : '';
   var secH = abaAtual(id + 'Sec', 'grafico'); if (X.marcaData) secH = 'mudancas';
   // valor de hoje de cada item
   var h = '<div class="hi-atual" id="' + id + 'Atual">' + X.itens.map(function (it) {
     var extra = '';
     if (tipo === 'molde') { var vp = H.valorPrincipal(f.naData(hoje), 'molde', it.ref); if (vp && vp.extra) extra = '<div class="hi-extra">Valor ' + fmtR2(vp.extra.valor) + ' ÷ (' + fmtQ(vp.extra.vida) + ' injetadas de vida × ' + fmtQ(vp.extra.cavidades) + (vp.extra.cavidades === 1 ? ' cavidade' : ' cavidades') + ')</div>'; }
-    if (tipo === 'mp') { var mp = porCod(S.emp.mps, it.ref); if (mp) extra = '<div class="hi-extra">Preço de compra ' + fmtPreciso(n(mp.vc)) + ' por ' + esc(unidadeExt(mp.un, 1)) + '; no custo entra o valor líquido dos impostos de entrada.</div>'; }
+    if (tipo === 'mp') { var mp = porCod(S.emp.mps, it.ref); if (mp && M.ehMistura(mp)) extra = '<div class="hi-extra">Mistura: ' + esc(mp.mist.map(function (c) { var cm = porCod(S.emp.mps, c.mp) || {}; return fmtQ(n(c.qtd)) + ' ' + unidadeExt(cm.un || '', n(c.qtd)) + ' de ' + c.mp; }).join(' + ')) + ' rendem ' + fmtQ(n(mp.rende)) + ' ' + esc(unidadeExt(mp.un, n(mp.rende))) + '. O custo muda quando muda o preço de um componente.</div>'; else if (mp) extra = '<div class="hi-extra">Preço de compra ' + fmtPreciso(n(mp.vc)) + ' por ' + esc(unidadeExt(mp.un, 1)) + '; no custo entra o valor líquido dos impostos de entrada.</div>'; }
     return '<div class="hi-atual-it">' + (refs.length > 1 || it.series.length > 1 ? '<div class="hi-atual-nome">' + esc(it.nome) + '</div>' : '') + '<div class="kpi-row">' + it.series.map(function (s) {
       var v = valorAte(s.pts, hoje), ult = null, prox = null;
       s.marcas.forEach(function (m) { if (m.data <= hoje) ult = m; else if (!prox) prox = m; });
@@ -13300,7 +13758,7 @@ function camposMudar(tipo) {
   if (tipo === 'cfg' || tipo === 'func') M.idsBeneficios(B).forEach(function (k) {
     if (B[k].ativo === false) return;
     var nm = M.nomeBeneficio(k, B[k]);
-    if (tipo === 'cfg') l.push(['beneficios.' + k + '.valor', nm + ' padrão (R$ por mês)'], ['beneficios.' + k + '.desconto', 'Desconto do funcionário no ' + nm.toLowerCase() + ' (R$ por mês)']);
+    if (tipo === 'cfg') l.push(['beneficios.' + k + '.valor', nm + ' padrão (R$ por mês)'], ['beneficios.' + k + '.desconto', 'Desconto do funcionário no ' + nm.toLowerCase() + (B[k].descontoTipo === 'pct' ? ' (% do salário base)' : ' (R$ por mês)')]);
     else l.push(['benef.' + k + '.valor', nm + ' desta pessoa (R$ por mês)']);
   });
   return l.length ? l : null;
@@ -13319,6 +13777,8 @@ function fmtCampoMudar(tipo, campo, v) {
   if (v === null || v === undefined || !isFinite(v)) return '—';
   if (campo === 'vida' || campo === 'cavidades' || campo === 'horasOperacao') return fmtQ(v);
   if (campo === 'impostosVendaPct' || /^(fiscal|icmsUF|ncms|imp)[.[]/.test(campo) || campo === 'freteP') return fmtP(v, 2);
+  var mbp = /^beneficios\.([^.]+)\.desconto$/.exec(campo);
+  if (mbp && (((S.emp.config || {}).beneficios || {})[mbp[1]] || {}).descontoTipo === 'pct') return fmtP(v, 2);
   if (/^benef/.test(campo)) return fmtR2(v);
   return fmtPreciso(v);
 }
@@ -13387,6 +13847,7 @@ function agendarPreviaMudar() { clearTimeout(_tMv); _tMv = setTimeout(function (
 ACOES.hiMudar = function (el) {
   var tipo = el.dataset.tipo, ref = el.dataset.ref, campos = camposMudar(tipo);
   if (!podeMudarH(tipo)) { semPermissao(); return; }
+  if (tipo === 'mp' && mpMistura(ref)) { toast('É uma mistura', ref + ' não tem preço de compra: o custo sai dos componentes. Para mudar a receita, abra a matéria-prima e use Editar.', { tipo: 'info', tempo: 7000 }); return; }
   if (S.sujo) { toast('Há alterações não gravadas', 'Grave ou descarte as alterações do cadastro antes de mudar um valor com data.', { tipo: 'warn', tempo: 6000 }); return; }
   var hoje = hojeRef(), passado = podeDataPassada(), c = R.criacao(S.emp, TIPO_HIST_EV[tipo], ref);
   S._mv = { tipo: tipo, ref: ref, campo: campos[0][0] };
@@ -13441,7 +13902,7 @@ function numMud(id) { var m = /(\d+)$/.exec(String(id || '')); return m ? +m[1] 
 function depoisDe(a, b) { return String(a.em || '') !== String(b.em || '') ? String(a.em || '') > String(b.em || '') : numMud(a.id) > numMud(b.id); }
 var NOMES_LINHA = { qtd: 'quantidade', tempo: 'tempo', setup: 'tempo de preparação', refugo: 'refugo (%)', ref: 'item', homens: 'pessoas', maquinas: 'máquinas', fatorGGF: 'gastos gerais', pct: '% do tempo', setor: 'setor', reapMp: 'matéria-prima reaproveitada', reapQtd: 'quantidade reaproveitada', tipo: 'tipo da linha', fase: 'fase', valor: 'valor', desc: 'descrição', horasMes: 'horas por mês', vidaAnos: 'vida em anos' };
 var TIPO_LINHA_TXT = { MP: 'matéria-prima', SA: 'semi-acabado', PA: 'peça', PS: 'serviço de terceiro', SP: 'etapa de produção' };
-var LISTA_TXT = { itens: 'fórmula', equipamentos: 'máquinas', aloc: 'setores em que trabalha', encargos: 'encargos', 'gastosEquip.itens': 'gastos dos equipamentos', ncms: 'NCM', tabelas: 'tabelas de preço' };
+var LISTA_TXT = { mist: 'receita da mistura', itens: 'fórmula', equipamentos: 'máquinas', aloc: 'setores em que trabalha', encargos: 'encargos', 'gastosEquip.itens': 'gastos dos equipamentos', ncms: 'NCM', tabelas: 'tabelas de preço' };
 // o que a mudança escreve, chave a chave: [{k, raiz, antes, valor, lista, linha, campo, op}]
 function toquesMud(ev) {
   var res = [], cs = ev.campos || {}, an = ev.antes || {}, ls = ev.linhas || {};
@@ -13495,7 +13956,7 @@ function valorToque(ev, t, v) {
   if (t.campo === 'tempo' || t.campo === 'setup') return typeof v === 'object' ? (v.modo === 'pph' ? fmtQ(n(v.valor)) + ' peças por hora' : v.modo === 'min' ? fmtQ(n(v.valor)) + ' minutos' : v.modo === 'cen' ? fmtQ(n(v.valor)) + ' horas' : String(v.valor)) : String(v);
   if (t.lista && t.campo === 'qtd') return fmtQ(n(v));
   if (ev.tipo === 'mp' && t.k === 'vc') return fmtPreciso(n(v));
-  if (campoBenef(t.k)) { var vb = valorBenef(campoBenef(t.k), v); return vb === 'vazio' ? '—' : vb; }
+  if (campoBenef(t.k)) { var vb = valorBenef(campoBenef(t.k, ev), v); return vb === 'vazio' ? '—' : vb; }
   var x = valorCampo(ev.tipo, t.raiz, v);
   return x === 'alterado' ? 'alterado' : x === 'vazio' ? '—' : x;
 }
@@ -13684,6 +14145,16 @@ function unDe(tr, ref) { var m = tr && tr.ctx && tr.ctx.mp[ref]; return m ? m.un
 function linhasMp(tr, ref) {
   var v = tr && tr.ctx ? tr.ctx.mpVal[ref] : null, un = unidadeExt(unDe(tr, ref), 1), mp = tr && tr.ctx ? tr.ctx.mp[ref] : null, l = [];
   if (!v) return null;
+  if (v.origem === 'mistura') {
+    if (v.erro) l.push({ k: 'mixErro', rot: 'Receita incompleta (' + v.erro + '): custo zero', v: null, vazioOk: true });
+    else {
+      v.mistura.itens.forEach(function (x) { l.push({ k: 'c:' + x.mp, rot: fmtQ(x.qtd) + ' ' + unidadeExt(x.un, x.qtd) + ' de ' + x.mp + ' × ' + fmtPreciso(x.unit) + ' por ' + unidadeExt(x.un, 1), v: x.valor }); });
+      l.push({ k: 'mixSoma', rot: 'Custo da receita', v: v.mistura.soma, menor: true });
+      l.push({ k: 'rende', rot: '÷ o que a receita rende (' + un + ')', v: v.mistura.rende, f: fmtQ });
+    }
+    l.push({ k: 'tot', rot: '= Custo por ' + un + ' usado nas peças', v: v.valor, tot: true });
+    return l;
+  }
   if (v.origem === 'manual') l.push({ k: 'manual', rot: 'Custo líquido digitado no cadastro (não usa o preço de compra)', v: v.valor });
   else if (v.origem === 'formula' || v.origem === 'erro') {
     l.push({ k: 'vc', rot: 'Preço de compra', v: n(mp.vc) });
@@ -13782,6 +14253,9 @@ function preencherConta(X) {
     var vcA = tA && tA.ctx && tA.ctx.mp[ref] ? n(tA.ctx.mp[ref].vc) : null, vcD = tD && tD.ctx && tD.ctx.mp[ref] ? n(tD.ctx.mp[ref].vc) : null;
     intro = 'O preço de compra não é o número que entra nas peças. O custo usa o <b>custo por ' + esc(un) + '</b>: preço de compra' + (imps.length ? ' menos os créditos de impostos (' + esc(imps.join(', ')) + ')' : '') + ' mais frete e outros valores, quando houver. Por isso aparecem dois números: o preço de compra (' + fmtPreciso(vcA) + ' → ' + fmtPreciso(vcD) + ') e o custo por ' + esc(un) + ' usado nas peças (' + fmtPreciso(totalDeLinhas(la)) + ' → ' + fmtPreciso(totalDeLinhas(ld)) + ').';
     depois = 'Em cada peça entra: quantidade da fórmula × custo por ' + esc(un) + '. A conta de cada peça está em “Efeito nas peças”.';
+    var ehMixEm = function (t) { return !!(t && t.ctx && t.ctx.mpVal[ref] && t.ctx.mpVal[ref].origem === 'mistura'); };
+    if (ehMixEm(tA) || ehMixEm(tD)) intro = 'Esta matéria-prima é uma mistura: o custo é a soma de cada componente (quantidade da receita × custo por unidade dele, que já tira os créditos dos impostos da compra) dividida pelo que a receita rende.';
+    else if (misturasCom(ref).length) depois += ' ' + esc(ref) + ' também entra na mistura ' + esc(misturasCom(ref).join(', ')) + ': as peças que usam a mistura mudam junto.';
   } else if (ev.tipo === 'func') {
     la = linhasFunc(tA, ref); ld = linhasFunc(tD, ref);
     intro = 'O salário vira custo por mês com encargos e provisões. Dividido pelas horas produtivas e pelo % do tempo em cada setor, ele entra na hora de mão de obra do setor; cada peça paga a hora do setor pelo tempo que passa nele.';
@@ -13819,6 +14293,8 @@ function preencherConta(X) {
 
 /* ---------------- 3. efeito nas peças ---------------- */
 // a peça usa o item direto? → {kind, idx}
+// a mistura (no contexto da data) leva a matéria-prima?
+function misturaLeva(ctx, mix, cod) { var m = ctx && ctx.mp[mix]; return !!(m && M.ehMistura(m) && m.mist.some(function (c) { return c && c.mp === cod; })); }
 function usaDireto(ctx, cod, ev) {
   var p = ctx && ctx.prod[cod], it, i, aloc;
   if (!p) return null;
@@ -13830,6 +14306,7 @@ function usaDireto(ctx, cod, ev) {
   for (i = 0; i < itens.length; i++) {
     it = itens[i]; if (!it) continue;
     if (ev.tipo === 'mp' && (((it.tipo === 'MP' || it.tipo === 'PS') && it.ref === ev.ref) || it.reapMp === ev.ref)) return { kind: 'linha', idx: i };
+    if (ev.tipo === 'mp' && it.tipo === 'MP' && misturaLeva(ctx, it.ref, ev.ref)) return { kind: 'linha', idx: i, mix: it.ref };
     if (ev.tipo === 'setor' && it.tipo === 'SP' && it.ref === ev.ref) return { kind: 'linha', idx: i };
     if (ev.tipo === 'func' && it.tipo === 'SP' && aloc.indexOf(it.ref) >= 0) return { kind: 'linha', idx: i };
   }
@@ -13841,7 +14318,8 @@ function caminhoRa(ctx, cod, ev, vistos) {
   vistos = vistos || {};
   if (!ctx || vistos[cod]) return null;
   vistos[cod] = true;
-  if (usaDireto(ctx, cod, ev)) return [cod];
+  var ud = usaDireto(ctx, cod, ev);
+  if (ud) return ud.mix ? [cod, ud.mix] : [cod];
   var p = ctx.prod[cod], r = null;
   (p ? p.itens || [] : []).forEach(function (it) { if (!r && it && (it.tipo === 'SA' || it.tipo === 'PA') && it.ref) { var s = caminhoRa(ctx, it.ref, ev, vistos); if (s) r = [cod].concat(s); } });
   return r;
@@ -13852,7 +14330,7 @@ function contaNaPeca(X, cod, ev, cam) {
   if (!cam || !base) return '';
   var qf = base.qf || 1, ar = function (a, d, f) { f = f || fmtPreciso; return a === null || a === undefined || Math.abs(a - d) < 1e-12 ? f(d) : f(a) + ' → ' + f(d); };
   var linha = function (c, pred) { var r = null; (c ? c.linhas : []).forEach(function (L) { if (!r && pred(L)) r = L; }); return r; };
-  if (cam.length > 1) {
+  if (cam.length > 1 && !(cam.length === 2 && ctx.mp[cam[1]] && !ctx.prod[cam[1]])) {   // [peça, mistura]: a linha da mistura, abaixo
     var comp = cam[1], pr = function (L) { return (L.tipo === 'SA' || L.tipo === 'PA') && L.ref === comp; }, LA = linha(cA, pr), LD = linha(cD, pr) || LA;
     if (!LD) return '';
     var q = LD.qtd / qf;
@@ -14666,7 +15144,7 @@ function exFunc(mat, D) {
   // Benefícios: uma linha por benefício, com a mudança que pôs o valor (o padrão da empresa ou o desta pessoa)
   (c.benefItens || []).forEach(function (b) {
     var campo = b.nao ? 'nao' : b.proprioValor ? 'valor' : null, m = b.nao || b.proprioValor ? mudDoCampo('func', mat, 'benef.' + b.id + '.' + (campo || 'valor'), D) : mudDoCampo('cfg', 'config', 'beneficios.' + b.id + '.valor', D);
-    var txt = 'Benefício: ' + b.nome + (b.nao ? ' (não recebe)' : (b.desconto ? ' ' + fmtR2(b.valor) + ' − ' + fmtR2(b.desconto) + ' de desconto do funcionário' : '') + (b.proprio ? ' (valor desta pessoa)' : ' (padrão da empresa)'));
+    var txt = 'Benefício: ' + b.nome + (b.nao ? ' (não recebe)' : (b.desconto ? ' ' + fmtR2(b.valor) + ' − ' + txtDescontoBenef(b) + ' de desconto do funcionário' : '') + (b.proprio ? ' (valor desta pessoa)' : ' (padrão da empresa)'));
     ls.push({ op: '+', rot: txt, v: b.liquido, soma: true, m: m });
   });
   var s = ls.reduce(function (t, l) { return t + l.v; }, 0);
@@ -14682,6 +15160,7 @@ function exFunc(mat, D) {
 function exMp(cod, D) {
   var tr = trEm(D), v = tr.ctx && tr.ctx.mpVal[cod], mp = tr.ctx && tr.ctx.mp[cod];
   if (!v || !mp) return vazioOr('Matéria-prima ' + cod, cod + ' não existia em ' + fmtData(D) + '.');
+  if (v.origem === 'mistura') return exMistura(cod, D, v, mp);
   var un = unidadeExt(mp.un, 1), ls = [], o = v.compra || M.compraMP(mp, tr.estado.config || {});
   if (v.origem === 'manual') ls.push({ op: '', rot: 'Custo líquido digitado no cadastro (não usa o preço de compra)', v: v.valor, soma: true, f: fmtPreciso, m: mudDoCampo('mp', cod, 'liquidoManual', D) });
   else if (v.origem === 'formula' || v.origem === 'erro') {
@@ -14697,6 +15176,21 @@ function exMp(cod, D) {
   return { titulo: 'Custo por ' + un + ' de ' + cod, curto: cod, sub: esc(mp.desc || '') + ' · com os valores de ' + fmtData(D), valor: v.valor, fval: fmtPreciso, dataConta: fmtData(D),
     oque: 'O preço de compra não é o número que entra nas peças: o custo usa o preço mais o IPI que não gera crédito, menos os créditos de ICMS, PIS e COFINS, mais o frete (menos os créditos do frete). ' + M.REGIMES[o.regime] + ': em branco, ' + (o.regime === 'real' ? 'os quatro geram crédito' : 'só ICMS e IPI geram crédito') + '.' + (o.legado ? ' Esta matéria-prima ainda está no formato da versão anterior (impostos de entrada gerais): os mesmos valores, em campos novos.' : ''),
     linhas: ls, depois: 'Cada valor do cadastro tem a mudança que o pôs em vigor: clique para ver a rastreabilidade. Em cada peça entra quantidade da fórmula × este custo.' };
+}
+function exMistura(cod, D, v, mp) {
+  var un = unidadeExt(mp.un, 1), ls = [];
+  if (v.erro) ls.push({ op: '', rot: 'A receita está incompleta: ' + v.erro, txt: '—', info: true });
+  else {
+    v.mistura.itens.forEach(function (x, i) {
+      ls.push({ op: i ? '+' : '', rot: fmtQ(x.qtd) + ' ' + unidadeExt(x.un, x.qtd) + ' de ' + x.mp + ' (' + (x.desc || '') + ') × ' + fmtPreciso(x.unit) + ' por ' + unidadeExt(x.un, 1), txt: fmtPreciso(x.valor), info: true, o: od('mp', x.mp, D) });
+    });
+    ls.push({ op: '=', rot: 'Custo da receita', txt: fmtPreciso(v.mistura.soma), info: true });
+    ls.push({ op: '÷', rot: 'O que a receita rende', txt: fmtQ(v.mistura.rende) + ' ' + unidadeExt(mp.un, v.mistura.rende), info: true, m: mudDoCampo('mp', cod, 'rende', D) });
+  }
+  ls.push({ op: '=', rot: 'Custo por ' + un + ' usado nas peças', v: v.valor, tot: true, f: fmtPreciso });
+  return { titulo: 'Custo por ' + un + ' de ' + cod, curto: cod, sub: esc(mp.desc || '') + ' · mistura · com os valores de ' + fmtData(D), valor: v.valor, fval: fmtPreciso, dataConta: fmtData(D),
+    oque: 'Esta matéria-prima é uma mistura de outras: o custo é a soma de cada componente (a quantidade da receita × o custo líquido dele, que já tira os créditos dos impostos da compra) dividida pelo que a receita rende. Quando o preço de um componente muda, o custo da mistura muda junto, na mesma data.',
+    linhas: ls, depois: 'Clique num componente para ver a conta dele. Em cada peça entra quantidade da fórmula × este custo.' };
 }
 function exMolde(cod, D) {
   var tr = trEm(D), md = tr.ctx && tr.ctx.molde[cod];
@@ -15099,6 +15593,11 @@ function compraDoRascunho(d) { var o = { imp: {}, cred: {} }; M.IMP_COMPRA.forEa
 // ao gravar: a antiga sem mudança nos impostos continua antiga (nada muda no registro); com mudança, passa para o formato novo
 function antesGravarMP(d) {
   var info = S.draftInfo || {};
+  if (mpEhMisturaDraft(d)) {
+    // a receita sem as linhas em branco; números de verdade (o que ficou vazio a conferência recusa)
+    d.mist = (d.mist || []).filter(function (c) { return c && !vazio(c.mp); }).map(function (c) { var x = { mp: c.mp, qtd: vazio(c.qtd) ? '' : n(c.qtd) }; if (!vazio(c.id)) x.id = c.id; return x; });
+    if (!vazio(d.rende)) d.rende = n(d.rende);
+  } else { d.mist = []; delete d.rende; }   // comprada: a receita (se havia) sai do registro
   if (info.legado) {
     if (JSON.stringify(compraDoRascunho(d)) === info.legado) { ['imp', 'cred', 'freteP', 'freteCred', 'v2Cred', 'ajuste'].forEach(function (k) { delete d[k]; }); return; }
     delete d.p; delete d.a; delete d.b;
@@ -15106,12 +15605,46 @@ function antesGravarMP(d) {
   if (!n(d.v2Cred)) delete d.v2Cred;
   if (!n(d.ajuste)) delete d.ajuste;
 }
-function htmlCompraMP(d) {
+// de onde vem o custo: comprada (preço e impostos da nota) ou mistura de outras (a receita). O rascunho guarda a escolha em
+// _modo enquanto a receita ainda está vazia (o "_" não vai para o registro)
+function mpEhMisturaDraft(d) { return d._modo ? d._modo === 'mistura' : M.ehMistura(d); }
+function mpMistura(cod) { var m = porCod(S.emp.mps || [], cod); return !!(m && M.ehMistura(m)); }
+// as misturas que levam a matéria-prima (hoje)
+function misturasCom(cod) { return (S.emp.mps || []).filter(function (m) { return M.ehMistura(m) && m.mist.some(function (c) { return c && c.mp === cod; }); }).map(function (m) { return m.cod; }); }
+function opcoesComponente(d) {
+  return ordenarPor(S.emp.mps, 'cod').filter(function (m) { return m.cod !== d.cod && !M.ehMistura(m) && m.situacao !== 'inativo'; })
+    .map(function (m) { return [m.cod, m.cod + ' — ' + m.desc + ' (' + unidadeExt(m.un, 1) + ')']; });
+}
+function htmlModoMP(d) {
+  var mix = mpEhMisturaDraft(d);
+  return '<div class="mp-modo"><span class="mp-modo-rot">De onde vem o custo</span><div class="seg" role="group" aria-label="De onde vem o custo">' +
+    [['compra', 'Comprada (preço da nota)'], ['mistura', 'Mistura de outras matérias-primas']].map(function (a) {
+      var on = (a[0] === 'mistura') === mix;
+      return '<button type="button" class="' + (on ? 'on' : '') + '" data-a="mpModo" data-v="' + a[0] + '" aria-pressed="' + on + '">' + esc(a[1]) + '</button>';
+    }).join('') + '</div></div>';
+}
+function htmlMisturaMP(d) {
+  var un = unidadeExt(d.un || 'un', 1), opc = opcoesComponente(d);
+  var linhas = (d.mist || []).map(function (c, i) {
+    var comp = c.mp ? porCod(S.emp.mps, c.mp, 'cod') : null, uc = comp ? U.sigla(comp.un) : '', vu = c.mp && S.ctx && S.ctx.mpVal[c.mp] ? S.ctx.mpVal[c.mp].valor : null;
+    var op = opc.slice(); if (c.mp && !opc.some(function (o) { return o[0] === c.mp; })) op.push([c.mp, c.mp + (comp ? ' — ' + comp.desc + ' (não pode ser componente)' : ' (não existe)')]);
+    return '<tr><td style="min-width:200px">' + fSelect('mist.' + i + '.mp', c.mp || '', op, { vazio: 'Escolha a matéria-prima', rr: true, id: 'mist-mp-' + i }) + '</td>' +
+      '<td style="min-width:120px">' + fNum('mist.' + i + '.qtd', c.qtd, { suf: uc || '—', ph: '0', id: 'mist-q-' + i }) + '</td>' +
+      '<td class="r nw" id="mist-v-' + i + '">' + (vu !== null && comp ? fmtPreciso(vu) + ' por ' + esc(U.sigla(comp.un)) : '<span class="muted">—</span>') + '</td>' +
+      '<td><button class="ico-btn del" data-a="mistDel" data-i="' + i + '" aria-label="Tirar este componente">' + ic('trash') + '</button></td></tr>';
+  }).join('');
+  return caixa('Mistura', htmlModoMP(d) + '<p class="desc">Esta matéria-prima é feita de outras (ex.: adesivo Chem + solvente). Cada componente entra com o custo líquido dele (o preço da nota com os impostos da compra dele) e o custo da mistura muda sozinho quando o preço de um componente muda. As fórmulas das peças continuam usando ' + esc(d.cod || 'este código') + '.</p>' +
+    '<div class="tbl-scroll"><table id="mistTab" data-sem-ordem><thead><tr><th>Componente</th><th>Quantidade na receita</th><th class="r">Custo líquido do componente</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+    '<div class="fx-add">' + btn('Componente', 'mistAdd', '', 'btn-ghost btn-sm', 'plus') + '</div>' +
+    '<div class="grid g3" style="margin-top:12px">' + fCampo('A receita rende', fNum('rende', d.rende, { suf: esc(un), ph: '0' }), 'Quanto a receita acima faz, em ' + esc(un) + '. Ex.: 1 kg de Chem + 2 L de solvente rendem 3 L. Se algo evapora ou se perde no preparo, ponha o que sobra para usar.') + '</div>');
+}
+function htmlCompraMP(d) { return mpEhMisturaDraft(d) ? htmlMisturaMP(d) : htmlCompraMPPreco(d); }
+function htmlCompraMPPreco(d) {
   var f = M.fiscalDe(S.emp.config || {}), un = esc(unidadeExt(d.un || 'un', 1));
   var linhaImp = function (k) {
     return '<tr><td class="pri">' + M.NOME_IMP[k] + (k === 'ipi' ? ' <span class="muted">(por fora)</span>' : '') + '</td><td style="min-width:110px">' + fNum('imp.' + k, d.imp[k], { suf: '%', ph: '0', id: 'mp-imp-' + k }) + '</td><td style="min-width:210px">' + fSelect('cred.' + k, credTxt(d.cred[k]), CRED_OPCOES(k, f.regime), { id: 'mp-cred-' + k, t: 'tri' }) + '</td></tr>';
   };
-  return caixa('Impostos da compra', '<p class="desc">Os impostos da nota de compra desta matéria-prima. ' + M.REGIMES[f.regime] + ': ' + (f.regime === 'real' ? 'ICMS, IPI, PIS e COFINS geram crédito' : 'só ICMS e IPI geram crédito; PIS e COFINS ficam no custo') + ' (padrão do regime, Ajustes › Impostos). ' + AVISO_CONTADOR + '.</p>' +
+  return caixa('Impostos da compra', htmlModoMP(d) + '<p class="desc">Os impostos da nota de compra desta matéria-prima. ' + M.REGIMES[f.regime] + ': ' + (f.regime === 'real' ? 'ICMS, IPI, PIS e COFINS geram crédito' : 'só ICMS e IPI geram crédito; PIS e COFINS ficam no custo') + ' (padrão do regime, Ajustes › Impostos). ' + AVISO_CONTADOR + '.</p>' +
     '<div class="grid g3">' + fCampo('Preço de compra (R$ por ' + un + ')', fNum('vc', d.vc, { ph: '0,00', suf: 'R$' }), 'O preço da nota, com ICMS, PIS e COFINS dentro e sem o IPI.') + '</div>' +
     '<div class="tbl-scroll" style="margin-top:10px"><table><thead><tr><th>Imposto</th><th>% da nota</th><th>Gera crédito?</th></tr></thead><tbody>' + M.IMP_COMPRA.map(linhaImp).join('') + '</tbody></table></div>' +
     '<div class="grid g3" style="margin-top:12px">' + fCampo('Frete (% do preço)', fNum('freteP', d.freteP, { suf: '%', ph: '0' })) + fCampo('Frete e seguro (R$ por ' + un + ')', fNum('v1', d.v1, { suf: 'R$', ph: '0,00' })) + fCampo('Créditos sobre o frete', fNum('freteCred', d.freteCred, { suf: '%', ph: '0' }), 'Ex.: ICMS do conhecimento de frete (e PIS/COFINS no Real).') +
@@ -15529,7 +16062,7 @@ TELAS['boas-vindas'] = {
       '<p class="hint">Impostos, taxas e encargos começam com valores padrão. Confira em Ajustes quando quiser.</p>' +
       '<div class="inline">' + btn('Cadastrar na tela', 'ir', 'data-rota="mps"', 'btn-accent', 'plus') + btn('Ver o passo a passo', 'ir', 'data-rota="manual" data-id="comecar"', 'btn-ghost', 'livro') + '</div>') + '</div><div>' +
       caixa('Importar planilha', '<ol class="nv-passos">' +
-        '<li><b>Baixe o modelo</b>: uma aba para matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, preços do terceiro e configuração.</li>' +
+        '<li><b>Baixe o modelo</b>: uma aba para matérias-primas, funcionários, setores e máquinas, moldes, peças, fórmulas, preços do terceiro e configuração.</li>' +
         '<li><b>Preencha</b> com os cadastros de hoje (números no padrão brasileiro: 1.500,25).</li>' +
         '<li><b>Importe</b> escolhendo a data de início: tudo passa a valer a partir dela.</li></ol>' +
         '<div class="inline">' + btn('Importar planilha', 'ir', 'data-rota="importar"', 'btn-accent', 'file') + '</div>') + '</div></div>';
@@ -15550,18 +16083,18 @@ function impPreparar(I) {
   return I._cache;
 }
 function impMarcados(I, P) { return (P.todos.itens || []).filter(function (x) { return !(I.pular || {})[x.k]; }); }
-var NOME_ABA_IMP = { ncm: 'NCM', tab: 'Tabelas de preço', enc: 'Encargos', benef: 'Benefícios', grupo: 'Grupos', producao: 'Produção', mp: 'Matérias-primas', func: 'Funcionários', setor: 'Setores e máquinas', molde: 'Moldes', prod: 'Peças e fórmulas', terceiro: 'Preços do terceiro', cfg: 'Configuração' };
+var NOME_ABA_IMP = { ncm: 'NCM', tab: 'Tabelas de preço', enc: 'Encargos', benef: 'Benefícios', grupo: 'Grupos', producao: 'Produção', mp: 'Matérias-primas', func: 'Funcionários', setor: 'Setores e máquinas', molde: 'Moldes', prod: 'Peças', peca: 'Peças', formula: 'Fórmulas', terceiro: 'Preços do terceiro', cfg: 'Configuração' };
 function nvPrepararImportacao(I) { return impPreparar(I).final; }
 TELAS.importar = {
   render: function () {
     var I = nvImp(), XL = window.XLSX;
     var h = ph('Importar e exportar planilha', 'Todos os dados da ' + esc(S.emp.nome) + ' numa planilha do Excel: baixe com os dados de hoje, mude o que quiser e importe de volta. Código novo é criado; código que já existe só muda no que estiver diferente.', '', 'Cadastros');
     if (!XL) return h + alerta('err', 'A biblioteca de planilhas não carregou. Confira a internet e recarregue a página.');
-    h += '<div class="grid g2"><div>' + caixa('1. Baixe a planilha', '<p class="desc">Uma aba por tipo de cadastro: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e configuração. Todo campo da tela tem a sua coluna. <b>Com todos os dados</b>: vem preenchida com o que está na Central hoje; mude o que quiser e importe de volta. <b>Modelo em branco</b>: só os títulos e uma linha de exemplo, para começar do zero.</p><div class="inline imp-baixar">' + btn('Baixar com todos os dados', 'impExportar', '', 'btn-accent', 'download') + btn('Baixar modelo em branco', 'impModelo', '', 'btn-ghost', 'file') + '</div>') + '</div><div>' +
+    h += '<div class="grid g2"><div>' + caixa('1. Baixe a planilha', '<p class="desc">Uma aba por tipo de cadastro: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças, fórmulas, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e configuração. Todo campo da tela tem a sua coluna. <b>Com todos os dados</b>: vem preenchida com o que está na Central hoje; mude o que quiser e importe de volta. <b>Modelo em branco</b>: só os títulos e uma linha de exemplo, para começar do zero.</p><div class="inline imp-baixar">' + btn('Baixar com todos os dados', 'impExportar', '', 'btn-accent', 'download') + btn('Baixar modelo em branco', 'impModelo', '', 'btn-ghost', 'file') + '</div>') + '</div><div>' +
       caixa('2. Envie a planilha preenchida', '<div class="campo"><label for="impArq">Arquivo .xlsx</label><input class="i" type="file" id="impArq" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>' + (I.arquivo ? '<div class="hint hint-fixo">Arquivo lido: <b>' + esc(I.arquivo) + '</b></div>' : '<div class="hint">Nada é gravado antes da conferência e da sua confirmação.</div>')) + '</div></div>';
     if (!I.lido) return h;
     var P = impPreparar(I), r0 = P.todos, r = P.final;
-    var linhaErro = function (e) { return '<tr><td class="nw">' + esc(NOME_ABA_IMP[e.aba] || e.aba || '—') + '</td><td class="r">' + (e.linha || '—') + '</td><td>' + esc(e.msg) + '</td></tr>'; };
+    var linhaErro = function (e) { return '<tr><td class="nw">' + esc(NOME_ABA_IMP[e.aba] || e.aba || '—') + '</td><td class="r">' + (e.ver || e.linha || '—') + '</td><td>' + esc(e.msg) + '</td></tr>'; };
     var tabErros = function (l) { return '<table data-sem-ordem><thead><tr><th>Aba</th><th class="r">Linha</th><th>Problema</th></tr></thead><tbody>' + l.map(linhaErro).join('') + '</tbody></table>'; };
     // problema que não é de um item (coluna que falta, data de início): não há o que escolher
     var gerais = r.erros.filter(function (e) { return !e.k; });
@@ -15575,13 +16108,17 @@ TELAS.importar = {
       ab.filter(function (a) { var x = r.resumo[a]; return x && x.novos + x.alterados + (x.excluidos || 0) + x.iguais; }).map(function (a) {
         var x = r.resumo[a]; return '<tr><td>' + esc(NOME_ABA_IMP[a]) + '</td><td class="r">' + x.novos + '</td><td class="r">' + x.alterados + '</td><td class="r">' + (x.excluidos || 0) + '</td><td class="r">' + x.iguais + '</td></tr>';
       }).join('') + '</tbody></table>', I.lido.abas.length + ' abas lidas');
+    // linhas sem as colunas obrigatórias (anotações, contas soltas): ficaram de fora, o resto entra
+    var foraL = r0.fora || [];
+    if (foraL.length) h += caixa('Linhas que ficaram de fora (' + foraL.length + ')', '<p class="desc">Estas linhas não têm as colunas obrigatórias (parecem anotações ou contas soltas): a importação não lê e não precisa corrigir. Se alguma for um cadastro de verdade, preencha as colunas obrigatórias e envie de novo.</p>' +
+      '<div class="tbl-scroll"><table data-sem-ordem id="impForaTab"><thead><tr><th>Aba</th><th class="r">Linha</th><th>O que tem</th></tr></thead><tbody>' + foraL.slice(0, 60).map(function (f) { return '<tr><td class="nw">' + esc(f.aba) + '</td><td class="r">' + (f.ver || f.linha) + '</td><td>' + esc(f.msg) + '</td></tr>'; }).join('') + '</tbody></table></div>' + (foraL.length > 60 ? '<div class="hint">e mais ' + (foraL.length - 60) + '</div>' : ''), '', 'imp-fora-box');
     // linhas repetidas: qual vale
     var rep = (r0.repetidos || []).filter(function (x) { return !x.iguais; }), repIg = (r0.repetidos || []).filter(function (x) { return x.iguais; });
     if (rep.length) h += caixa('Linhas repetidas na planilha (' + rep.length + ')', '<p class="desc">O mesmo item está em mais de uma linha, com valores diferentes. Marque a linha que vale; as outras ficam de fora. Sem escolha, vale a última.</p>' +
       rep.map(function (x) {
         return '<div class="imp-rep"><div class="imp-rep-tit">' + esc(NOME_ABA_IMP[x.aba] || x.aba) + ' · <span class="cod">' + esc(x.ref) + '</span></div><div class="tbl-scroll"><table data-sem-ordem><thead><tr><th></th><th class="r">Linha</th>' +
           x.colunas.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-          x.linhas.map(function (l) { return '<tr' + (l.linha === x.escolhida ? ' class="on"' : '') + '><td class="c"><input type="radio" name="rep-' + esc(x.k) + '" data-a="impEscolha" data-k="' + esc(x.k) + '" data-l="' + l.linha + '"' + (l.linha === x.escolhida ? ' checked' : '') + ' aria-label="Usar a linha ' + l.linha + '"></td><td class="r">' + l.linha + '</td>' + l.valores.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') +
+          x.linhas.map(function (l) { return '<tr' + (l.linha === x.escolhida ? ' class="on"' : '') + '><td class="c"><input type="radio" name="rep-' + esc(x.k) + '" data-a="impEscolha" data-k="' + esc(x.k) + '" data-l="' + l.linha + '"' + (l.linha === x.escolhida ? ' checked' : '') + ' aria-label="Usar a linha ' + (l.ver || l.linha) + '"></td><td class="r">' + (l.ver || l.linha) + '</td>' + l.valores.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') +
           '</tbody></table></div></div>';
       }).join(''), '', 'imp-reps');
     if (repIg.length) h += alerta('info', repIg.length + (repIg.length === 1 ? ' item aparece' : ' itens aparecem') + ' em mais de uma linha com os mesmos valores: ' + (repIg.length === 1 ? 'entra' : 'entram') + ' uma vez só (' + esc(repIg.slice(0, 4).map(function (x) { return x.ref; }).join(', ')) + (repIg.length > 4 ? '…' : '') + ').');
@@ -15604,7 +16141,7 @@ TELAS.importar = {
         if (x.campos && x.campos.length) notas.push('<span class="muted">' + esc(x.campos.slice(0, 4).join(', ') + (x.campos.length > 4 ? ' e mais ' + (x.campos.length - 4) : '')) + '</span>');
         if (x.nota) notas.push('<span class="muted">' + esc(x.nota) + '</span>');
         (fora ? [] : (avisosK[x.k] || [])).forEach(function (w) { notas.push(badge('atenção', 'b-warn') + ' ' + esc(w.msg)); });
-        ((fora ? errosK0[x.k] : errosK[x.k]) || []).forEach(function (e) { notas.push('<span class="imp-erro">' + esc(e.msg) + (e.linha ? ' (linha ' + e.linha + ')' : '') + '</span>'); });
+        ((fora ? errosK0[x.k] : errosK[x.k]) || []).forEach(function (e) { notas.push('<span class="imp-erro">' + esc(e.msg) + ((e.ver || e.linha) ? ' (' + (e.aba ? esc(e.aba) + ', ' : '') + 'linha ' + (e.ver || e.linha) + ')' : '') + '</span>'); });
         corpo += '<tr class="' + (fora ? 'imp-fora' : '') + '"><td class="c"><input type="checkbox" data-a="impMarcar" data-k="' + esc(x.k) + '"' + (fora ? '' : ' checked') + ' aria-label="Importar ' + esc(x.ref) + '"></td>' +
           '<td class="cod">' + esc(x.ref) + '</td><td>' + esc(x.desc || '') + '</td><td>' + badge(ac[0], ac[1]) + (notas.length ? ' ' + notas.join(' ') : '') + '</td></tr>';
       });
@@ -16560,7 +17097,7 @@ var MANUAL = [
     atencao: ['Molde sem vida útil ou sem cavidades não dá custo por peça: a peça que usa ele aparece com erro.'] },
   { id: 'mps', rota: 'mps', grupo: 'Cadastros › Peças', nome: 'Matérias-primas',
     oque: 'Tudo o que você compra e usa nas peças: borrachas, cargas, aceleradores, insertos metálicos, embalagens. O sistema tira do preço de compra os impostos que a empresa recupera (créditos) e soma frete e outros gastos. O resultado é o custo líquido, usado nas fórmulas.',
-    passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, unidade (kg, g, L, un…).', 'Aba Preço e impostos: o preço da nota, os impostos da nota e se cada um gera crédito, e o frete.', 'Grave e confira o custo líquido no cartão ao lado.'],
+    passos: ['Clique em <b>Incluir</b>.', 'Aba Cadastro: código, descrição, unidade (kg, g, L, un…).', 'Aba Preço e impostos: o preço da nota, os impostos da nota e se cada um gera crédito, e o frete.', 'Mistura (ex.: adesivo + solvente): na mesma aba, escolha <b>Mistura de outras matérias-primas</b>, ponha cada componente com a quantidade da receita e quanto a receita rende. O custo sai dos preços de cada componente, com os impostos de cada um.', 'Grave e confira o custo líquido no cartão ao lado.'],
     abas: [['Cadastro', [
         ['cod', 'Código', 'O código da matéria-prima, ex.: MP-001. Gravou errado? Em Editar › Corrigir um erro o código pode ser trocado: vale em todas as datas e em tudo que usa o cadastro.'],
         ['desc', 'Descrição', 'O nome do material, ex.: Borracha NBR 33% ACN.'],
@@ -16577,8 +17114,12 @@ var MANUAL = [
         ['v2', 'Outros valores (R$ por unidade)', 'Outros gastos para trazer o material, em reais por unidade.', '+'],
         ['v2Cred', 'Créditos sobre outros valores', 'Quanto desses outros valores a empresa recupera em impostos, em %.'],
         ['ajuste', 'Outros acréscimos ou créditos', 'Veio da versão anterior. Quando os impostos estiverem nos campos certos, zere.'],
-        ['liquidoManual', 'Custo líquido digitado (opcional)', 'Deixe em branco para o sistema calcular. Se preencher, o sistema usa este valor e ignora a conta.', '+']]]],
-    colunas: [['Imposto', 'ICMS, IPI, PIS e COFINS da nota de compra.'], ['% da nota', 'A alíquota que está na nota fiscal do fornecedor. Ex.: ICMS 12.'], ['Gera crédito', '<b>Sim</b>: a empresa recupera esse imposto e ele sai do custo. <b>Não</b>: ele fica no custo. Em branco: o padrão do regime (pergunte ao contador).']],
+        ['liquidoManual', 'Custo líquido digitado (opcional)', 'Deixe em branco para o sistema calcular. Se preencher, o sistema usa este valor e ignora a conta.', '+']]],
+      ['Mistura', [
+        ['mist.#.mp', 'Componente', 'Uma matéria-prima comprada que entra na receita, ex.: o adesivo Chem 11/42 ou o solvente. Ela entra com o custo líquido dela (o preço da nota menos os créditos dos impostos da compra). Uma mistura não entra em outra.'],
+        ['mist.#.qtd', 'Quantidade na receita', 'Quanto do componente vai na receita, na unidade dele (kg, L…). Ex.: 1 kg de Chem e 2 L de solvente.'],
+        ['rende', 'A receita rende', 'Quanto a receita faz, na unidade desta matéria-prima. Ex.: 1 kg de Chem + 2 L de solvente rendem 3 L de adesivo pronto. Se algo evapora ou se perde no preparo, ponha o que sobra para usar: a perda entra no custo.']]]],
+    colunas: [['Componente', 'Uma matéria-prima comprada que entra na receita da mistura.'], ['Quantidade na receita', 'Quanto do componente vai na receita, na unidade dele (kg, L…).'], ['Custo líquido do componente', 'O custo por unidade do componente hoje (preço da nota menos os créditos dos impostos da compra). Só para ver.'], ['Imposto', 'ICMS, IPI, PIS e COFINS da nota de compra.'], ['% da nota', 'A alíquota que está na nota fiscal do fornecedor. Ex.: ICMS 12.'], ['Gera crédito', '<b>Sim</b>: a empresa recupera esse imposto e ele sai do custo. <b>Não</b>: ele fica no custo. Em branco: o padrão do regime (pergunte ao contador).']],
     atencao: ['Preço sem atualização há muito tempo gera aviso em Alertas (o prazo fica em Ajustes › Geral e dados).', 'Unidade errada (kg no cadastro e gramas na fórmula) erra o custo: a fórmula usa a unidade daqui.'] },
 
   /* ------------------------------------------------------------ cadastros › preços */
@@ -16657,12 +17198,12 @@ var MANUAL = [
         ['he.*', 'Horas extras por mês', 'A média de horas extras por mês com esse acréscimo. Entram no custo do mês e nas horas da pessoa. Em branco: nenhuma.'],
         ['vb.*', 'Valores deste funcionário', 'O valor desta pessoa para este item dos encargos (ex.: insalubridade só para quem recebe). Em branco: vale o padrão da empresa.']]]],
     blocos: [{ caixa: 'Alocação nos setores', txt: 'Em cada linha: o <b>setor</b> e o <b>% do tempo</b> que a pessoa (ou a função) trabalha nele. Ex.: 70% na injeção e 30% na rebarbação. O total deve dar 100%; o que faltar fica fora do custo das peças.' }],
-    colunas: [['Benefício', 'Os benefícios da empresa (cadastrados em Encargos e provisões).'], ['Valor por mês', 'Quanto a empresa paga por mês a esta pessoa. Em branco: o padrão da empresa.'], ['Desconto do funcionário', 'Quanto é descontado do salário da pessoa por esse benefício. Sai do custo. Em branco: o padrão.'], ['Não recebe', 'Marque se esta pessoa não recebe esse benefício.']],
+    colunas: [['Benefício', 'Os benefícios da empresa (cadastrados em Encargos e provisões).'], ['Valor por mês', 'Quanto a empresa paga por mês a esta pessoa. Em branco: o padrão da empresa.'], ['Desconto do funcionário', 'Quanto é descontado do salário da pessoa por esse benefício. Sai do custo. Em branco: o padrão. Escolha ao lado se é em <b>R$ por mês</b> ou em <b>% do salário base</b> (ex.: vale transporte, até 6%; o desconto nunca passa do valor do benefício).'], ['Não recebe', 'Marque se esta pessoa não recebe esse benefício.']],
     atencao: ['Pessoa sem setor não entra no custo de nenhuma peça (aparece em Alertas).', 'Na função, todas as pessoas têm o mesmo salário. Se os salários são bem diferentes, use a média ou separe em duas funções.'] },
   { id: 'cfg-encargos', rota: 'cfg-encargos', grupo: 'Cadastros › Fábrica', nome: 'Encargos e provisões',
     oque: 'A tabela que transforma o salário no custo mensal de cada funcionário: INSS, FGTS, férias, 13º, aviso prévio… Ela já vem preenchida com o padrão. Aqui também ficam os benefícios padrão (vale-alimentação, vale-transporte).',
     passos: ['Confira os benefícios padrão: valor por mês e desconto do funcionário.', 'Confira a tabela com o contador: a alíquota (Valor) de cada item.', 'Mexa nas fórmulas só se souber o que está fazendo. <b>Restaurar fórmulas padrão</b> volta ao começo.', 'Grave.'],
-    colunas: [['Ref', 'O código do item (V01 a V50). Outras fórmulas podem usar o valor dele por esse código.'], ['Descrição', 'O nome do item, ex.: INSS patronal, FGTS, Férias + 1/3.'], ['Tipo', '% (percentual) ou $ (valor em reais): diz como ler o Valor. <b>Inativo</b> tira a linha da conta.'], ['Varia por funcionário', 'Marcado: cada pessoa pode ter um valor próprio, na aba Salário e benefícios dela (ex.: insalubridade).'], ['Integra o salário', 'Marcado: o item soma ao salário antes dos outros encargos (ex.: adicional de insalubridade, que também paga INSS e férias).'], ['Valor', 'O número que a fórmula usa como VB: um percentual (ex.: 8 para o FGTS) ou um valor em reais.'], ['Fórmula', 'A conta do item. Ex.: ST * VB / 100 = salário total × Valor ÷ 100. ST = salário total; SB = salário base; V01… = outros itens.'], ['Vai para', 'Em qual grupo o valor aparece: Encargos, Provisões ou Outros. Não muda o total.'], ['Benefício', 'O nome do benefício.'], ['Valor por mês (padrão)', 'Quanto a empresa paga por mês a cada funcionário.'], ['Desconto do funcionário', 'Quanto é descontado do salário de cada um. Sai do custo.'], ['Entra no custo', 'Calculado: valor − desconto.'], ['Ativo', 'Desmarcado: o benefício não entra para ninguém.']],
+    colunas: [['Ref', 'O código do item (V01 a V50). Outras fórmulas podem usar o valor dele por esse código.'], ['Descrição', 'O nome do item, ex.: INSS patronal, FGTS, Férias + 1/3.'], ['Tipo', '% (percentual) ou $ (valor em reais): diz como ler o Valor. <b>Inativo</b> tira a linha da conta.'], ['Varia por funcionário', 'Marcado: cada pessoa pode ter um valor próprio, na aba Salário e benefícios dela (ex.: insalubridade).'], ['Integra o salário', 'Marcado: o item soma ao salário antes dos outros encargos (ex.: adicional de insalubridade, que também paga INSS e férias).'], ['Valor', 'O número que a fórmula usa como VB: um percentual (ex.: 8 para o FGTS) ou um valor em reais.'], ['Fórmula', 'A conta do item. Ex.: ST * VB / 100 = salário total × Valor ÷ 100. ST = salário total; SB = salário base; V01… = outros itens.'], ['Vai para', 'Em qual grupo o valor aparece: Encargos, Provisões ou Outros. Não muda o total.'], ['Benefício', 'O nome do benefício.'], ['Valor por mês (padrão)', 'Quanto a empresa paga por mês a cada funcionário.'], ['Desconto do funcionário', 'Quanto é descontado do salário de cada um. Sai do custo. Escolha ao lado se é em <b>R$ por mês</b> ou em <b>% do salário base</b>: no vale transporte a lei permite descontar até 6% do salário base, nunca mais que o próprio vale (quem ganha mais paga o vale inteiro e ele não custa nada para a empresa).'], ['Entra no custo', 'Calculado: valor − desconto.'], ['Ativo', 'Desmarcado: o benefício não entra para ninguém.']],
     atencao: ['Benefício que também está na tabela de encargos conta duas vezes: o sistema avisa.'] },
   { id: 'cfg-taxas', rota: 'cfg-taxas', grupo: 'Cadastros › Fábrica', nome: 'Taxas hora',
     oque: 'As regras do custo das pessoas: os valores que já vêm preenchidos no funcionário novo, os números usados pelos encargos e de onde vêm as horas e a eficiência.',
@@ -16719,9 +17260,14 @@ var MANUAL = [
         ['senha', 'Senha provisória', 'Mínimo 6 caracteres. Passe para a pessoa; ela troca no primeiro acesso.', '+']]]],
     atencao: ['Gestor e consulta veem custos, e com eles os salários. Para quem só lança produção, use operador.'] },
   { id: 'importar', rota: 'importar', grupo: 'Cadastros › Planilha', nome: 'Importar e exportar planilha',
-    oque: 'Todos os dados numa planilha do Excel, nos dois sentidos: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças e fórmulas, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e toda a configuração de Ajustes. Todo campo que dá para preencher na tela tem uma coluna (ou uma linha, na aba Configuração). Baixe com os dados de hoje para conferir ou mudar muita coisa de uma vez, e importe de volta.',
+    oque: 'Todos os dados numa planilha do Excel, nos dois sentidos: grupos, matérias-primas, funcionários, setores e máquinas, moldes, peças, fórmulas, NCM, tabelas de preço, preços do terceiro, produção, encargos, benefícios e toda a configuração de Ajustes. Todo campo que dá para preencher na tela tem uma coluna (ou uma linha, na aba Configuração). Baixe com os dados de hoje para conferir ou mudar muita coisa de uma vez, e importe de volta.',
     passos: ['Clique em <b>Baixar com todos os dados</b> (ou em <b>Baixar modelo em branco</b> para começar do zero). Cada aba do Excel é um tipo de cadastro.', 'Mude ou acrescente o que quiser. Números no padrão brasileiro (1.500,25); datas dd/mm/aaaa. Não mude os títulos da primeira linha.', 'Em <b>Envie a planilha</b>, escolha o arquivo. O sistema confere linha por linha e mostra os problemas.', 'Confira o resumo (novos, alterados, iguais), escolha a data em que as mudanças passam a valer e clique em <b>Importar</b>.'],
-    extra: '<p><b>Visual da planilha:</b> título cinza = coluna obrigatória; fundo amarelo-claro = dado obrigatório; valores em R$ em azul; a 2ª linha mostra a unidade de cada coluna (R$, %, nº, dd/mm/aaaa). Passe o mouse no título para ver a explicação.</p><p><b>Escolher o que entra:</b> depois de enviar, a tela lista item por item (novo, muda, exclui). Desmarque o que não quer; <b>Só os novos</b> não mexe no que já existe; <b>Desmarcar os que têm problema</b> deixa o resto entrar.</p><p><b>Código repetido na planilha:</b> se as linhas são iguais, entra uma vez; se são diferentes, você marca qual linha vale.</p><p><b>Apagar:</b> escreva <b>sim</b> na coluna <b>Excluir</b> da linha. Some de todas as datas (fica no histórico de mudanças). Peça excluída leva junto a produção e os preços do terceiro dela.</p><p><b>Célula em branco não apaga:</b> deixa o valor como está.</p><p><b>Produção:</b> cada linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.</p><p><b>Grupos:</b> na coluna Grupo das matérias-primas e das peças pode ir o código ou o nome do grupo.</p><p><b>Encargos e Benefícios:</b> uma linha por item. Linha nova com o código em branco vira item novo (o sistema numera).</p><p><b>Funcionários:</b> as últimas colunas, “Encargo do funcionário: …” e “Benefício: …”, são os valores próprios de cada pessoa; em branco vale o padrão da empresa. Benefício novo: crie na aba Benefícios e acrescente as colunas com o mesmo nome (ou importe, baixe de novo e elas já vêm).</p><p><b>Valor digitado</b> (custo líquido da matéria-prima, taxa do setor): escreva <b>calcular</b> para o sistema voltar a calcular.</p>',
+    extra: '<p><b>Visual da planilha:</b> título cinza = coluna obrigatória; fundo amarelo-claro = dado obrigatório; valores em R$ em azul; a 2ª linha (<b>Formato</b>) diz o que a coluna aceita (R$, %, nº, dd/mm/aaaa ou as opções da lista). Passe o mouse no título para ver a explicação.</p>' +
+      '<p><b>Texto cinza:</b> o valor padrão — a pessoa ou a matéria-prima não tem valor próprio e usa o da empresa (horas, eficiência, vales, descontos, encargos do funcionário, o crédito dos impostos pelo regime). Importar de volta igual continua no padrão; outro valor vira valor próprio.</p>' +
+      '<p><b>Colunas “— só para ver”</b> (título azul-claro): a Central calcula com os dados de hoje — custo da matéria-prima, da peça e de cada linha da fórmula, custo do funcionário, horas-base e taxa hora dos setores, depreciação das máquinas. Servem para conferir; a importação não lê.</p>' +
+      '<p><b>Peças e Fórmulas:</b> a aba Peças tem uma linha por peça, com os preços de cada tabela (colunas “Preço: …”) e o preço da limpeza no terceiro de hoje. A aba Fórmulas tem uma linha por linha da fórmula, com o código da peça em todas; a coluna <b>Passo</b> dá a ordem. Planilhas antigas (aba “Peças e fórmulas”) continuam sendo lidas.</p>' +
+      '<p><b>Mistura</b> (ex.: adesivo + solvente): nas colunas “Mistura: componentes” (CHEM-1142: 1; SOLV-467: 2) e “Mistura: a receita rende”. <b>Desconto de benefício</b> em % do salário: escreva 6%.</p>' +
+      '<p><b>Linhas que ficaram de fora:</b> a linha sem as colunas obrigatórias (uma anotação, uma conta) não entra e a tela avisa; o resto importa normalmente.</p><p><b>Escolher o que entra:</b> depois de enviar, a tela lista item por item (novo, muda, exclui). Desmarque o que não quer; <b>Só os novos</b> não mexe no que já existe; <b>Desmarcar os que têm problema</b> deixa o resto entrar.</p><p><b>Código repetido na planilha:</b> se as linhas são iguais, entra uma vez; se são diferentes, você marca qual linha vale.</p><p><b>Apagar:</b> escreva <b>sim</b> na coluna <b>Excluir</b> da linha. Some de todas as datas (fica no histórico de mudanças). Peça excluída leva junto a produção e os preços do terceiro dela.</p><p><b>Célula em branco não apaga:</b> deixa o valor como está.</p><p><b>Produção:</b> cada linha troca o lançamento daquela peça naquele dia; os outros dias ficam como estão.</p><p><b>Grupos:</b> na coluna Grupo das matérias-primas e das peças pode ir o código ou o nome do grupo.</p><p><b>Encargos e Benefícios:</b> uma linha por item. Linha nova com o código em branco vira item novo (o sistema numera).</p><p><b>Funcionários:</b> as últimas colunas, “Encargo do funcionário: …” e “Benefício: …”, são os valores próprios de cada pessoa; em branco vale o padrão da empresa. Benefício novo: crie na aba Benefícios e acrescente as colunas com o mesmo nome (ou importe, baixe de novo e elas já vêm).</p><p><b>Valor digitado</b> (custo líquido da matéria-prima, taxa do setor): escreva <b>calcular</b> para o sistema voltar a calcular.</p>',
     atencao: ['Importar de volta a mesma planilha não muda nada: só o que está diferente vira mudança.', 'Não vão na planilha: os acessos (usuários e senhas) e o histórico dos valores antigos. A planilha traz os valores de hoje.', 'Excluir (coluna no fim de cada aba): só o administrador da empresa. O que ainda é usado hoje (matéria-prima numa fórmula, NCM numa peça, grupo com itens) não sai: a tela diz quem usa.', 'Para tirar só uma linha da fórmula ou uma máquina, apague a linha da planilha; a coluna Excluir apaga a peça ou o setor inteiro.'] },
   { id: 'grupos', rota: 'grupos', grupo: 'Cadastros › Peças', nome: 'Grupos',
     oque: 'Os grupos organizam as matérias-primas e as peças (ex.: Elastômeros, Cargas, Anéis, Retentores) e servem de filtro nas listas. Cada grupo tem um código e um nome; o mesmo grupo pode ter matérias-primas e peças.',
